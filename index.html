@@ -35,8 +35,8 @@
   main{padding:8px 22px 40px;min-width:900px}
   section{position:relative;margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px 12px}
   section h2{margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
-  .ticks{position:relative;height:18px;margin-left:var(--label-w)}
-  .ticks span{position:absolute;top:0;transform:translateX(-50%);font-weight:700;font-size:13px;color:#b8c3d1}
+  .ticks{position:relative;height:62px;margin-left:var(--label-w)}
+  .ticks span{position:absolute;top:0;transform:translateX(-50%) rotate(-55deg);transform-origin:top center;font-weight:600;font-size:10px;color:#b8c3d1;white-space:nowrap}
   .row{display:grid;grid-template-columns:var(--label-w) 1fr;align-items:center;margin-top:5px;transition:opacity .25s}
   .row .lab{padding-right:10px;text-align:right;font-weight:600;font-size:13px;color:#c9d2dd;white-space:nowrap}
   .row.big .lab{font-size:15px;font-weight:700;color:#e6ecf3}
@@ -73,7 +73,8 @@
   </div>
   <div class="lists">
     <div><span class="k">Trend window now</span><span id="trendlist"></span></div>
-    <div><span class="k">Turn spike now / next</span><span id="turnlist"></span></div>
+    <div><span class="k">Turn spike now</span><span id="turnnowlist"></span></div>
+    <div><span class="k">Turn spike next</span><span id="turnnextlist"></span></div>
   </div>
   <div class="ctrl">
     <div class="r"><span>Time zone</span>
@@ -83,7 +84,7 @@
     </div>
     <div class="r"><span>Day profile</span>
       <div class="seg" id="dayseg">
-        <button data-m="auto" class="sel">Auto</button><button data-m="all">All</button><button data-m="0">Mon</button><button data-m="1">Tue</button><button data-m="2">Wed</button><button data-m="3">Thu</button><button data-m="4">Fri</button>
+        <button data-m="auto" class="sel">Auto (12m)</button><button data-m="all">All</button><button data-m="0">Mon</button><button data-m="1">Tue</button><button data-m="2">Wed</button><button data-m="3">Thu</button><button data-m="4">Fri</button>
       </div>
     </div>
     <div class="r">
@@ -118,7 +119,7 @@ function build(){
     const sec = document.createElement("section"); sec.dataset.group = g;
     sec.innerHTML = `<h2>${g}</h2><div class="ticks"></div>`;
     const ticks = sec.querySelector(".ticks");
-    for (let h=8; h<=21; h++){ const s=document.createElement("span"); s.style.left=((h-8)*4/SLOTS*100)+"%"; s.textContent=slotLabel((h-8)*4).slice(0,2); ticks.appendChild(s); }
+    for (let k=0; k<SLOTS; k++){ const s=document.createElement("span"); s.style.left=((k+.5)/SLOTS*100)+"%"; s.textContent=`${slotLabel(k)}–${slotLabel(k+1)}`; ticks.appendChild(s); }
     const body = document.createElement("div"); body.className="body"; body.style.position="relative"; sec.appendChild(body);
     ROWS.filter(r=>r.group===g).forEach(r=>{
       const row=document.createElement("div"); row.className="row"+(r.big?" big":""); row.dataset.i=ROWS.indexOf(r);
@@ -164,13 +165,13 @@ function tick(){
   if (displayOffset < -720) displayOffset += 1440;
   $("clock").textContent = `${pad(displayed.h)}:${pad(displayed.m)}:${pad(displayed.s)}`;
   $("zonelab").textContent = timeMode === "est" ? "EST time" : "UK time";
-  document.querySelectorAll(".ticks span").forEach((span, index)=>span.textContent=slotLabel(index*4).slice(0,2));
+  document.querySelectorAll(".ticks").forEach(ticks=>ticks.querySelectorAll("span").forEach((span, index)=>span.textContent=`${slotLabel(index)}–${slotLabel(index+1)}`));
   const previewMinutes = preview && (preview.h*60 + preview.m - displayOffset + 1440) % 1440;
   const t = preview ? {h:Math.floor(previewMinutes/60), m:previewMinutes%60, s:0, wd:real.wd} : real;
   const wdIdx = ["Mon","Tue","Wed","Thu","Fri"].indexOf(real.wd);
-  const mode = dayMode === "auto" ? (wdIdx >= 0 ? String(wdIdx) : "all") : dayMode;
+  const mode = dayMode === "auto" ? "all" : dayMode;
   applyMode(mode);
-  $("modelab").textContent = "profile: " + (mode === "all" ? "all days" : WD[+mode] + "s") + (dayMode === "auto" ? " (auto)" : "") + " · " + ROWS[0].days[mode] + " days";
+  $("modelab").textContent = "profile: " + (mode === "all" ? "12-month all-days" : WD[+mode] + "s") + (dayMode === "auto" ? " (auto)" : "") + " · " + ROWS[0].days[mode] + " days";
   const k = currentSlot(t), thr = (+$("thr").value)/100;
   const weekend = !preview && wdIdx < 0;
   const banner = $("banner");
@@ -179,7 +180,7 @@ function tick(){
     banner.classList.add("show"); $("winlab").textContent="—"; $("cd").textContent="";
     document.querySelectorAll("section").forEach(s=>s.classList.remove("live"));
     document.querySelectorAll(".row").forEach(r=>{ r.classList.remove("on","off","turn"); r.querySelector(".pct").textContent=""; });
-    $("trendlist").innerHTML='<span class="chip none">—</span>'; $("turnlist").innerHTML='<span class="chip none">—</span>';
+    $("trendlist").innerHTML='<span class="chip none">—</span>'; $("turnnowlist").innerHTML='<span class="chip none">—</span>'; $("turnnextlist").innerHTML='<span class="chip none">—</span>';
     return;
   }
   banner.classList.remove("show");
@@ -187,7 +188,7 @@ function tick(){
   const left = 480+(k+1)*15-(t.h*60+t.m)-(t.s>0?1:0), ls = t.s>0?60-t.s:0;
   $("winlab").textContent = `${slotLabel(k)}–${slotLabel(k+1)}`;
   $("cd").textContent = `next window in ${left}:${pad(ls)}`;
-  const trend=[], turn=[];
+  const trend=[], turnNow=[], turnNext=[];
   document.querySelectorAll(".row").forEach(row=>{
     const r = ROWS[+row.dataset.i], d = r.data[shownMode], closed = r.closed[k];
     const on = !closed && d.s[k] >= thr;
@@ -195,10 +196,12 @@ function tick(){
     row.classList.toggle("on", on); row.classList.toggle("off", !on); row.classList.toggle("turn", sp);
     row.querySelector(".pct").textContent = closed ? "closed" : Math.round(d.s[k]*100) + "% · turns " + d.t[k].toFixed(1) + "×";
     if (on) trend.push(r.label);
-    if (sp) turn.push(r.label + (d.t[k] >= THR_SPIKE ? "" : " (next)"));
+    if (!closed && d.t[k] >= THR_SPIKE) turnNow.push(r.label);
+    if (k<51 && !r.closed[k+1] && d.t[k+1] >= THR_SPIKE) turnNext.push(r.label);
   });
   $("trendlist").innerHTML = trend.length ? trend.map(x=>`<span class="chip">${x}</span>`).join("") : '<span class="chip none">none at this threshold</span>';
-  $("turnlist").innerHTML = turn.length ? turn.map(x=>`<span class="chip t">${x}</span>`).join("") : '<span class="chip none">none</span>';
+  $("turnnowlist").innerHTML = turnNow.length ? turnNow.map(x=>`<span class="chip t">${x}</span>`).join("") : '<span class="chip none">none</span>';
+  $("turnnextlist").innerHTML = turnNext.length ? turnNext.map(x=>`<span class="chip t">${x}</span>`).join("") : '<span class="chip none">none</span>';
   document.querySelectorAll("section").forEach(sec=>{
     sec.classList.add("live");
     const body=sec.querySelector(".body"), strip=sec.querySelector(".strips"), now=sec.querySelector(".now"), nxt=sec.querySelector(".next");

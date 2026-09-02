@@ -84,7 +84,7 @@
     </div>
     <div class="r"><span>Day profile</span>
       <div class="seg" id="dayseg">
-        <button data-m="auto" class="sel">Auto (12m)</button><button data-m="all">All</button><button data-m="0">Mon</button><button data-m="1">Tue</button><button data-m="2">Wed</button><button data-m="3">Thu</button><button data-m="4">Fri</button>
+        <button data-m="auto" class="sel">Auto (4m)</button><button data-m="all">All</button><button data-m="0">Mon</button><button data-m="1">Tue</button><button data-m="2">Wed</button><button data-m="3">Thu</button><button data-m="4">Fri</button>
       </div>
     </div>
     <div class="r">
@@ -171,7 +171,7 @@ function tick(){
   const wdIdx = ["Mon","Tue","Wed","Thu","Fri"].indexOf(real.wd);
   const mode = dayMode === "auto" ? "all" : dayMode;
   applyMode(mode);
-  $("modelab").textContent = "profile: " + (mode === "all" ? "12-month all-days" : WD[+mode] + "s") + (dayMode === "auto" ? " (auto)" : "") + " · " + ROWS[0].days[mode] + " days";
+  $("modelab").textContent = "profile: " + (mode === "all" ? "4-month all-days" : WD[+mode] + "s") + (dayMode === "auto" ? " (auto)" : "") + " · " + ROWS[0].days[mode] + " days";
   const k = currentSlot(t), thr = (+$("thr").value)/100;
   const weekend = !preview && wdIdx < 0;
   const banner = $("banner");

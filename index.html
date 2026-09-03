@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>5m 20MA trend windows — live</title>
 <style>
-  :root{--bg:#0e131a;--panel:#141b24;--line:#26313f;--text:#e6ecf3;--muted:#8b97a7;--amber:#ffcf5c;--spike:#ff6a2a;--spike-dim:#6a4630;--on:#ffffff;--label-w:184px}
+  :root{--bg:#0e131a;--panel:#141b24;--line:#26313f;--text:#e6ecf3;--muted:#8b97a7;--amber:#ffcf5c;--spike:#ff6a2a;--spike-dim:#6a4630;--on:#ffffff;--label-w:184px;--chart-min:900px;--pad-x:22px}
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.35 "Segoe UI",Inter,system-ui,-apple-system,sans-serif}
   .mono{font-family:"JetBrains Mono","SF Mono",Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}
-  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 30px;padding:14px 22px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:linear-gradient(var(--bg),var(--bg) 85%,transparent);z-index:5}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 30px;padding:14px var(--pad-x) 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:linear-gradient(var(--bg),var(--bg) 85%,transparent);z-index:5}
   .clock{font-size:44px;font-weight:700;letter-spacing:.5px;line-height:1}
   .clock small{font-size:14px;color:var(--muted);font-weight:500;margin-left:8px}
   .win{font-size:15px;color:var(--muted)}
   .win b{color:var(--amber);font-size:20px;font-weight:700}
   .win .cd{color:var(--text);margin-left:10px}
-  .lists{display:flex;flex-direction:column;gap:6px;min-width:260px;flex:1}
+  .lists{display:flex;flex-direction:column;gap:6px;min-width:min(260px,100%);flex:1}
   .lists .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px;margin-right:8px}
   .chip{display:inline-block;padding:2px 9px;border-radius:4px;background:#1e2a3a;color:var(--on);font-weight:600;margin:2px 4px 2px 0;font-size:13px}
   .chip.t{background:#3a2114;color:#ffb38a;border:1px solid #6e3a1f}
   .chip.none{background:transparent;color:var(--muted);font-weight:400;padding-left:0}
   .ctrl{display:flex;flex-direction:column;gap:8px;align-items:flex-end;color:var(--muted);font-size:12px}
-  .ctrl .r{display:flex;gap:12px;align-items:center}
+  .ctrl .r{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
   .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
   .seg button{background:#1a2330;color:var(--muted);border:0;padding:4px 10px;font:inherit;cursor:pointer;border-right:1px solid var(--line)}
   .seg button:last-child{border-right:0}
@@ -30,15 +30,16 @@
   .ctrl select,.ctrl input{background:#1a2330;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font:inherit}
   .ctrl input{width:72px}
   .ctrl .btn{background:#1a2330;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px 10px;font:inherit;cursor:pointer}
-  .banner{margin:12px 22px 0;padding:8px 12px;border:1px solid #5a4a20;background:#241d0f;color:var(--amber);border-radius:6px;display:none}
+  .banner{margin:12px var(--pad-x) 0;padding:8px 12px;border:1px solid #5a4a20;background:#241d0f;color:var(--amber);border-radius:6px;display:none}
   .banner.show{display:block}
-  main{padding:8px 22px 40px;min-width:900px}
-  section{position:relative;margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px 12px}
-  section h2{margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
-  .ticks{position:relative;height:62px;margin-left:var(--label-w)}
+  main{padding:8px var(--pad-x) 40px}
+  section{position:relative;margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px 12px;overflow-x:auto}
+  section h2{margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);position:sticky;left:0}
+  .ticks{position:relative;height:62px;margin-left:var(--label-w);min-width:calc(var(--chart-min) - var(--label-w))}
+  .body{min-width:var(--chart-min)}
   .ticks span{position:absolute;top:0;transform:translateX(-50%) rotate(-55deg);transform-origin:top center;font-weight:600;font-size:10px;color:#b8c3d1;white-space:nowrap}
-  .row{display:grid;grid-template-columns:var(--label-w) 1fr;align-items:center;margin-top:5px;transition:opacity .25s}
-  .row .lab{padding-right:10px;text-align:right;font-weight:600;font-size:13px;color:#c9d2dd;white-space:nowrap}
+  .row{display:grid;grid-template-columns:var(--label-w) 1fr;align-items:center;margin-top:5px;transition:opacity .25s;min-width:var(--chart-min)}
+  .row .lab{padding-right:10px;text-align:right;font-weight:600;font-size:13px;color:#c9d2dd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .row.big .lab{font-size:15px;font-weight:700;color:#e6ecf3}
   .row .lab .pct{display:block;font-size:11px;color:var(--muted);font-weight:500}
   .row .lab .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.5px;padding:1px 5px;border-radius:3px;margin-right:5px;vertical-align:middle;background:#3a2114;color:#ffb38a;border:1px solid #6e3a1f;visibility:hidden}
@@ -60,7 +61,30 @@
   .now::before{content:attr(data-t);position:absolute;top:-1px;left:50%;transform:translate(-50%,-100%);background:var(--amber);color:#1a1300;font-weight:700;font-size:11px;padding:1px 6px;border-radius:3px;white-space:nowrap}
   .next{position:absolute;top:0;bottom:0;border:1px dashed rgba(255,207,92,.55);pointer-events:none;display:none;z-index:2}
   section.live .now,section.live .next{display:block}
-  .foot{color:var(--muted);font-size:11px;margin:16px 22px}
+  .foot{color:var(--muted);font-size:11px;margin:16px var(--pad-x)}
+  @media (max-width:1100px){
+    :root{--label-w:150px;--chart-min:820px;--pad-x:16px}
+    .clock{font-size:36px}
+  }
+  @media (max-width:760px){
+    :root{--label-w:118px;--chart-min:700px;--pad-x:12px}
+    header{gap:12px 16px;position:static}
+    .clock{font-size:30px}
+    .win{font-size:14px}
+    .ctrl{align-items:stretch;width:100%}
+    .ctrl .r{justify-content:flex-start}
+    .ticks{height:54px}
+    .ticks span{font-size:9px}
+    .row .lab{font-size:12px}
+    .row.big .lab{font-size:13px}
+  }
+  @media (max-width:480px){
+    :root{--label-w:96px;--chart-min:620px}
+    .clock{font-size:26px}
+    .clock small{display:block;margin:2px 0 0}
+    .win .cd{display:block;margin:0}
+    .heat div{height:18px}
+  }
   @media (prefers-reduced-motion:reduce){.row{transition:none}}
 </style>
 </head>

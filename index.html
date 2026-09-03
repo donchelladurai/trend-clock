@@ -149,10 +149,10 @@ function applyMode(mode){
     for (let k=0;k<SLOTS;k++){
       if (r.closed[k]) continue;
       heat[k].style.background = heatColor(d.s[k]);
-      heat[k].title = `${slotLabel(k)}  trending ${Math.round(d.s[k]*100)}% of ${r.days[mode]} days`;
+      heat[k].title = `${r.label}  ${slotLabel(k)}–${slotLabel(k+1)}  trending ${Math.round(d.s[k]*100)}% of ${r.days[mode]} days`;
       const i = bars[k].firstChild; i.style.height = Math.round(Math.min(d.t[k]/1.8,1)*100)+"%";
       bars[k].classList.toggle("s", d.t[k] >= THR_SPIKE);
-      bars[k].title = `${slotLabel(k)}  turns ${d.t[k].toFixed(1)}× average`;
+      bars[k].title = `${r.label}  ${slotLabel(k)}–${slotLabel(k+1)}  turns ${d.t[k].toFixed(1)}× average`;
     }
   });
 }

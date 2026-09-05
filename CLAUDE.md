@@ -88,16 +88,31 @@ Pearson chi-square of the row's counts split across the five weekday columns, ov
 `4 × (used − 1)` degrees of freedom (4 df per used window, less the 4 spent estimating the
 weekday column proportions). Windows whose 5-weekday total is under 5 are skipped.
 
+**It is not a dispersion estimator, despite the name.** It is a weekday × slot *interaction*
+statistic, and it fails as a measure of clustering in both directions:
+
+- **It diverges with sample length.** On simulated days with zero clustering but a fixed 15%
+  weekday × slot pattern it returns 1.23 / 1.62 / 2.16 / 3.52 / 6.99 at 10 / 25 / 52 / 104 / 260
+  days per weekday. A Pearson statistic under a fixed alternative grows without bound; only the
+  no-pattern control stays at 1.0.
+- **It is blind to whole-day clustering** — the thing the old comments claimed it measured.
+  Against genuine day-level dispersion of 1.4, 2.8 and 6.8 it returns 0.96, 1.00 and 1.01, because
+  its expected values come from the row's own weekday totals and absorb any common day multiplier.
+
+It survives in the significance tests only because both errors push the same way there: a
+too-large `phi` widens the tail and under-flags. **Do not reuse it anywhere that direction is not
+safe** — it was in `pTurn` once and understated the printed figure by up to 17.9 points.
+**Refresh hazard:** a longer history inflates it further and will quietly suppress flags.
+
 Returns **both** forms and they are not interchangeable:
 
 - `phi` — clamped to `>= 1`. Used for the per-window tail, where staying conservative is
   deliberate.
 - `raw` + `dfPhi` — unclamped. Used by the omnibus, which references F.
 
-Constituents of a composite turn together, so composites cluster and run wider than Poisson:
-`phi` is 1.0 for 9 of the 20 single instruments and up to ~2.5 for USD pairs. The estimator
-cannot separate that clustering from a genuine day-of-week × window pattern and charges both to
-`phi`, so it is an upper bound and the test errs toward under-flagging.
+Observed range: 1.0 for 9 of the 20 single instruments, up to ~2.5 for USD pairs. Under a pure
+null it is unbiased (simulated 0.98–1.00), which is what §3.4 leans on to calibrate test size;
+it is only under structure that it inflates.
 
 ### 3.2 Per-window p-value — `poisUpper(c, lam, phi)`
 
@@ -150,20 +165,28 @@ The figure on each bar is `P(at least one turn in this window on a given day)`, 
 `mu = c[k] / days`:
 
 ```js
-pTurn = phi > 1.0001 ? 1 - Math.pow(phi, -mu/(phi-1))   // negative binomial, Var = phi·mu
-                     : 1 - Math.exp(-mu)                 // Poisson
+pTurn = 1 - Math.exp(-mu)     // Poisson; deliberately does NOT use phi
 ```
 
-Continuous as `phi → 1`. **It is not `c/days`** — that is a rate, exceeds 1 on the busiest
-composite windows, and cannot be a percentage. Clustering means fewer *distinct* days carry a
-turn, so the negative-binomial branch sits below the Poisson one.
+**It is not `c/days`** — that is a rate, exceeds 1 on the busiest composite windows, and cannot
+be a percentage.
+
+**Why no `phi`.** It used the negative-binomial form `1 - phi^(-mu/(phi-1))`, which is correct
+for a genuine dispersion `phi` but wrong with the statistic §3.1 actually computes. Because
+`ln(phi)/(phi−1) < 1`, an inflated `phi` always biases this *downward* — measured at up to 17.9
+points on USD pairs, 8.8 on Europe, 7.8 on US — and since `phi` grows with sample length, a
+longer history would have shrunk the printed probability rather than sharpened it.
+
+`1 - exp(-mu)` is by Jensen an **upper bound** on P(at least one) for any mixed-Poisson day
+model, so it cannot mislead optimistically and does not drift with sample size. The UI says
+"up to" for exactly this reason — keep that wording if you touch it.
 
 ### 3.7 Other constants
 
 - `P50 = 0.50` — composite rows only: bright orange fill where `pTurn >= 50%`. On the 12-month
-  profile this lights 47 cells, all on USD pairs and EUR crosses; Europe and US top out at 35%
-  and never reach it. It shares the bright fill with tier 2, so on those four rows bright means
-  "50%+ likely, or flagged, or both".
+  profile this lights **94** cells (535 across all six profiles). It shares the bright fill with
+  tier 2, so on those four rows bright means "50%+ likely, or flagged, or both". These counts
+  doubled when `phi` came out of `pTurn` — if you see 47 quoted anywhere, it predates that fix.
 - `MIN_N = 30` — days below which a heat cell is hatched as a thin sample.
 - Wilson intervals carry the heat strip; Byar's Poisson interval carries the bar tooltip.
 
@@ -248,7 +271,8 @@ weekday`, Chicago Wheat's day count, `MIN_LAM`, `MIN_N`. Everything below is not
 | Comment ~L405 | Spot Gold omnibus `0.10`, one red | recompute |
 | Comment ~L408 | Chicago Wheat `6.1` turns/window, doubling misses p = 0.05 | `lambda` + smallest significant count |
 | Comment ~L415 | held-out `0.15` vs `0.40` and `0.19` vs `0.29` | §7 harness |
-| §3.7 above | `P50` lights `47` cells, USD pairs + EUR crosses only, Europe/US cap at 35% | count `pTurn >= 0.5` on composites |
+| §3.7 above | `P50` lights `94` cells on all-days, `535` across profiles | count `pTurn >= 0.5` on composites |
+| §3.1 above | `phi` divergence figures `1.23 / 2.16 / 6.99`, blindness `0.96 / 1.00 / 1.01` | re-run the two estimator simulations; these are properties of the estimator, not the data, so they should reproduce |
 
 Also check the **sample dates** in the first footer sentence and the Chicago Wheat start date.
 
@@ -271,6 +295,9 @@ functions.
   squeaked through painted a median of 10 marks; the board ran 201 false marks against 20 for
   the current second BH pass. The gate is also built from the very windows it licenses.
 - **Reading `c/days` as a probability.** It is a rate and exceeds 1. See §3.6.
+- **Using `phi` in the printed probability.** Correct for a real dispersion, wrong for the
+  interaction statistic §3.1 computes; biased the figure down by up to 17.9 points and would
+  have worsened with more data. See §3.6.
 - **`P(X > c)` as the p-value**, and **summing the CDF** to get the tail. See §3.2.
 - **Clamping `phi` inside the omnibus.** See §3.4.
 

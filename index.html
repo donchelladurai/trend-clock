@@ -27,6 +27,10 @@
   .chip{display:inline-flex;align-items:baseline;gap:.38em;padding:.26em .6em;border-radius:.24em;background:#1e2a3a;color:var(--on);font-weight:600;margin:.15em .38em .15em 0;font-size:clamp(13px, .53vw, 28px);line-height:1.15}
   .chip b{font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:1.08em;font-weight:700;color:var(--amber)}
   .chip.t b{color:#ffb38a}
+  /* The looser tier, carrying the same relationship to the solid chip that a light-capped bar
+     carries to a solid one: same family, visibly weaker claim. */
+  .chip.t.soft{background:transparent;border:1px solid #6e3a1f;color:#c69a80}
+  .chip.t.soft b{color:var(--spike-cap)}
   .chip.t{background:#3a2114;color:#ffb38a;border:1px solid #6e3a1f}
   .chip.none{background:transparent;color:var(--muted);font-weight:400;padding-left:0;font-size:clamp(12px, .42vw, 22px)}
   .ctrl{display:flex;flex-direction:column;gap:8px;align-items:flex-end;color:var(--muted);font-size:12px}
@@ -319,9 +323,21 @@ function omnibusP(c, open, lam, phiRaw, dfPhi){
   const f = x/(df*phiRaw);
   return betai(dfPhi/2, df/2, dfPhi/(dfPhi + df*f));
 }
-const OMNIBUS = 0.10, MID_FDR = 0.30;
-// Overview cue on the composite rows only: at least an even chance of a turn on a given day.
-const P50 = 0.50;
+// MID_FDR was 0.30. Raised to 0.40 because at 0.30 nine rows could never reach the summary
+// chips at all — including USD/CAD, whose day is measurably not flat (omnibus 0.032) but whose
+// evidence is spread too thinly for any one window to survive. 0.40 brings it in with 6 windows
+// and costs 263 marks board-wide against 180, while leaving every statistically flat row out:
+// AUD/USD (0.73), USD/CHF (0.24), FTSE 100 (0.20) and Chicago Wheat (0.64) still show nothing,
+// which is the point. Germany 40 (0.054) and EUR/JPY (0.089) would need 0.60 and 0.70 and are
+// deliberately left out — past here the tier stops meaning anything.
+const OMNIBUS = 0.10, MID_FDR = 0.40;
+// Overview cue on the composite rows only. A flat 50% was miscalibrated at both ends: it sat
+// above the whole of Europe's 19-42% range and the whole of US's 16-42% (0 cells each), and
+// below the whole of USD pairs' 50-72% (all 52). A composite's baseline is set by how many
+// instruments it sums, so the level has to be its own. AGG_Q is the percentile of a row's own
+// 12-month spread; mu barely moves between profiles (Europe 0.392-0.402 across all six), so one
+// level per row holds for all of them.
+const AGG_Q = 0.85;
 // Returns -1 when nothing passes, so a legitimate cutoff of exactly 0 (a p-value that
 // underflows) stays distinguishable from "no rejections" and keeps its slots.
 function bhCutoff(ps, q){
@@ -423,7 +439,7 @@ const TURN = ROWS.map((r, idx) => {
     return c/t.lam;
   })();
   // So tier 1 is simply a second, looser cut in the SAME family as tier 2 — everything BH
-  // admits at a 30% false-discovery rate that the 10% cut did not. Its mark count then scales
+  // admits at a 40% false-discovery rate that the 10% cut did not. Its mark count then scales
   // with the row's own evidence instead of with 6 x 52, and it supports a sentence a reader
   // can act on: up to about a third of a row's mid marks are expected to be spurious.
   // Held-out the band averages 0.15 against 0.40 for tier 2 on the 12-month profile, and 0.19
@@ -466,12 +482,20 @@ let preview = null, dayMode = "auto", shownMode = null, shownOffset = null;
 // Germany 40 + France 40, and so on. Spot Gold and Chicago Wheat are drawn big too but stand
 // alone, so the flag is derived rather than assumed: a big row is a composite exactly when the
 // non-big rows following it in its group have turn totals summing to its own.
+const AGG_CUT = [];   // filled below, once COMPOSITE is known
 const COMPOSITE = ROWS.map((r, i) => {
   if (!r.big) return 0;
   const kids = [];
   for (let j=i+1; j<ROWS.length && ROWS[j].group === r.group && !ROWS[j].big; j++) kids.push(j);
   const sum = kids.reduce((a, j) => a + TURNC[j][MODES.length-1], 0);
   return kids.length && sum === TURNC[i][MODES.length-1] ? kids.length : 0;
+});
+ROWS.forEach((r, i) => {
+  if (!COMPOSITE[i]) { AGG_CUT[i] = Infinity; return; }
+  const p = [];
+  for (let k=0;k<SLOTS;k++) if (!r.closed[k]) p.push(TURN[i].all.pTurn[k]);
+  p.sort((a,b)=>a-b);
+  AGG_CUT[i] = p[Math.floor(AGG_Q*p.length)];
 });
 function build(){
   const main = $("main");
@@ -516,7 +540,6 @@ function applyMode(mode){
     const r = ROWS[+row.dataset.i], d = r.data[mode];
     const heat = row.querySelectorAll(".heat div"), bars = row.querySelectorAll(".bars div");
     const n = r.days[mode], thin = n < MIN_N, tr = TURN[+row.dataset.i], tn = tr[mode];
-    const agg = !!COMPOSITE[+row.dataset.i];
     for (let k=0;k<SLOTS;k++){
       if (r.closed[k]) continue;
       heat[k].style.background = heatColor(d.s[k]);
@@ -525,8 +548,8 @@ function applyMode(mode){
       heat[k].title = `${r.label}  ${slotLabel(k)}–${slotLabel(k+1)}\ntrending ${Math.round(d.s[k]*100)}% of ${n} days`
         + `\n95% CI ${Math.round(lo*100)}–${Math.round(hi*100)}%` + (thin ? `\nthin sample — indicative only` : ``);
       const pv = bars[k].querySelector(".pv"); pv.textContent = Math.round(tn.pTurn[k]*100) + "%";
-      // Composite rows only: a flat 50% likelihood bar, asked for as a quick overview cue.
-      bars[k].classList.toggle("p50", agg && tn.pTurn[k] >= P50);
+      // Composite rows only — AGG_CUT is Infinity elsewhere, so the test carries its own guard.
+      bars[k].classList.toggle("p50", tn.pTurn[k] >= AGG_CUT[+row.dataset.i]);
       const i = bars[k].firstChild; i.style.height = Math.round(Math.min(d.t[k]/1.8,1)*100)+"%";
       bars[k].classList.toggle("s", tn.tier[k] === 2);
       bars[k].classList.toggle("m", tn.tier[k] === 1);
@@ -543,7 +566,7 @@ function applyMode(mode){
         + `95% CI ${rlo.toFixed(2)}–${rhi.toFixed(2)}× on its own\n`
         + (tn.weak ? `only ${tn.lam.toFixed(1)} turns per window here — too few to read`
           : tn.tier[k] === 2 ? `p ${fmtP(tn.p[k])} — clears this row's 10% false-discovery cut`
-          : tn.tier[k] === 1 ? `p ${fmtP(tn.p[k])} — clears this row's looser 30% cut, so expect up to a third of its capped windows to be spurious`
+          : tn.tier[k] === 1 ? `p ${fmtP(tn.p[k])} — clears this row's looser 40% cut, so expect up to two in five of its capped windows to be spurious`
           : rlo > 1 ? `p ${fmtP(tn.p[k])} — above average on its own, but short of even the loose cut once all ${tn.nOpen} windows are tested`
           : `p ${fmtP(tn.p[k])} — within ordinary variation`)
         // Then what the ROW says, which is a different question from what this window says.
@@ -624,17 +647,24 @@ function tick(){
     const r = ROWS[+row.dataset.i], d = r.data[shownMode], closed = r.closed[k];
     const tn = TURN[+row.dataset.i][shownMode];
     const on = !closed && d.s[k] >= thr;
-    const now = !closed && tn.spike[k], next = k<51 && !r.closed[k+1] && tn.spike[k+1];
+    // Chips follow both marked tiers, not just the flagged one. On the strict tier alone only
+    // 13 of 25 rows could ever appear — EUR/USD, USD/CAD and seven others were structurally
+    // unable to, which made the summary quietly misleading about where turns cluster. Including
+    // the 30% tier takes it to 23; the two that stay out (Germany 40, Chicago Wheat) are the two
+    // that carry no mark anywhere on the board, so their absence is the honest reading.
+    const now = !closed && tn.tier[k] > 0, next = k<51 && !r.closed[k+1] && tn.tier[k+1] > 0;
     row.classList.toggle("on", on); row.classList.toggle("off", !on); row.classList.toggle("turn", now || next);
     row.querySelector(".pct").textContent = closed ? "closed"
       : Math.round(d.s[k]*100) + "% ±" + ciHalfPP(d.s[k], r.days[shownMode]) + " · turns " + d.t[k].toFixed(1) + "×";
     // Chips carry the same figure the cell prints, so the summary and the board agree.
-    if (on) trend.push([r.label, Math.round(d.s[k]*100)]);
-    if (now) turnNow.push([r.label, Math.round(tn.pTurn[k]*100)]);
-    if (next) turnNext.push([r.label, Math.round(tn.pTurn[k+1]*100)]);
+    if (on) trend.push([r.label, Math.round(d.s[k]*100), 2]);
+    if (now) turnNow.push([r.label, Math.round(tn.pTurn[k]*100), tn.tier[k]]);
+    if (next) turnNext.push([r.label, Math.round(tn.pTurn[k+1]*100), tn.tier[k+1]]);
   });
+  // Strongest first, so the leftmost chip is always the one most worth reading.
   const chips = (list, cls, empty) => list.length
-    ? list.map(([nm, pc])=>`<span class="chip ${cls}">${nm}<b>${pc}%</b></span>`).join("")
+    ? list.sort((a,b)=>b[2]-a[2]).map(([nm, pc, ti])=>
+        `<span class="chip ${cls}${ti===1?" soft":""}">${nm}<b>${pc}%</b></span>`).join("")
     : `<span class="chip none">${empty}</span>`;
   $("trendlist").innerHTML  = chips(trend,   "",  "none at this threshold");
   $("turnnowlist").innerHTML  = chips(turnNow,  "t", "none");
@@ -715,7 +745,7 @@ function clearHover(){
 }
 $("main").addEventListener("mouseleave", clearHover);
 const single = ROWS.filter(r=>!r.big), wheat = ROWS.find(r=>r.label==="Chicago Wheat");
-document.getElementById("foot").textContent = "5m 20MA · 1 Sep 2025 – 28 Aug 2026, ~12 months (" + Math.min(...single.map(r=>r.days.all)) + "–" + Math.max(...single.map(r=>r.days.all)) + " valid days per instrument; ~" + ROWS[0].days["0"] + " of each weekday; Chicago wheat " + wheat.days.all + " days from 23 Jun 2026). Blue = share of days the 20 was trending in that 15-minute slot for the selected day profile. Orange bars = how often trends started or stopped. Red = the window carries more turns than ordinary variation around that instrument's own average would produce: an upper-tail test on the underlying turn counts, widened per instrument to allow for turns clustering on the same days (a quasi-Poisson dispersion of 1.0 for most single instruments, 1.3–2.5 for the four aggregate rows), and held to a Benjamini–Hochberg false-discovery rate of 10% across each row's open windows — 52, or 43 for Chicago wheat. That 10% is a ceiling rather than an estimate; on this data the bound works out at about 6%, so of the 70 red windows on the board roughly 4 are expected to be chance. That widening is why USD pairs carries no red at all and Europe only two. A light-capped bar is a softer second tier: the same test and the same 52-window family, read at a looser 30% false-discovery rate — everything the 10% cut turned away but a 30% one admits. So up to about a third of a row's capped windows are expected to be spurious, and the count scales with that row's own evidence rather than with how many windows exist. Held-out, and split by the two regimes rather than pooled: on the 12-month profile a capped window averages 0.15 above its row's own mean against 0.40 for a red one, landing above average 62% of the time against 81%; trained and scored on single weekdays, where two thirds of the capped marks actually live, it is 0.19 against 0.29, and 69% against 76%. The baseline either way is 0.00 and 46%. The gain over the rule this replaced is not per-window quality, which is about the same, but that there are 110 marks instead of 283, a stated error rate instead of none, and 20 false marks on a pure-noise board instead of 201. Treat capped windows as somewhere to look, not something to act on. 110 are marked against 70 red, and only the red ones reach the chips at the top. Hatched bars mark profiles averaging under " + MIN_LAM + " turns per window, where nothing can be told apart from noise — the Chicago wheat weekday profiles, which run at 1.0-1.5 turns per window. The figure printed on each bar is the chance that window holds at least one turn on a given day — the plain-language version of the bar. It is not the turn count divided by the day count: that is a rate, and on the busiest aggregate windows it runs past 100%. It is an upper bound rather than a point estimate: turns bunching onto the same days can only reduce how many separate days carry one, so the true share is this figure or lower. Bar height is capped at 1.8×, so the tallest bars are not all equal. Hover any bar for its count, its expected count and a 95% interval on the ratio: on the all-days profile 85% of windows have an interval that still spans 1.0×, and on a single weekday 96% do, so most bars are describing an ordinary window and only the red ones are worth acting on. Two rows carry no mark on any profile, for opposite reasons, and hovering their bars says which: Chicago wheat has too little data to detect anything short of a 2.0× window and its day looks flat besides (chi-square p 0.64), while Germany 40 is measurably not flat over 12 months (p 0.05) but spreads that evidence so thinly across the day that no single window survives the correction. A chi-square on the whole day is a separate question from any one window, and the two can disagree in both directions — Spot Gold looks flat overall at p = 0.13 yet owns one window sharp enough to clear the strict cut. Grey = not trading. Holidays and half-days are excluded per instrument. ± figures are Wilson 95% confidence intervals: a single weekday profile carries roughly ±13pp, the all-days profile roughly ±6pp. Hatched cells rest on fewer than " + MIN_N + " days (Chicago wheat weekdays, ~10 each) and are indicative only. Across this sample the day-of-week differences sit within sampling noise, so the all-days profile is the more reliable read and the weekday buttons are best used for confirmation, not selection. That holds twice over for turns. A single instrument's weekday profile carries only ~5–8 turns per window against ~27–38 for all-days (the four aggregate rows run 15–53 and 83–258; Chicago wheat 1.0–1.5 and 6.1), so a weekday window needs a much larger excess to clear the test: 26 of the 70 red windows are weekday ones against 44 for all-days, a rate about eight times lower per window (62 of the 110 capped ones are weekday, at a similar discount). The day-specific part of the turn pattern shows no structure at all — lag-1 autocorrelation −0.04, against +0.33 for the all-days pattern — so treat a lone weekday spike as noise unless the all-days profile agrees. Slots are UK clock time; for the ~4 weeks a year when UK and US clocks are out of step, US-session features fall an hour — four slots — earlier than shown.";
+document.getElementById("foot").textContent = "5m 20MA · 1 Sep 2025 – 28 Aug 2026, ~12 months (" + Math.min(...single.map(r=>r.days.all)) + "–" + Math.max(...single.map(r=>r.days.all)) + " valid days per instrument; ~" + ROWS[0].days["0"] + " of each weekday; Chicago wheat " + wheat.days.all + " days from 23 Jun 2026). Blue = share of days the 20 was trending in that 15-minute slot for the selected day profile. Orange bars = how often trends started or stopped. Red = the window carries more turns than ordinary variation around that instrument's own average would produce: an upper-tail test on the underlying turn counts, widened per instrument to allow for turns clustering on the same days (a quasi-Poisson dispersion of 1.0 for most single instruments, 1.3–2.5 for the four aggregate rows), and held to a Benjamini–Hochberg false-discovery rate of 10% across each row's open windows — 52, or 43 for Chicago wheat. That 10% is a ceiling rather than an estimate; on this data the bound works out at about 6%, so of the 70 red windows on the board roughly 4 are expected to be chance. That widening is why USD pairs carries no red at all and Europe only two. A light-capped bar is a softer second tier: the same test and the same 52-window family, read at a looser 40% false-discovery rate — everything the 10% cut turned away but a 40% one admits. So up to two in five of a row's capped windows are expected to be spurious, and the count scales with that row's own evidence rather than with how many windows exist. Held-out, and split by the two regimes rather than pooled: on the 12-month profile a capped window averages 0.15 above its row's own mean against 0.40 for a red one, landing above average 62% of the time against 81%; trained and scored on single weekdays, where two thirds of the capped marks actually live, it is 0.19 against 0.29, and 69% against 76%. The baseline either way is 0.00 and 46%. The gain over the rule this replaced is not per-window quality, which is about the same, but that there are 110 marks instead of 283, a stated error rate instead of none, and 20 false marks on a pure-noise board instead of 201. Treat capped windows as somewhere to look, not something to act on. 110 are marked against 70 red, and only the red ones reach the chips at the top. Hatched bars mark profiles averaging under " + MIN_LAM + " turns per window, where nothing can be told apart from noise — the Chicago wheat weekday profiles, which run at 1.0-1.5 turns per window. The figure printed on each bar is the chance that window holds at least one turn on a given day — the plain-language version of the bar. It is not the turn count divided by the day count: that is a rate, and on the busiest aggregate windows it runs past 100%. It is an upper bound rather than a point estimate: turns bunching onto the same days can only reduce how many separate days carry one, so the true share is this figure or lower. Bar height is capped at 1.8×, so the tallest bars are not all equal. Hover any bar for its count, its expected count and a 95% interval on the ratio: on the all-days profile 85% of windows have an interval that still spans 1.0×, and on a single weekday 96% do, so most bars are describing an ordinary window. The chips at the top follow both marked tiers, solid for a window that clears the strict cut and outlined for the looser one. One row carries no mark on any profile, and hovering its bars says why: Chicago wheat has too little data to detect anything short of a 2.0× window, and its day looks flat besides (chi-square p 0.64). Four more rows — AUD/USD, USD/CHF, FTSE 100 and Spot Gold — clear the bar only rarely, and all four are statistically flat over the 12 months (p 0.73, 0.24, 0.20, 0.13), so their quiet is the finding rather than a gap. A chi-square on the whole day is a separate question from any one window, and the two can disagree in both directions — Spot Gold looks flat overall at p = 0.13 yet owns one window sharp enough to clear the strict cut. Grey = not trading. Holidays and half-days are excluded per instrument. ± figures are Wilson 95% confidence intervals: a single weekday profile carries roughly ±13pp, the all-days profile roughly ±6pp. Hatched cells rest on fewer than " + MIN_N + " days (Chicago wheat weekdays, ~10 each) and are indicative only. Across this sample the day-of-week differences sit within sampling noise, so the all-days profile is the more reliable read and the weekday buttons are best used for confirmation, not selection. That holds twice over for turns. A single instrument's weekday profile carries only ~5–8 turns per window against ~27–38 for all-days (the four aggregate rows run 15–53 and 83–258; Chicago wheat 1.0–1.5 and 6.1), so a weekday window needs a much larger excess to clear the test: 26 of the 70 red windows are weekday ones against 44 for all-days, a rate about eight times lower per window (62 of the 110 capped ones are weekday, at a similar discount). The day-specific part of the turn pattern shows no structure at all — lag-1 autocorrelation −0.04, against +0.33 for the all-days pattern — so treat a lone weekday spike as noise unless the all-days profile agrees. Slots are UK clock time; for the ~4 weeks a year when UK and US clocks are out of step, US-session features fall an hour — four slots — earlier than shown.";
 build(); tick(); setInterval(tick, 1000);
 </script>
 </body>

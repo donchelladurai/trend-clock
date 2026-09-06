@@ -131,12 +131,23 @@ Within each **row × profile** family (52 windows, 43 for Chicago Wheat):
 | Tier | Rule | Constant | Appearance |
 |---|---|---|---|
 | 2 | `p <= ` BH cutoff at 10% FDR | `FDR = 0.10` | solid bright orange |
-| 1 | `p <= ` BH cutoff at 30% FDR, not tier 2 | `MID_FDR = 0.30` | dim bar with a light cap |
+| 1 | `p <= ` BH cutoff at 40% FDR, not tier 2 | `MID_FDR = 0.40` | dim bar with a light cap |
 | 0 | neither | — | plain brown |
 | — | `lambda < MIN_LAM` → no tier at all | `MIN_LAM = 3` | hatched, "too few to read" |
 
 `bhCutoff` returns **−1** when nothing passes, so a legitimate cutoff of exactly 0 (an
 underflowed p) stays distinguishable from "no rejections". Do not restore a `cut > 0` guard.
+
+Current board: **70 red, 193 capped, 24 of 25 rows marked**; only Chicago Wheat is blank.
+
+`MID_FDR` was 0.30 and was raised to 0.40 for coverage of the summary chips, not for the bars.
+At 0.30 nine rows could never reach the chips at all, including USD/CAD, whose day is
+measurably not flat (omnibus 0.032) but whose evidence is too diffuse for any one window to
+survive. 0.40 admits it with 6 windows at a cost of 263 marks against 180, and — the reason it
+is defensible — still leaves every statistically flat row out: AUD/USD (0.73), USD/CHF (0.24),
+FTSE 100 (0.20), Chicago Wheat (0.64). Germany 40 (0.054) and EUR/JPY (0.089) would need 0.60
+and 0.70; they are deliberately excluded, because past roughly 0.40 the tier stops carrying a
+claim worth making.
 
 ### 3.4 Row-level structure — `omnibusP(c, open, lam, phiRaw, dfPhi)`
 
@@ -150,6 +161,16 @@ across `lambda`). Change one and you must change the other.
 
 Only `out.all.omni` is read. `out.flat = out.all.omni > OMNIBUS` (`OMNIBUS = 0.10`) feeds
 tooltip prose **only** — it must never gate which windows get marked (§6).
+
+### 3.4b The summary chips
+
+The three lists at the top follow **both** marked tiers, sorted strongest-first, with tier 1
+drawn as an outlined chip against tier 2's filled one. They read `tier[k] > 0`, not `spike[k]`.
+
+This matters more than it looks: keyed to tier 2 alone, only 13 of 25 rows could ever appear,
+so the summary was structurally silent about EUR/USD, USD/CAD and seven others regardless of
+what the day did. It is now 19 of 25 on the 12-month profile. The rows that stay out are the
+ones carrying no mark anywhere, which is the honest reading rather than a gap.
 
 ### 3.5 Composite detection — `COMPOSITE`
 
@@ -183,10 +204,25 @@ model, so it cannot mislead optimistically and does not drift with sample size. 
 
 ### 3.7 Other constants
 
-- `P50 = 0.50` — composite rows only: bright orange fill where `pTurn >= 50%`. On the 12-month
-  profile this lights **94** cells (535 across all six profiles). It shares the bright fill with
-  tier 2, so on those four rows bright means "50%+ likely, or flagged, or both". These counts
-  doubled when `phi` came out of `pTurn` — if you see 47 quoted anywhere, it predates that fix.
+- `AGG_Q = 0.85` — composite rows only: bright orange fill where `pTurn` reaches that percentile
+  of **that row's own** 12-month spread. `AGG_CUT[i]` holds the level, `Infinity` for
+  non-composites so the test carries its own guard.
+
+  A flat 50% preceded it and was miscalibrated at both ends — above the whole of Europe's 19–42%
+  and US's 16–42% (0 cells each), below the whole of USD pairs' 50–72% (all 52 lit). A
+  composite's baseline is set by how many instruments it sums, so the level has to be per row.
+  Current cuts: Europe 37%, US 38%, USD pairs 68%, EUR crosses 60% — lighting 8/9/9/10 cells on
+  the 12-month profile and 296 across all six, against 5/4/287/239 under the flat rule.
+
+  One level per row serves all six profiles because `mu` barely moves between them (Europe
+  0.392–0.402). It shares the bright fill with tier 2, so on those four rows bright means
+  "high for this row, or flagged, or both".
+
+  **Do not generalise this to single instruments as a top-of-own-range rule.** Measured: a
+  ≥80%-of-row-max rule lights 356 cells including 27 on AUD/USD and 24 on USD/CHF, both
+  statistically flat (omnibus 0.73 and 0.24). Amplitude ranking scored 0.169 out-of-sample lift
+  against 0.399 for the significance test, and per-instrument amplitude normalisation measured
+  worse still at 0.140. The tier colours are already row-relative — that is what `lambda` is.
 - `MIN_N = 30` — days below which a heat cell is hatched as a thin sample.
 - Wilson intervals carry the heat strip; Byar's Poisson interval carries the bar tooltip.
 
@@ -247,12 +283,12 @@ weekday`, Chicago Wheat's day count, `MIN_LAM`, `MIN_N`. Everything below is not
 | Footer | `85%` of all-days windows / `96%` of weekday windows have a CI spanning 1.0× | Byar interval per window, count those with `lo <= 1 <= hi` |
 | Footer | quasi-Poisson dispersion `1.0` most singles, `1.3–2.5` composites | `TURN[i].phi` range |
 | Footer | FDR bound "works out at about 6%", "roughly 4 of the 70 red" | `sum(m × cut)` over firing families ÷ total flags |
-| Footer | `110` capped against `70` red; `26 of the 70` weekday; `62 of the 110` | count tiers across all profiles |
+| Footer | `193` capped against `70` red; `26 of the 70` weekday; `116 of the 193` | count tiers across all profiles |
 | Footer | held-out lift `0.15` vs `0.40`, hit `62%` vs `81%`; weekday `0.19` vs `0.29`, `69%`/`76%` | §7 harness |
 | Footer | `20` false marks on a pure-noise board against `201` | §7 null simulation |
 | Footer | rate "about eight times lower per window" | weekday flags/windows ÷ all-days flags/windows |
 | Footer | `~5–8` turns/window weekday vs `~27–38` all-days; composites `15–53` / `83–258`; wheat `1.0–1.5` / `6.1` | `lambda` ranges by row class |
-| Footer | blank rows named (**Chicago wheat**, **Germany 40**) with p `0.64` / `0.05`, and wheat's `2.0×` detection floor | `TURN[i].all.omni`, `TURN[i].needs` |
+| Footer | blank rows named — at `MID_FDR = 0.40` only **Chicago wheat** is blank; the sentence still names Germany 40 and needs rewriting | `TURN[i].marked`, `TURN[i].all.omni`, `TURN[i].needs` |
 | Footer | Spot Gold "flat overall at p = 0.13 yet owns one window" | `TURN[i].all.omni` + its tier-2 count |
 | Footer | Wilson half-widths `±13pp` weekday, `±6pp` all-days | mean `ciHalfPP` by profile class |
 | Footer | lag-1 autocorrelation `−0.04` day-specific vs `+0.33` all-days | pooled lag-1 over `t_weekday − t_all` and over `t_all` |
@@ -271,7 +307,7 @@ weekday`, Chicago Wheat's day count, `MIN_LAM`, `MIN_N`. Everything below is not
 | Comment ~L405 | Spot Gold omnibus `0.10`, one red | recompute |
 | Comment ~L408 | Chicago Wheat `6.1` turns/window, doubling misses p = 0.05 | `lambda` + smallest significant count |
 | Comment ~L415 | held-out `0.15` vs `0.40` and `0.19` vs `0.29` | §7 harness |
-| §3.7 above | `P50` lights `94` cells on all-days, `535` across profiles | count `pTurn >= 0.5` on composites |
+| §3.7 above | per-row cuts `37/38/68/60%`, lighting `8/9/9/10` on all-days and `296` across profiles | recompute `AGG_CUT` and count |
 | §3.1 above | `phi` divergence figures `1.23 / 2.16 / 6.99`, blindness `0.96 / 1.00 / 1.01` | re-run the two estimator simulations; these are properties of the estimator, not the data, so they should reproduce |
 
 Also check the **sample dates** in the first footer sentence and the Chicago Wheat start date.
@@ -295,6 +331,11 @@ functions.
   squeaked through painted a median of 10 marks; the board ran 201 false marks against 20 for
   the current second BH pass. The gate is also built from the very windows it licenses.
 - **Reading `c/days` as a probability.** It is a rate and exceeds 1. See §3.6.
+- **A single absolute level for the composite bright fill.** Composites sum different numbers of
+  instruments, so their baselines differ by 30+ points; any flat cut is above one pair's whole
+  range and below the other's. See §3.7.
+- **Top-of-own-range highlighting on single instruments.** It cannot tell a row with structure
+  from a flat one, and lights AUD/USD and USD/CHF hardest. See §3.7.
 - **Using `phi` in the printed probability.** Correct for a real dispersion, wrong for the
   interaction statistic §3.1 computes; biased the figure down by up to 17.9 points and would
   have worsened with more data. See §3.6.

@@ -1,0 +1,5 @@
+# Raw market data pulled by tools/fetch_histdata.js and the 5-minute bars tools/hist2m5.py builds.
+# The generated row (data/row_*.json) is committed; the inputs are re-fetchable.
+data/*.zip
+data/*_m5.json
+data/*_h.json

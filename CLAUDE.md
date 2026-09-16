@@ -2,7 +2,7 @@
 
 A single static file, `index.html`. No build, no dependencies, no server. Open it in a browser.
 
-It answers two questions about 25 instruments across the 08:00–21:00 UK trading day, cut into
+It answers two questions about 26 instruments across the 08:00–21:00 UK trading day, cut into
 52 fifteen-minute windows:
 
 - **Blue heat strip** — on what share of days was the 5-minute 20-period moving average
@@ -11,18 +11,20 @@ It answers two questions about 25 instruments across the 08:00–21:00 UK tradin
   more than ordinary variation for this instrument?
 
 Everything is precomputed into two literals near the top of the `<script>`. The page derives all
-statistics from them at load. There is no generator script in this repo and none in its git
-history — the blob arrives from outside, which is why the data contract below matters.
+statistics from them at load. The original 25 rows arrived as a blob from outside — their
+generator is not in this repo or its history. The 26th row, AUD/JPY, is built by the scripts in
+`tools/` (§1b) with a definition calibrated to reproduce those rows approximately. The data
+contract below is what both must satisfy.
 
 ---
 
 ## 1. Data contract
 
-### `ROWS` — 25 entries, one per board row
+### `ROWS` — 26 entries, one per board row
 
 ```js
 {
-  group: "Indices" | "FX — USD pairs" | "FX — EUR crosses" | "Commodities",
+  group: "Indices" | "FX — USD pairs" | "FX — EUR crosses" | "FX — other crosses" | "Commodities",
   label: "EUR/USD",
   big:   true,            // drawn larger. NOT the same as "is a composite" — see §4
   closed: [bool × 52],    // true where this instrument is not trading in window k
@@ -34,9 +36,10 @@ history — the blob arrives from outside, which is why the data contract below 
 - `s[k]` — share of days the 20MA was trending in window `k`. A proportion, 2 decimal places.
 - `t[k]` — **turn ratio**, normalised so its mean over that row's *open* windows is exactly 1.0.
   2 decimal places. It is a ratio to the row's own day, never a comparison between instruments.
-- Profile keys: `"0"`–`"4"` are Mon–Fri, `"all"` is the full 12 months.
+- Profile keys: `"0"`–`"4"` are Mon–Fri, `"all"` is the row's whole sample — 12 months for 25 rows,
+  five years for AUD/JPY (§1b).
 
-### `TURNC` — 25 × 6 integers
+### `TURNC` — 26 × 6 integers
 
 Total turn count per row per profile, ordered `[Mon, Tue, Wed, Thu, Fri, all]`. This is what
 makes the whole statistical layer possible: `t` alone is a ratio and carries no sample size, so
@@ -46,10 +49,10 @@ without `TURNC` there is no way to tell a 1.5× built on 10 turns from one built
 
 | # | Invariant | Status |
 |---|---|---|
-| 1 | `TURNC[i][5] === sum(TURNC[i][0..4])` | 25/25 |
+| 1 | `TURNC[i][5] === sum(TURNC[i][0..4])` | 26/26 |
 | 2 | Composite `TURNC` == sum of its constituents, in all 6 profiles | exact |
 | 3 | `sum(t[k])` over open windows == number of open windows | worst deviation 0.140 against a 2dp rounding budget of 0.26 |
-| 4 | Open windows: 52 for 24 rows, **43 for Chicago Wheat** (9 closed) | — |
+| 4 | Open windows: 52 for 25 rows, **43 for Chicago Wheat** (9 closed) | — |
 
 **Composite membership** (used by invariant 2, and derived at runtime — see §4):
 
@@ -63,6 +66,66 @@ its own (Europe 255 = mean of 256/257/252, whose sum is 765). Its `TURNC` is a g
 So `TURNC / days` for a composite is turns per day *across several instruments* and can exceed 1
 — USD pairs reaches 1.28. Never read it as a probability. See §3.6.
 
+### 1b. AUD/JPY and the generator in `tools/`
+
+AUD/JPY (group "FX — other crosses", no composite) is the one row not from the original blob.
+It was added on 16 Sep 2026 from **five years** of data — 13 Sep 2021 – 11 Sep 2026, 1296 valid
+days, ~260 per weekday — so its `all` profile is not a 12-month profile, and its tests have
+roughly five times the power of any other row's. It carries 48 red and 33 capped windows across
+its six profiles for that reason alone; `phi` is 1.07, so the longer history has not inflated
+the interaction statistic (§3.1).
+
+**Source.** histdata.com 1-minute bid bars (EST-stamped, converted to UTC, aggregated to 5-minute
+bars, gaps inside a week forward-filled flat). Dukascopy was tried first and rate-limits a
+five-year pull into hours; histdata serves a year per request.
+
+**Definitions** (constants at the top of `tools/gen_row.js`):
+
+| Term | Rule |
+|---|---|
+| MA | 20-period EMA of 5-minute closes on the continuous series |
+| scale | 14-day Wilder ATR of UK-calendar-day bars, from completed days only |
+| move | `d3[t] = EMA[t] − EMA[t−3]`, the MA's move over the last 15 minutes |
+| trending | bar: `abs(d3) ≥ 0.015 × scale`; window: any of its three bars is trending |
+| trend state | +1 / 0 / −1 with hysteresis: enter at `abs(d3) ≥ 0.03 × scale`, hold while the sign is unchanged and `abs(d3) ≥ 0.0075 × scale` |
+| turn | every bar at which the state differs from the bar before, counted in that bar's window |
+| valid day | Mon–Fri UK; all 156 board bars and the 12 before 08:00 present; at least half the board bars move |
+
+The original generator is unknown, so these were **calibrated**, not copied: seven instruments
+were pulled from the same source over the original 1 Sep 2025 – 28 Aug 2026 window and scored
+against their existing rows. The day-validity rule reproduces the original day counts exactly
+(258 days, 52/52/52/50/52 by weekday, for FX). The trend rule reproduces the share-of-days
+profiles to a correlation of 0.89–0.96 and an RMSE of 0.04–0.07 on FX and gold (0.10 on the two
+indices, which want a higher threshold — do not reuse this rule for an index row without
+refitting). Turn rates land within about 15% on FX (USD/JPY 6.8 vs 7.1 a day, EUR/JPY 7.2 vs
+6.9, AUD/USD 8.4 vs 7.4, EUR/USD 8.9 vs 7.4), and the turn profiles correlate only 0.2–0.6,
+because the reference profiles are mostly Poisson noise at ~35 turns per window. Read AUD/JPY
+as "comparable to the other FX rows", not "computed the same way".
+
+Rejected while calibrating: a 5-minute ATR(14) scale (it normalises away the time-of-day
+structure the reference rows show; correlation 0.2–0.6); price above/below the MA (negative
+correlation); raw direction flips of the MA as turns (2–3× too many, and not clustered where
+the reference turns are); a single threshold in price units (cannot serve JPY pairs, majors
+and indices at once).
+
+**Pipeline** — from the repo root, node ≥ 18 and python 3:
+
+```bash
+node tools/fetch_histdata.js audjpy 2021 2026 9 data      # yearly zips, then monthly for 2026
+python tools/hist2m5.py audjpy data data/audjpy_m5.json   # EST M1 → UTC 5-minute bars
+node tools/gen_row.js --bars data/audjpy_m5.json --label "AUD/JPY" --group "FX — other crosses" \
+     --from 2021-09-13 --to 2026-09-11 --out data/row_audjpy.json
+node tools/inject_row.js data/row_audjpy.json             # replaces the row in place
+node tools/board_stats.js                                 # every figure the footer cites
+```
+
+`gen_row.js --compare` scores a run against the existing row of the same label, which is how
+to check a rule change. To put AUD/JPY on the same 12-month footing as the rest, rerun with
+`--from 2025-09-01 --to 2026-08-28`; to add another pair, change the histdata symbol and the
+label and keep the group. `data/row_audjpy.json` is the committed record of what went in,
+including the exact per-window counts under `meta.counts`; the zips and 5-minute bars are not
+committed (see `.gitignore`).
+
 ---
 
 ## 2. Counts are recovered, not stored per window
@@ -74,8 +137,10 @@ c[k]   = Math.round(t[k] * lambda)           // the integer count behind the win
 
 Exact wherever one count moves `t` by more than the 0.01 rounding step, i.e. `lambda < 100`.
 Above that a count can land either side: on USD pairs and EUR crosses over 12 months
-(`lambda` 258 and 212), 57 of 7746 windows come back one turn off the constraint-solved value.
-No flag on the board turns on the difference — but if a refresh pushes more rows past
+(`lambda` 258 and 212), 57 of 7746 windows come back one turn off the constraint-solved value,
+and on AUD/JPY's all-days profile (`lambda` 183) 27 of 52 windows sit one off the generator's
+exact count. No flag on the board turns on the difference — for AUD/JPY this was checked by
+re-running the tiers on `meta.counts` (0 differences) — but if a refresh pushes more rows past
 `lambda = 100`, re-check that.
 
 ---
@@ -110,7 +175,8 @@ Returns **both** forms and they are not interchangeable:
   deliberate.
 - `raw` + `dfPhi` — unclamped. Used by the omnibus, which references F.
 
-Observed range: 1.0 for 9 of the 20 single instruments, up to ~2.5 for USD pairs. Under a pure
+Observed range: 1.0 for 10 of the 22 single instruments, up to ~2.5 for USD pairs. AUD/JPY sits at
+1.07 despite five years of history, so its weekday × slot structure is mild. Under a pure
 null it is unbiased (simulated 0.98–1.00), which is what §3.4 leans on to calibrate test size;
 it is only under structure that it inflates.
 
@@ -138,7 +204,10 @@ Within each **row × profile** family (52 windows, 43 for Chicago Wheat):
 `bhCutoff` returns **−1** when nothing passes, so a legitimate cutoff of exactly 0 (an
 underflowed p) stays distinguishable from "no rejections". Do not restore a `cut > 0` guard.
 
-Current board: **70 red, 193 capped, 24 of 25 rows marked**; only Chicago Wheat is blank.
+Current board: **118 red, 226 capped, 25 of 26 rows marked**; only Chicago Wheat is blank. The 25
+12-month rows alone are still 70 red / 193 capped; AUD/JPY adds 48 red and 33 capped across its
+six profiles (31 of its red are weekday ones), because five years gives its tests about five
+times the power.
 
 `MID_FDR` was 0.30 and was raised to 0.40 for coverage of the summary chips, not for the bars.
 At 0.30 nine rows could never reach the chips at all, including USD/CAD, whose day is
@@ -169,8 +238,9 @@ drawn as an outlined chip against tier 2's filled one. They read `tier[k] > 0`, 
 
 This matters more than it looks: keyed to tier 2 alone, only 13 of 25 rows could ever appear,
 so the summary was structurally silent about EUR/USD, USD/CAD and seven others regardless of
-what the day did. It is now 19 of 25 on the 12-month profile. The rows that stay out are the
-ones carrying no mark anywhere, which is the honest reading rather than a gap.
+what the day did. It is now 20 of 26 on the all-days profile (19 of the 25 original rows) and 25
+of 26 on some profile. The rows that stay out are the ones carrying no mark there, which is the
+honest reading rather than a gap.
 
 ### 3.5 Composite detection — `COMPOSITE`
 
@@ -245,7 +315,9 @@ model, so it cannot mislead optimistically and does not drift with sample size. 
 
 ## 5. Refreshing the data (the 12-month window going stale)
 
-The sample is currently **1 Sep 2025 – 28 Aug 2026**; Chicago Wheat only from 23 Jun 2026.
+The sample is currently **1 Sep 2025 – 28 Aug 2026**; Chicago Wheat only from 23 Jun 2026;
+AUD/JPY **13 Sep 2021 – 11 Sep 2026** (§1b — regenerated by `tools/`, so it can be refreshed on
+its own with the pipeline there while the other rows wait for the external blob).
 
 ### Step 1 — replace the blob
 
@@ -276,32 +348,38 @@ specific numbers describing *this* sample. They are prose, not computed, and wil
 become false. Recompute or delete each one.
 
 Some footer values *are* computed and look after themselves — day-count range, `~N of each
-weekday`, Chicago Wheat's day count, `MIN_LAM`, `MIN_N`. Everything below is not:
+weekday`, Chicago Wheat's and AUD/JPY's day counts, `MIN_LAM`, `MIN_N`. Everything below is not,
+but **`node tools/board_stats.js` prints the current value of every board-level figure** in this
+table (tiers, CI spans, `lambda` ranges, Wilson widths, autocorrelations, FDR bound, `AGG_CUT`),
+so a refresh is a diff against its output rather than a hunt. The held-out and null-simulation
+figures are the exception: they describe experiments on the 25 original rows, and the footer
+now says so.
 
 | Where | Claim | How to recompute |
 |---|---|---|
-| Footer | `85%` of all-days windows / `96%` of weekday windows have a CI spanning 1.0× | Byar interval per window, count those with `lo <= 1 <= hi` |
+| Footer | `83%` of all-days windows / `95%` of weekday windows have a CI spanning 1.0× | Byar interval per window, count those with `lo <= 1 <= hi` |
 | Footer | quasi-Poisson dispersion `1.0` most singles, `1.3–2.5` composites | `TURN[i].phi` range |
-| Footer | FDR bound "works out at about 6%", "roughly 4 of the 70 red" | `sum(m × cut)` over firing families ÷ total flags |
-| Footer | `193` capped against `70` red; `26 of the 70` weekday; `116 of the 193` | count tiers across all profiles |
-| Footer | held-out lift `0.15` vs `0.40`, hit `62%` vs `81%`; weekday `0.19` vs `0.29`, `69%`/`76%` | §7 harness |
-| Footer | `20` false marks on a pure-noise board against `201` | §7 null simulation |
-| Footer | rate "about eight times lower per window" | weekday flags/windows ÷ all-days flags/windows |
-| Footer | `~5–8` turns/window weekday vs `~27–38` all-days; composites `15–53` / `83–258`; wheat `1.0–1.5` / `6.1` | `lambda` ranges by row class |
-| Footer | blank rows named — at `MID_FDR = 0.40` only **Chicago wheat** is blank; the sentence still names Germany 40 and needs rewriting | `TURN[i].marked`, `TURN[i].all.omni`, `TURN[i].needs` |
+| Footer | FDR bound "works out at about 7%", "roughly 8 of the 118 red" | `sum(m × cut)` over firing families ÷ total flags |
+| Footer | `226` capped against `118` red on the board, `193`/`70` on the 12-month rows; `26 of the 70` weekday; `116 of the 193`; AUD/JPY `31 of 48` | count tiers across all profiles |
+| Footer | held-out lift `0.15` vs `0.40`, hit `62%` vs `81%`; weekday `0.19` vs `0.29`, `69%`/`76%` — scoped to the 25 original rows | §7 harness |
+| Footer | `20` false marks on a pure-noise board against `201` — scoped to the 25 original rows | §7 null simulation |
+| Footer | rate "about eight times lower per window" (12-month rows; the whole board is 5.4×) | weekday flags/windows ÷ all-days flags/windows |
+| Footer | `~5–8` turns/window weekday vs `~27–38` all-days; composites `15–53` / `83–258`; wheat `1.0–1.5` / `6.1`; AUD/JPY `34–38` / `183` | `lambda` ranges by row class |
+| Footer | blank rows named — only **Chicago wheat** | `TURN[i].marked`, `TURN[i].all.omni`, `TURN[i].needs` |
 | Footer | Spot Gold "flat overall at p = 0.13 yet owns one window" | `TURN[i].all.omni` + its tier-2 count |
-| Footer | Wilson half-widths `±13pp` weekday, `±6pp` all-days | mean `ciHalfPP` by profile class |
-| Footer | lag-1 autocorrelation `−0.04` day-specific vs `+0.33` all-days | pooled lag-1 over `t_weekday − t_all` and over `t_all` |
+| Footer | Wilson half-widths `±13pp` weekday, `±6pp` all-days; AUD/JPY `±6pp` / `±3pp` | mean `ciHalfPP` by profile class |
+| Footer | lag-1 autocorrelation `−0.04` day-specific vs `+0.35` all-days (`+0.33` without AUD/JPY) | pooled lag-1 over `t_weekday − t_all` and over `t_all` |
 | Footer | bar height cap `1.8×` | matches `Math.min(d.t[k]/1.8, 1)` in `applyMode` |
 | Comment ~L211 | FTSE 100 `~10 turns vs 6.9` weekday, `~50 vs 33.6` 12-month | that row's `lambda` |
 | Comment ~L213 | Chicago Wheat `1.0–1.5` turns per weekday window | its weekday `lambda` |
-| Comment ~L219 | `lambda` 258 / 212, `57 of 7746` windows off by one | recompute against a constraint solve |
+| Comment ~L219 | `lambda` 258 / 212, `57 of 7746` windows off by one; AUD/JPY `183`, `27 of 312` | recompute against a constraint solve; AUD/JPY against `meta.counts` |
 | Comment ~L222 | LOO `0.399` vs `0.169`, `81%` vs `61%`, `179` vs `779` flags, budget-matched `0.254`/`66%` | §7 harness |
 | Comment ~L279 | GBP/USD non-flat at `p = 0.0004` yet clears once | its `omni` and tier-2 count |
+| Comment ~L565 | chips reachable by `20 of 26` rows on the all-days profile, `25 of 26` on some profile | rows with any `tier > 0` |
 | Comment ~L312 | realised size `0.076` clamped / `0.13` unclamped / `0.10` paired | §7 null simulation |
 | Comment ~L334 | FDR sweep `83/81/79/76%` at q = .05/.10/.15/.20 | §7 harness across q |
 | Comment ~L336 | USD pairs `331 turns against 258` just missing the cut | its max count and `lambda` |
-| Comment ~L341 | `phi` 1.0 for 9 of 20 singles, up to 2.5 | `TURN[i].phi` |
+| Comment ~L341 | `phi` 1.0 for 10 of 22 singles, up to 2.5 | `TURN[i].phi` |
 | Comment ~L378 | USD pairs rate hits `1.28` | `max(c)/days` |
 | Comment ~L401 | rejected gate: median `10` marks, board `201` vs `20` | §7 null simulation |
 | Comment ~L405 | Spot Gold omnibus `0.10`, one red | recompute |
@@ -310,7 +388,8 @@ weekday`, Chicago Wheat's day count, `MIN_LAM`, `MIN_N`. Everything below is not
 | §3.7 above | per-row cuts `37/38/68/60%`, lighting `8/9/9/10` on all-days and `296` across profiles | recompute `AGG_CUT` and count |
 | §3.1 above | `phi` divergence figures `1.23 / 2.16 / 6.99`, blindness `0.96 / 1.00 / 1.01` | re-run the two estimator simulations; these are properties of the estimator, not the data, so they should reproduce |
 
-Also check the **sample dates** in the first footer sentence and the Chicago Wheat start date.
+Also check the **sample dates** in the first footer sentence, the Chicago Wheat start date, and
+AUD/JPY's dates and "five years" wording.
 
 ---
 
@@ -348,7 +427,8 @@ functions.
 
 ### Load the statistics layer in node
 
-The script has no module boundary, so stub the DOM and re-export:
+`tools/board_stats.js` does exactly this and prints the board figures. For ad-hoc work, the same
+stub by hand — the script has no module boundary, so stub the DOM and re-export:
 
 ```bash
 node -e "
@@ -385,7 +465,7 @@ partly for that reason.
 |---|---|
 | Script parses | `new Function(scriptBody)` throws nothing |
 | No runtime errors | dumped DOM contains no `Uncaught` / `ReferenceError` / `TypeError` |
-| Tooltips | 1291 bar tooltips at the default profile |
+| Tooltips | 1343 bar tooltips at the default profile (26 × 52 − 9) |
 | CI vs verdict | **0** windows whose printed CI excludes 1.0× while the text says "within ordinary variation" |
 | Printed % | every value `< 100%`; no `NaN` / `undefined` anywhere in the DOM |
 | Tiers on closed/weak | **0** |
@@ -412,7 +492,8 @@ degenerates, which produced wrong false-mark counts here once.
   labels only; the data is not re-bucketed. For the ~4 weeks a year when UK and US clocks are out
   of step, US-session features land an hour — **four slots** — earlier than labelled.
 - Editing this file from a shell: template literals and `×`/`—` get mangled by bash string
-  expansion. Apply replacements from a JSON file with node, not inline `node -e` with the text
-  embedded.
+  expansion. Apply replacements from a JSON file with `node tools/apply_edits.js edits.json`
+  (each `{old, new}` must match exactly once; add `CLAUDE.md` as a second argument to edit this
+  file), not inline `node -e` with the text embedded.
 - Prose is deliberately specific about uncertainty. If a change makes a stated number wrong,
   change the number — do not soften the sentence into something unfalsifiable.

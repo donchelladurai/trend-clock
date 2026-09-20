@@ -116,7 +116,7 @@ python tools/hist2m5.py audjpy data data/audjpy_m5.json   # EST M1 → UTC 5-min
 node tools/gen_row.js --bars data/audjpy_m5.json --label "AUD/JPY" --group "FX — other crosses" \
      --from 2021-09-13 --to 2026-09-11 --out data/row_audjpy.json
 node tools/inject_row.js data/row_audjpy.json             # replaces the row in place
-node tools/board_stats.js                                 # every figure the footer cites
+node tools/board_stats.js                                 # every board-level figure the comments cite
 ```
 
 `gen_row.js --compare` scores a run against the existing row of the same label, which is how
@@ -313,8 +313,11 @@ model, so it cannot mislead optimistically and does not drift with sample size. 
 - The **Auto** day profile follows the real UK weekday and is re-derived every tick, so it moves
   to the new day at midnight without a reload; Saturday and Sunday fall back to all-days. The
   button reads `Auto (Tue)` / `Auto (all days)` so the pick is visible. `All` is the pooled
-  12-month read the footer recommends for confirmation; Auto is what the user asked to trade
+  12-month read, still the steadier one for confirmation; Auto is what the user asked to trade
   from (20 Sep 2026), reversing an earlier default of all-days.
+- A greeting sits under the clock — `greeting()` and the `GREET`/`NAME` constants — addressing the
+  owner by name, chosen by time of day and varied by weekday so it holds all day and differs
+  tomorrow. It is the only prose on the page since the footer was dropped (§5 step 3).
 
 ---
 
@@ -348,33 +351,42 @@ materially. If it does, re-run the leave-one-weekday-out check in §7 before tou
 
 ### Step 3 — recompute every hardcoded figure
 
-**This is where a refresh goes wrong.** The footer and the code comments carry dozens of
-specific numbers describing *this* sample. They are prose, not computed, and will silently
-become false. Recompute or delete each one.
+**This is where a refresh goes wrong.** The code comments carry dozens of specific numbers
+describing *this* sample. They are prose, not computed, and will silently become false.
+Recompute or delete each one.
 
-Some footer values *are* computed and look after themselves — day-count range, `~N of each
-weekday`, Chicago Wheat's and AUD/JPY's day counts, `MIN_LAM`, `MIN_N`. Everything below is not,
-but **`node tools/board_stats.js` prints the current value of every board-level figure** in this
+**The footer was dropped on 20 Sep 2026**, at the owner's request, from both pages. It carried
+most of these claims plus the sample dates, the meaning of red and capped bars, the confidence
+intervals and the "up to" caveat on the printed percentage. What survives on screen is the
+tooltips and the readout, which are computed from the data and cannot go stale; what was lost
+is the page's self-description, so a reader who has not seen this file no longer learns from
+the page what the sample is or what the colours mean. If that ever matters, the text is in the
+history at `git show b2678fa:index.html`, and the figures below are how to rebuild it.
+
+**`node tools/board_stats.js` prints the current value of every board-level figure** in this
 table (tiers, CI spans, `lambda` ranges, Wilson widths, autocorrelations, FDR bound, `AGG_CUT`),
 so a refresh is a diff against its output rather than a hunt. The held-out and null-simulation
-figures are the exception: they describe experiments on the 25 original rows, and the footer
-now says so.
+figures are the exception: they describe experiments on the 25 original rows.
+
+The rows marked *(was footer)* are no longer displayed anywhere. Keep them: they are the
+specification of what the board means, they are quoted in the code comments, and they are what a
+rebuilt footer or a README would have to say.
 
 | Where | Claim | How to recompute |
 |---|---|---|
-| Footer | `83%` of all-days windows / `95%` of weekday windows have a CI spanning 1.0× | Byar interval per window, count those with `lo <= 1 <= hi` |
-| Footer | quasi-Poisson dispersion `1.0` most singles, `1.3–2.5` composites | `TURN[i].phi` range |
-| Footer | FDR bound "works out at about 7%", "roughly 8 of the 118 red" | `sum(m × cut)` over firing families ÷ total flags |
-| Footer | `226` capped against `118` red on the board, `193`/`70` on the 12-month rows; `26 of the 70` weekday; `116 of the 193`; AUD/JPY `31 of 48` | count tiers across all profiles |
-| Footer | held-out lift `0.15` vs `0.40`, hit `62%` vs `81%`; weekday `0.19` vs `0.29`, `69%`/`76%` — scoped to the 25 original rows | §7 harness |
-| Footer | `20` false marks on a pure-noise board against `201` — scoped to the 25 original rows | §7 null simulation |
-| Footer | rate "about eight times lower per window" (12-month rows; the whole board is 5.4×) | weekday flags/windows ÷ all-days flags/windows |
-| Footer | `~5–8` turns/window weekday vs `~27–38` all-days; composites `15–53` / `83–258`; wheat `1.0–1.5` / `6.1`; AUD/JPY `34–38` / `183` | `lambda` ranges by row class |
-| Footer | blank rows named — only **Chicago wheat** | `TURN[i].marked`, `TURN[i].all.omni`, `TURN[i].needs` |
-| Footer | Spot Gold "flat overall at p = 0.13 yet owns one window" | `TURN[i].all.omni` + its tier-2 count |
-| Footer | Wilson half-widths `±13pp` weekday, `±6pp` all-days; AUD/JPY `±6pp` / `±3pp` | mean `ciHalfPP` by profile class |
-| Footer | lag-1 autocorrelation `−0.04` day-specific vs `+0.35` all-days (`+0.33` without AUD/JPY) | pooled lag-1 over `t_weekday − t_all` and over `t_all` |
-| Footer | bar height cap `1.8×` | matches `Math.min(d.t[k]/1.8, 1)` in `applyMode` |
+| (was footer) | `83%` of all-days windows / `95%` of weekday windows have a CI spanning 1.0× | Byar interval per window, count those with `lo <= 1 <= hi` |
+| (was footer) | quasi-Poisson dispersion `1.0` most singles, `1.3–2.5` composites | `TURN[i].phi` range |
+| (was footer) | FDR bound "works out at about 7%", "roughly 8 of the 118 red" | `sum(m × cut)` over firing families ÷ total flags |
+| (was footer) | `226` capped against `118` red on the board, `193`/`70` on the 12-month rows; `26 of the 70` weekday; `116 of the 193`; AUD/JPY `31 of 48` | count tiers across all profiles |
+| (was footer) | held-out lift `0.15` vs `0.40`, hit `62%` vs `81%`; weekday `0.19` vs `0.29`, `69%`/`76%` — scoped to the 25 original rows | §7 harness |
+| (was footer) | `20` false marks on a pure-noise board against `201` — scoped to the 25 original rows | §7 null simulation |
+| (was footer) | rate "about eight times lower per window" (12-month rows; the whole board is 5.4×) | weekday flags/windows ÷ all-days flags/windows |
+| (was footer) | `~5–8` turns/window weekday vs `~27–38` all-days; composites `15–53` / `83–258`; wheat `1.0–1.5` / `6.1`; AUD/JPY `34–38` / `183` | `lambda` ranges by row class |
+| (was footer) | blank rows named — only **Chicago wheat** | `TURN[i].marked`, `TURN[i].all.omni`, `TURN[i].needs` |
+| (was footer) | Spot Gold "flat overall at p = 0.13 yet owns one window" | `TURN[i].all.omni` + its tier-2 count |
+| (was footer) | Wilson half-widths `±13pp` weekday, `±6pp` all-days; AUD/JPY `±6pp` / `±3pp` | mean `ciHalfPP` by profile class |
+| (was footer) | lag-1 autocorrelation `−0.04` day-specific vs `+0.35` all-days (`+0.33` without AUD/JPY) | pooled lag-1 over `t_weekday − t_all` and over `t_all` |
+| (was footer) | bar height cap `1.8×` | matches `Math.min(d.t[k]/1.8, 1)` in `applyMode` |
 | Comment ~L211 | FTSE 100 `~10 turns vs 6.9` weekday, `~50 vs 33.6` 12-month | that row's `lambda` |
 | Comment ~L213 | Chicago Wheat `1.0–1.5` turns per weekday window | its weekday `lambda` |
 | Comment ~L219 | `lambda` 258 / 212, `57 of 7746` windows off by one; AUD/JPY `183`, `27 of 312` | recompute against a constraint solve; AUD/JPY against `meta.counts` |
@@ -393,8 +405,9 @@ now says so.
 | §3.7 above | per-row cuts `37/38/68/60%`, lighting `8/9/9/10` on all-days and `296` across profiles | recompute `AGG_CUT` and count |
 | §3.1 above | `phi` divergence figures `1.23 / 2.16 / 6.99`, blindness `0.96 / 1.00 / 1.01` | re-run the two estimator simulations; these are properties of the estimator, not the data, so they should reproduce |
 
-Also check the **sample dates** in the first footer sentence, the Chicago Wheat start date, and
-AUD/JPY's dates and "five years" wording.
+Also check the **sample dates** in §5's opening sentence and in §1b, including the Chicago Wheat
+start date and AUD/JPY's dates and "five years" wording. Since the footer went, §1b and §5 are
+the only record of what period the board covers — nothing on screen says it.
 
 ---
 
@@ -559,8 +572,10 @@ which also govern any new string:
   windows already over, holidays, the unverified wheat slot, 1–6 quiet instruments, Friday —
   then signoff. Five lines at most. Greetings: 05:00 morning, 12:00 afternoon, 18:00 evening,
   22:00 night; weekends use their own set and name the focus day.
-- "Sir" lives only in marked greeting and signoff variants and is capped at one per briefing;
-  no other string carries it. No exclamation marks, no naming the character, British spelling.
+- The owner is addressed by name, once, in the greeting that opens the briefing: `NAME` at the
+  top of the script, `{name}` in every greeting variant, and nowhere else, so it reads as an
+  address rather than a tic. It replaced a sparing "sir" on 20 Sep 2026. Change `NAME` in both
+  pages to rename. No exclamation marks, no naming the character, British spelling.
 - Unknown is never dressed as quiet: while the fetch is pending the lists say "Consulting the
   calendar…", after a failed first load they say the calendar did not load and the header says
   "unknown", and a failed refresh keeps the last calendar and says so on the freshness line.
@@ -590,6 +605,12 @@ The deck behind this was produced by a judged panel (three drafts, three lenses,
 and the winning register was the film-faithful one; the calibration lives in the session, not
 the repo. Editing a string means editing `VOICE`; editing a rule means editing the renderer that
 applies it and this list.
+
+**No footer.** Both pages lost their footer on 20 Sep 2026 at the owner's request. brief.html's
+carried the feed's provenance, the window rules and the currency-to-instrument mapping; that
+specification now lives only in the table above. The page still declares the recurring USDA slot
+unverified and the seed calendar provisional in the lines it draws, so the two claims that most
+need a caveat still carry one.
 
 **Verify.** Serve the folder over HTTP (fetch does not work from `file://`), then check with a
 browser in a non-UK timezone and a faked clock that a known event lands at its UK time and that

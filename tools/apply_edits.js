@@ -6,7 +6,9 @@
 // edits go through here rather than through inline shell commands.
 const fs = require('fs'), path = require('path');
 const file = process.argv[3] ? path.resolve(process.argv[3]) : path.join(__dirname, '..', 'index.html');
-let h = fs.readFileSync(file, 'utf8');
+// Normalised to LF on read: git hands these files back with CRLF after a checkout or rebase,
+// which silently breaks every multi-line anchor. The repo's working copies are LF.
+let h = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
 const edits = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 let bad = 0;
 for (const { old, new: nu } of edits){ const n = h.split(old).length - 1; if (n !== 1){ console.error(`occurs ${n} times, not 1: ${old.slice(0, 90)}…`); bad++; } }

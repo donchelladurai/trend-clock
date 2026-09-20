@@ -58,7 +58,6 @@
   #notes:empty{display:none}
   #notes h3{margin-top:12px}
   .next .rem{font-size:12px;color:var(--muted)}
-  footer{padding:0 var(--pad-x) 30px;color:var(--muted);font-size:12px;max-width:1100px}
   @media (max-width:640px){
     :root{--pad-x:14px}
     header{position:static}
@@ -106,9 +105,6 @@
     <p style="margin:8px 0 0"><button class="act" id="copy" type="button">Copy list</button> <span id="copied" class="quiet"></span></p>
   </section>
 </main>
-<footer>
-  <p>Calendar: <a href="https://www.forexfactory.com/calendar">Forex Factory</a> weekly feed, pulled by a GitHub Action and converted here to UK clock time, so BST and GMT are handled. Chicago Wheat slots are USDA's recurring schedule (Crop Progress Mondays 4 PM ET, April to November; Export Sales Thursdays 8:30 AM ET) and are not checked against USDA's holiday shifts or WASDE dates. Suggested windows: high impact 5 minutes before to 20 after, medium 5 before to 15 after, rate decisions 10 before to 30 after, speeches and press conferences from the start to 30 after. Which instruments an event hits is a fixed mapping by currency (USD events also map to US indices and Spot Gold, EUR to Germany 40 and France 40, GBP to FTSE 100, CNY to AUD and NZD), so a surprise can still move instruments outside it. I can only flag what is scheduled; the market is under no obligation to keep to it.</p>
-</footer>
 <script>
 const TZ = 'Europe/London';
 const GROUPS = [
@@ -138,9 +134,10 @@ const DAYN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 // without touching the renderers. Variants are chosen by the UK date (pick), so wording varies
 // from day to day and holds still across the once-a-minute re-renders. House rules (CLAUDE.md §9):
 // facts first, wit as garnish; list items, tags and tooltips carry data only; the aside under the
-// countdown is dropped before the data line ever is; "sir" appears only in the marked greeting and
-// signoff variants, at most once per page; nothing claims what the page cannot know. Nothing here
-// is fetched from a model.
+// countdown is dropped before the data line ever is; the owner is addressed by name in the greeting
+// and nowhere else, so it stays a greeting rather than a tic; nothing claims what the page cannot
+// know. Nothing here is fetched from a model.
+const NAME = 'Don';
 const VOICE = {
   pageTitle: 'Morning brief — news blackouts',
   nextIdle: 'Next blackout begins in', nextIdleFar: 'Next blackout',
@@ -202,12 +199,12 @@ const VOICE = {
   ],
   live: ['It is under way. You need not be.', "I'd advise against anything clever until it clears.", 'Anything placed now is a guess with a spread.', 'Nothing to do but wait, so I shall.', 'Stops are the only thing I would touch at present.'],
   greetings: {
-    morning: ['Good morning. Here is the day as the calendar has it.', "Good morning, sir. Today's windows, UK time, in order.", 'Morning. I have taken the liberty of reading the calendar so that you need not.', "Good morning. The day's calendar, such as it is."],
-    afternoon: ['Good afternoon. What remains of the day, in order.', 'Good afternoon. The day so far, and what is left of it.', 'Afternoon, sir. What the calendar still owes you.'],
-    evening: ['Good evening. Most of the day is behind you; the remainder follows.', 'Good evening. Little left on the calendar, which is how I prefer it.', 'Good evening. For completeness, what is still scheduled.'],
-    night: ["An unsociable hour. The day's calendar, for the record.", 'Late, or early. The board does not mind which.', 'The calendar does not sleep either. Today, in order.'],
-    weekend: ['It is the weekend. The list below is for {day}, in outline.', 'It is the weekend. The markets are closed, which is more than can be said for the calendar. What follows is {day}.', 'It is the weekend, sir. {day} as the calendar currently has it.', 'The markets are closed; I would suggest following their example. Nonetheless, here is {day}.'],
-    weekendPast: 'It is the weekend, and the week shown has passed; the feed has not turned over yet. {day}, for the record.'
+    morning: ['Good morning, {name}. Here is the day as the calendar has it.', "Good morning, {name}. Today's windows, UK time, in order.", 'Morning, {name}. I have taken the liberty of reading the calendar so that you need not.', "Good morning, {name}. The day's calendar, such as it is."],
+    afternoon: ['Good afternoon, {name}. What remains of the day, in order.', 'Good afternoon, {name}. The day so far, and what is left of it.', 'Afternoon, {name}. What the calendar still owes you.'],
+    evening: ['Good evening, {name}. Most of the day is behind you; the remainder follows.', 'Good evening, {name}. Little left on the calendar, which is how I prefer it.', 'Good evening, {name}. For completeness, what is still scheduled.'],
+    night: ["An unsociable hour, {name}. The day's calendar, for the record.", 'Late, or early, {name}. The board does not mind which.', 'The calendar does not sleep either, {name}. Today, in order.'],
+    weekend: ['It is the weekend, {name}. The list below is for {day}, in outline.', 'It is the weekend, {name}. The markets are closed, which is more than can be said for the calendar. What follows is {day}.', 'It is the weekend, {name}. {day} as the calendar currently has it.', 'The markets are closed, {name}; I would suggest following their example. Nonetheless, here is {day}.'],
+    weekendPast: 'It is the weekend, {name}, and the week shown has passed; the feed has not turned over yet. {day}, for the record.'
   },
   lines: {
     // count: [0,1] high>=1 & medium>=1; [2,3] no high, medium>=2; [4,5] no medium, high>=2; [6] one high only; [7] one medium only; [8,9] another day.
@@ -289,7 +286,7 @@ const VOICE = {
       'That is all. I shall keep the clock.',
       'That will be all, unless the market disagrees.',
       'That is the whole of it. Do try to trade the plan rather than the news.',
-      'Nothing further, sir. I shall be here.'
+      'Nothing further. I shall be here.'
     ]
   }
 };
@@ -737,7 +734,8 @@ function renderBrief(days, now) {
   const weekend = u.dow === 0 || u.dow === 6;
   const focus = focusDay(days, u), isToday = focus.ymd === u.ymd, past = focus.ymd < u.ymd;
   const out = [];
-  const greet = past ? fill(G.weekendPast, {day: focus.label}) : fill(pick(weekend ? G.weekend : u.min < 300 ? G.night : u.min < 720 ? G.morning : u.min < 1080 ? G.afternoon : u.min < 1320 ? G.evening : G.night, 0, u), {day: focus.label});
+  const gv = {day: focus.label, name: NAME};
+  const greet = past ? fill(G.weekendPast, gv) : fill(pick(weekend ? G.weekend : u.min < 300 ? G.night : u.min < 720 ? G.morning : u.min < 1080 ? G.afternoon : u.min < 1320 ? G.evening : G.night, 0, u), gv);
   out.push(greet);
   let sign = pick(L.signoff, 8, u);
   if (loadState === 'failed' && !events.length) out.push(pick(L.loadFailed, 1, u));
@@ -785,8 +783,6 @@ function renderBrief(days, now) {
     const week = cand.filter(e => days.some(d => d.ymd === e.ymd));
     if (u.dow === 5 && week.length && week.every(e => ms > endMs(e))) sign = VOICE.weekSign;
   }
-  // "Sir" at most once per briefing.
-  if (/\bsir\b/.test(greet) && /\bsir\b/.test(sign)) sign = L.signoff[0];
   out.push(sign);
   host.textContent = out.map(cap).join(' ');
 }

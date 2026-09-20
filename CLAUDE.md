@@ -321,7 +321,12 @@ model, so it cannot mislead optimistically and does not drift with sample size. 
   the next to start, else nothing left. Strings live in `MV.mini`, chosen by weekday so the line
   holds all day and differs tomorrow; it re-renders every tick from the same lists the chips use.
   Outside 08:00–21:00 and at weekends it carries the greeting and one sentence saying so; the
-  banner's notices come from `MV.banner`. It is the only prose on the page since the footer went.
+  banner's notices come from `MV.banner`. It is drawn as a panel of its own — the sections'
+  background lifted a little, an amber left edge and an uppercase `BRIEF` label, so it reads as
+  one of the board's sections rather than a caption — and the BOX is centred on a 1100px reading
+  measure while its text stays left-aligned; the banner below shares that measure so the two
+  align. `setMini` writes `#minitext` rather than `#mini`, because the label is a sibling element
+  and `textContent` on the parent would erase it. It is the only prose on the page since the footer went.
 - **News on the board (added 20 Sep 2026).** `news.js` — shared with brief.html — fetches
   `data/ff_week.json`; today's blackout windows are drawn as a 3px band along the top of the heat
   strip on every row the event hits (orange high, light medium, faint low; `.news i`, tooltip data

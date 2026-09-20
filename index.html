@@ -44,7 +44,8 @@
   .ctrl select,.ctrl input{background:#1a2330;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font:inherit}
   .ctrl input{width:72px}
   .ctrl .btn{background:#1a2330;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px 10px;font:inherit;cursor:pointer}
-  .banner{margin:12px var(--pad-x) 0;padding:8px 12px;border:1px solid #5a4a20;background:#241d0f;color:var(--amber);border-radius:6px;display:none}
+  /* Sits directly under the mini brief, so it shares its measure and centring. */
+  .banner{max-width:min(1100px, calc(100% - var(--pad-x) * 2));margin:10px auto 0;padding:8px 12px;border:1px solid #5a4a20;background:#241d0f;color:var(--amber);border-radius:6px;display:none}
   .banner.show{display:block}
   main{padding:8px var(--pad-x) 40px}
   section{position:relative;margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px 12px;overflow-x:auto}
@@ -70,8 +71,19 @@
   .chip.n.soft{background:transparent;color:#cdbf95}
   .chip.n b{color:var(--amber);font-size:1em}
   /* The mini brief: one line in the same voice as brief.html, under the header. */
-  .mini{margin:10px var(--pad-x) 0;color:#c9d2dd;font-size:clamp(13px,.55vw,19px);line-height:1.5}
-  .mini b{color:var(--on);font-weight:600}
+  /* The mini brief is a panel in its own right, not a caption: it takes the sections' background
+     and border so it reads as a peer of them, with an amber edge to mark it as the page speaking.
+     The BOX is centred on a reading measure; the text inside stays left-aligned. */
+  .mini{max-width:min(1100px, calc(100% - var(--pad-x) * 2));margin:16px auto 2px;padding:14px 20px 15px;
+        background-color:#17212d;
+        background-image:linear-gradient(90deg,rgba(255,207,92,.10),rgba(255,207,92,.03) 45%,rgba(255,207,92,.015));
+        border:1px solid #3c4657;border-left:4px solid var(--amber);border-radius:8px;
+        box-shadow:0 6px 22px rgba(0,0,0,.5);
+        color:var(--text);font-size:clamp(15px,.72vw,23px);line-height:1.6}
+  /* Labelled like the strips below it, so it reads as one of the board's sections. */
+  .mini .k{display:block;color:var(--amber);font-size:clamp(10px,.28vw,14px);text-transform:uppercase;
+           letter-spacing:1.1px;font-weight:700;margin-bottom:6px}
+  .mini b{color:var(--on);font-weight:700}
   .heat,.bars{display:grid;grid-template-columns:repeat(52,1fr);gap:1px}
   .heat div{height:max(22px, calc(var(--pv, 9px) * 1.25));border-radius:1px;position:relative}
   /* The threshold control used to touch only the live window's row dimming, which is one cell
@@ -217,7 +229,7 @@
     </div>
   </div>
 </header>
-<div class="mini" id="mini"></div>
+<div class="mini" id="mini"><span class="k">Brief</span><span id="minitext"></span></div>
 <div class="banner" id="banner"></div>
 <main id="main"></main>
 <div class="readout mono" id="readout"></div>
@@ -794,7 +806,7 @@ function drawNews(){
 const newsIn = k => NEWS.today.filter(e => e.imp !== "L" && e.s < (k+1)*15 && e.f > k*15);
 // Two releases at the same minute from the same country shorten to the same chip (both German PMIs), so show one.
 const dedupe = list => list.filter((e, i) => list.findIndex(x => x.min === e.min && x.country === e.country && x.short === e.short) === i);
-const setMini = s => { const el = $("mini"); if (el.textContent !== s) el.textContent = s; };
+const setMini = s => { const el = $("minitext"); if (el.textContent !== s) el.textContent = s; };
 // Date-seeded like brief.html's pick(), so the line holds still across ticks and differs tomorrow.
 const seedDay = () => typeof NewsFeed !== "undefined" ? +NewsFeed.ukParts(new Date()).ymd.replace(/-/g, "") : 0;
 const byDay = (arr, offset) => arr[(seedDay() + offset) % arr.length];

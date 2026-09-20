@@ -54,6 +54,21 @@
   .notes h3{font-size:15px;margin:0 0 8px}
   .notes ul{margin:6px 0 0;padding-left:18px}
   .notes li{margin:4px 0;color:var(--med)}
+  /* The sectioned briefing: intro, then High / Medium / Low with one block per event, then signoff. */
+  #brief .lede{margin:0 0 4px}
+  #brief h3{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;margin:16px 0 6px;padding-top:10px;border-top:1px solid var(--line)}
+  #brief h4{font-size:12px;color:var(--med);font-weight:600;margin:12px 0 2px}
+  #brief .sx{margin:0 0 6px;color:var(--med);font-size:14px}
+  #brief .ev{margin:8px 0;line-height:1.5;padding-left:10px;border-left:2px solid var(--line)}
+  #brief .ev.H{border-left-color:var(--spike)}
+  #brief .ev.M{border-left-color:var(--med)}
+  #brief .ev.past{opacity:.55}
+  #brief .ev.now .t{color:var(--spike)}
+  #brief .ev .t{font-weight:700;color:var(--amber);margin-right:8px}
+  #brief .ev b{font-weight:600}
+  #brief .ev .w{color:var(--muted);font-size:12px;margin-left:8px}
+  #brief .ev .d{display:block;color:var(--med);font-size:13px}
+  #brief .ev .r{display:block;color:var(--text);font-size:14px}
   .notes .lede{margin:0;font-size:15px;line-height:1.55;color:var(--text)}
   #notes:empty{display:none}
   #notes h3{margin-top:12px}
@@ -77,8 +92,8 @@
 </header>
 <main>
   <section id="briefSec" hidden>
-    <h2>This morning's brief</h2>
-    <div class="notes"><p id="brief" class="lede"></p><div id="notes"></div></div>
+    <h2>The brief</h2>
+    <div class="notes"><div id="brief"></div><div id="notes"></div></div>
   </section>
   <section>
     <h2>Your instruments</h2>
@@ -105,8 +120,13 @@
     <p style="margin:8px 0 0"><button class="act" id="copy" type="button">Copy list</button> <span id="copied" class="quiet"></span></p>
   </section>
 </main>
+<script src="news.js"></script>
 <script>
-const TZ = 'Europe/London';
+// The feed logic — currency map, window rules, UK-time conversion, USDA slots — lives in news.js
+// and is shared with index.html, so the two pages cannot drift apart on what an event hits.
+const {TZ, CCY, IMPACT, DAYN, ukParts, hm, zonedToDate, windowFor, usdaSlots, shortName} = NewsFeed;
+const instrumentsFor = e => NewsFeed.instrumentsFor(e, ALL);
+const prepare = raw => NewsFeed.prepare(raw, ALL);
 const GROUPS = [
   ['Indices', ['FTSE 100','Germany 40','France 40','US 500','US Tech 100','Wall Street']],
   ['USD pairs', ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','USD/CAD','AUD/USD','NZD/USD']],
@@ -114,21 +134,7 @@ const GROUPS = [
   ['Other', ['AUD/JPY','Spot Gold','Chicago Wheat']]
 ];
 const ALL = GROUPS.flatMap(g => g[1]);
-const CCY = {
-  USD: ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','USD/CAD','AUD/USD','NZD/USD','US 500','US Tech 100','Wall Street','Spot Gold'],
-  EUR: ['EUR/USD','EUR/GBP','EUR/JPY','EUR/CHF','EUR/AUD','EUR/CAD','EUR/NZD','Germany 40','France 40'],
-  GBP: ['GBP/USD','EUR/GBP','FTSE 100'],
-  JPY: ['USD/JPY','EUR/JPY','AUD/JPY'],
-  CHF: ['USD/CHF','EUR/CHF'],
-  CAD: ['USD/CAD','EUR/CAD'],
-  AUD: ['AUD/USD','EUR/AUD','AUD/JPY'],
-  NZD: ['NZD/USD','EUR/NZD'],
-  CNY: ['AUD/USD','AUD/JPY','NZD/USD'],
-  WHEAT: ['Chicago Wheat']
-};
-const IMPACT = {High: 'H', Medium: 'M', Low: 'L', Holiday: 'X'};
 const COL = {H: '#ff6a2a', M: '#c9d2dd', L: '#4a5667'};
-const DAYN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 // ---- Voice ----------------------------------------------------------------------------------
 // Everything a person reads here that is not pure data lives in VOICE, so the tone can be edited
 // without touching the renderers. Variants are chosen by the UK date (pick), so wording varies
@@ -181,7 +187,7 @@ const VOICE = {
   allSelected: '{time} {event} · all {n} selected instruments',
   usdaSub: '{time} {event} · {instruments} · unverified slot',
   farSub: '{day} {time} · {event} · {instruments}', unverified: ' · unverified slot',
-  then: 'Then {event} at {time}.', joins: '{event} joins at {time}.',
+  then: 'Then {event} at {time}.', joins: 'Joined at {time} by {event}.',
   several: 'Several at once; treat them as one.',
   overnightNote: 'Overnight windows, before 07:00, already ended: {n}. Whatever happened there has happened.',
   fridayNote: 'It is Friday. Anything carried over the weekend is carried at your own risk.',
@@ -197,36 +203,214 @@ const VOICE = {
     [240, 1440, ['Nothing pressing. I shall keep watch.', 'A clear stretch ahead. Do try to use it well.', 'Hours away. It will come round regardless.']],
     [1440, 1e9, ['Not today. The calendar leaves the day to you.', "Another day's concern.", 'A clear day, on paper.']]
   ],
-  live: ['It is under way. You need not be.', "I'd advise against anything clever until it clears.", 'Anything placed now is a guess with a spread.', 'Nothing to do but wait, so I shall.', 'Stops are the only thing I would touch at present.'],
+  live: ['It is under way. You need not be.', 'I would advise against anything clever until it clears.', 'Anything placed now is a guess with a spread.', 'Nothing to do but wait, so I shall.', 'Stops are the only thing I would touch at present.'],
   greetings: {
     morning: ['Good morning, {name}. Here is the day as the calendar has it.', "Good morning, {name}. Today's windows, UK time, in order.", 'Morning, {name}. I have taken the liberty of reading the calendar so that you need not.', "Good morning, {name}. The day's calendar, such as it is."],
-    afternoon: ['Good afternoon, {name}. What remains of the day, in order.', 'Good afternoon, {name}. The day so far, and what is left of it.', 'Afternoon, {name}. What the calendar still owes you.'],
-    evening: ['Good evening, {name}. Most of the day is behind you; the remainder follows.', 'Good evening, {name}. Little left on the calendar, which is how I prefer it.', 'Good evening, {name}. For completeness, what is still scheduled.'],
-    night: ["An unsociable hour, {name}. The day's calendar, for the record.", 'Late, or early, {name}. The board does not mind which.', 'The calendar does not sleep either, {name}. Today, in order.'],
-    weekend: ['It is the weekend, {name}. The list below is for {day}, in outline.', 'It is the weekend, {name}. The markets are closed, which is more than can be said for the calendar. What follows is {day}.', 'It is the weekend, {name}. {day} as the calendar currently has it.', 'The markets are closed, {name}; I would suggest following their example. Nonetheless, here is {day}.'],
-    weekendPast: 'It is the weekend, {name}, and the week shown has passed; the feed has not turned over yet. {day}, for the record.'
+    afternoon: ['Good afternoon, {name}. The afternoon, as the calendar has it.', 'Good afternoon, {name}. The day so far, and what is left of it.', 'Afternoon, {name}. The rest of the day, for the record.'],
+    evening: ['Good evening, {name}. Most of the day is behind you; the remainder follows.', "Good evening, {name}. The evening's calendar, such as it is.", 'Good evening, {name}. The evening, for completeness.'],
+    night: ["An unsociable hour, {name}. The day's calendar, for the record.", 'Late, or early, {name}. The calendar does not mind which.', 'The calendar does not sleep either, {name}. Today, in order.'],
+    weekend: ['It is the weekend, {name}. What follows is {day}, in outline.', 'It is the weekend, {name}. The markets are closed, which is more than can be said for the calendar. What follows is {day}.', 'It is the weekend, {name}. {day} as the calendar currently has it.', 'The markets are closed, {name}; I would suggest following their example. Nonetheless, here is {day}.'],
+    weekendPast: 'It is the weekend, {name}, and the week shown has passed. {day}, for the record.'
+  },
+  // The sectioned briefing (renderBrief): section headings, their intros by count, sub-section
+  // labels, one remark per event by kind and state, the low-impact summary, and the orientation
+  // sentence that replaced the count line. Placeholders as documented in CLAUDE.md §9.
+  brief: {
+    "sectionTitles": {
+      "high": "High impact",
+      "medium": "Medium impact",
+      "low": "Low impact"
+    },
+    "sectionIntro": {
+      "high": {
+        "none": [
+          "Nothing of high weight for the selected instruments.",
+          "No high-impact windows, on paper. The day is not spared on that account.",
+          "The top tier is empty for your instruments; I would not lower my guard on the strength of it."
+        ],
+        "one": [
+          "One window of high weight, and it is the one to respect.",
+          "One, and it deserves the whole of your attention.",
+          "A single window of the first order; I would not be in anything through it."
+        ],
+        "many": [
+          "Windows of high weight: {n}, set out below in order.",
+          "Several, which is {n} more than I would like.",
+          "There are {n} of them. I would treat each as a hard stop, not a suggestion."
+        ],
+        "doneOne": [
+          "The one high-impact window has passed; what follows is the record.",
+          "One of high weight, and it is behind you."
+        ],
+        "doneMany": [
+          "Of high weight, {n}, all behind you now. Below is the record, not the plan.",
+          "The high-impact windows are done; the entries below are for the file."
+        ]
+      },
+      "medium": {
+        "none": [
+          "Nothing of medium weight.",
+          "No medium-impact windows for your instruments.",
+          "The middle tier is empty, on paper."
+        ],
+        "one": [
+          "One of medium weight, easily forgotten and not to be.",
+          "One at this weight, and it is the kind that catches people out.",
+          "A single medium-impact window. Minor on paper; not minor if you are in it."
+        ],
+        "many": [
+          "Of medium weight, {n}. Individually minor; together they shape the day.",
+          "There are {n} medium-impact windows. Not the headline, but not to be walked through either.",
+          "Medium weight, {n} of them, in order. Short windows; I would still respect them."
+        ],
+        "doneOne": [
+          "The one medium-impact window has passed.",
+          "One of medium weight, already behind you."
+        ],
+        "doneMany": [
+          "Of medium weight, {n}, all behind you. Listed for the record.",
+          "The medium-impact windows are done; below is what they were."
+        ]
+      },
+      "low": {
+        "none": [
+          "Nothing of low weight either.",
+          "The minor tier is empty.",
+          "No minor prints for your instruments."
+        ],
+        "some": [
+          "The rest, mentioned so that nothing is a surprise.",
+          "Low impact, listed for completeness rather than caution.",
+          "The minor prints; rarely worth a pause, occasionally worth knowing."
+        ]
+      }
+    },
+    "subsections": {
+      "overnight": "Overnight",
+      "morning": "London morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening"
+    },
+    "eventRemark": {
+      "rate": {
+        "upcoming": [
+          "The decision is one number; the statement behind it is the weather. Allow for both.",
+          "The one window I would clear the desk for.",
+          "Ten before, thirty after. Nothing new inside it, and the stops checked before it."
+        ],
+        "live": [
+          "Under way until {endTime}. Let the bank finish its sentence before you start yours.",
+          "Runs to {endTime}. Patience, which is cheaper than the alternative.",
+          "Under way. Whatever you were about to do, do it after."
+        ],
+        "past": [
+          "Done. What it left behind is on the chart, not in here.",
+          "Already out. The window has cleared; a press conference, if there was one, may not have.",
+          "Cleared at {endTime}. The decision is in the market; the trend, if any, is yours to read."
+        ]
+      },
+      "speech": {
+        "upcoming": [
+          "Speakers keep their own clock; treat the end time loosely.",
+          "Words rather than numbers, which is not to say harmless.",
+          "Headlines arrive mid-sentence, so I would not wait for the end."
+        ],
+        "live": [
+          "Under way. Speakers overrun; treat {endTime} as a floor rather than a promise.",
+          "Speaking now. Wait for the end, and then a little longer.",
+          "In progress. A headline can land at any minute until {endTime}; nothing new until then."
+        ],
+        "past": [
+          "Over, by the schedule. If it overran, the overrun is not something I can see.",
+          "Concluded and cleared at {endTime}. Whatever was said, the window for it has closed.",
+          "Finished, as far as the schedule knows."
+        ]
+      },
+      "data": {
+        "upcoming": [
+          "The figure lands on the minute; be tidy by then.",
+          "Five minutes before, be flat or be sized for a miss.",
+          "The figure matters less than its distance from {forecast}."
+        ],
+        "live": [
+          "The print is out or about to be; clear at {endTime}. Let the first minutes settle.",
+          "Inside the window until {endTime}. Nothing new on the back of the first candle.",
+          "Live until {endTime}. The number is what it is; the reaction to it is not scheduled."
+        ],
+        "past": [
+          "Printed and past. The chart has the verdict.",
+          "Done. I would not revisit it; the calendar certainly will not.",
+          "Printed and cleared. The figure is on the wires; this page does not carry it."
+        ]
+      },
+      "usda": {
+        "upcoming": [
+          "On the usual day at the usual hour, unless it is not.",
+          "If USDA has moved it this week, I have not been told; the slot is the usual one.",
+          "Wheat is the only row it touches. Confirm the time before relying on it."
+        ],
+        "live": [
+          "In the usual slot, if USDA kept to it this week. Wheat only; the rest carry on.",
+          "Wheat's window, by habit, until {endTime}, and only if the schedule held.",
+          "Live on the routine timetable. Whether the report actually came out, I cannot see."
+        ],
+        "past": [
+          "Behind you, assuming USDA kept the appointment.",
+          "The slot has passed. Whether the report came with it, I cannot say.",
+          "Cleared at {endTime}. If USDA shifted the release, the window moved and I did not see it."
+        ]
+      }
+    },
+    "lowSummary": [
+      "Also on the calendar, low weight: {list}.",
+      "For the record, the minor prints: {list}.",
+      "Low impact, noted rather than warned about: {list}."
+    ],
+    "noEvents": [
+      "Nothing for your instruments, at any weight. The day is unstructured, which is not the same as uneventful.",
+      "Nothing at any weight. The calendar's silence is noted, not trusted.",
+      "No windows at any weight for the selected instruments. Empty describes the calendar, not the market."
+    ],
+    "allDone": [
+      "Every high and medium window has closed. The remainder of the day is unscheduled at those weights, which is not the same as unwatched.",
+      "The high and medium windows are behind you. The sections below are the record, not the plan.",
+      "The day's windows of weight are spent; the minor prints, if any, are listed for the record."
+    ],
+    "orientation": {
+      "frontLoaded": [
+        "A front-loaded day: the weight sits in the morning, and the afternoon is lighter for it.",
+        "Early, mostly. The morning carries the calendar; the afternoon carries only the market.",
+        "Heavy before noon, light after."
+      ],
+      "backLoaded": [
+        "A back-loaded day: the morning is clear on paper and the afternoon is not.",
+        "Little before lunch, most of it after.",
+        "The calendar saves itself for later; the second half of the day carries the weight."
+      ],
+      "spread": [
+        "The windows fall on both sides of noon; I shall take them in order.",
+        "Nothing bunched into one half of the day: the calendar has scattered it. In order, then.",
+        "The day is punctuated rather than loaded, morning and afternoon alike. Mind the gaps as much as the windows."
+      ],
+      "single": [
+        "One window, and everything else is either before it or after it.",
+        "A single window shapes the day. Before it and after it are different days.",
+        "The day turns on one window. I would arrange the rest to suit."
+      ],
+      "empty": [
+        "Nothing of weight scheduled; the shape of the day is yours to give it.",
+        "Nothing scheduled, which I record without endorsing.",
+        "Clear on paper at the weights that matter. That describes the calendar, not the session ahead."
+      ]
+    }
   },
   lines: {
-    // count: [0,1] high>=1 & medium>=1; [2,3] no high, medium>=2; [4,5] no medium, high>=2; [6] one high only; [7] one medium only; [8,9] another day.
-    count: [
-      'On the calendar today: {high} high-impact, {medium} medium-impact, for the instruments selected.',
-      'Today carries {high} high and {medium} medium across your instruments.',
-      'Nothing high-impact today. Medium-impact: {medium}, which I would not dismiss entirely.',
-      'No high-impact windows today; {medium} of medium weight, for the record.',
-      'High-impact windows today: {high}. Nothing of medium weight.',
-      'High-impact windows today: {high}, and none of medium weight. The day turns on a few minutes.',
-      'A single high-impact window today, and I would plan the day around it.',
-      'A single medium-impact window today. Not much, but enough to be careless around.',
-      'For {day}: {high} high-impact, {medium} medium-impact, for the instruments selected.',
-      '{day} carries {high} high and {medium} medium across your instruments.'
-    ],
-    pastDay: '{day} carried {high} high and {medium} medium across your instruments.',
     // Titles are held after a colon or full stop so "… Speaks" and "1-y …" survive substitution.
     firstBlackout: [
       'The next window opens at {time} for {event}. It covers {instruments}.',
       'Nothing to avoid until {time}, when {event} arrives for {instruments}.',
       'At {time}: {event}. Instruments: {instruments}. I would have things tidy by then.',
-      'On {day}, the first window opens at {time} for {event}. It covers {instruments}.'
+      'The first window that day opens at {time} for {event}. It covers {instruments}.'
     ],
     liveNow: [
       'We are inside the window for {event}, clear at {endTime}. Nothing new until then.',
@@ -234,12 +418,6 @@ const VOICE = {
       'Currently inside the window for {event}, which clears at {endTime}. Patience.'
     ],
     liveRun: 'We are inside the window for {event}; with what follows on its heels, the stretch clears at {endTime}. Nothing new until then.',
-    allDone: [
-      'That is everything for today. The rest of the session is yours, as far as the calendar is concerned.',
-      'No further windows today. Whatever moves from here will not have been scheduled.',
-      "Today's windows are all behind you. What remains is ordinary trading, if there is such a thing.",
-      'The calendar is finished with today. I shall stay on nonetheless.'
-    ],
     // quiet[1] and holidays[0] say "today" and are only eligible when the focus day is today.
     quiet: [
       'Nothing scheduled for {list}. Quiet on paper, which is not the same as quiet.',
@@ -269,13 +447,7 @@ const VOICE = {
     loadFailed: [
       'I could not load the calendar, so there is nothing to brief. I would treat the absence of windows as unknown, not as none.',
       'The calendar did not load. I cannot tell you what is scheduled, only that I cannot see it.',
-      "Calendar unavailable. I am working blind, and I'd advise against your doing the same."
-    ],
-    noEvents: [
-      'Nothing on the calendar today for your instruments, high or medium. Quiet days have their own hazards; I merely note it.',
-      'The calendar has nothing for you today. I would not read that as permission.',
-      'No high or medium windows today for the selected instruments, which is not the same as safe.',
-      'Nothing high or medium on {day} for your instruments. On paper, at least.'
+      'Calendar unavailable. I am working blind, and I would advise against your doing the same.'
     ],
     stale: [
       'The calendar last changed {when}, which is longer ago than I would like. Revisions since then are not reflected.',
@@ -354,79 +526,12 @@ try {
   if (Array.isArray(s) && s.length) selected = new Set(s.filter(x => ALL.includes(x)));
 } catch (e) {}
 
-function ukParts(d) {
-  const p = {};
-  new Intl.DateTimeFormat('en-GB', {timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short', hourCycle: 'h23'})
-    .formatToParts(d).forEach(x => { p[x.type] = x.value; });
-  return {
-    ymd: `${p.year}-${p.month}-${p.day}`,
-    min: (+p.hour) * 60 + (+p.minute),
-    sec: +p.second,
-    hm: `${p.hour}:${p.minute}`,
-    dow: DAYN.indexOf(p.weekday),
-    day: +p.day
-  };
-}
 
-function hm(m) {
-  m = ((m % 1440) + 1440) % 1440;
-  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
-}
 
-function zonedToDate(ymd, hhmm, zone) {
-  const [y, mo, d] = ymd.split('-').map(Number);
-  const [h, mi] = hhmm.split(':').map(Number);
-  let guess = Date.UTC(y, mo - 1, d, h, mi);
-  for (let i = 0; i < 2; i++) {
-    const p = {};
-    new Intl.DateTimeFormat('en-US', {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'})
-      .formatToParts(new Date(guess)).forEach(x => { p[x.type] = x.value; });
-    const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
-    guess += Date.UTC(y, mo - 1, d, h, mi) - asUtc;
-  }
-  return new Date(guess);
-}
 
-function windowFor(e) {
-  const t = e.title.toLowerCase();
-  if (e.imp === 'H' && !/speaks|unemployment|inflation|participation|savings/.test(t) && /(policy|cash|funds|refinancing|interest|bank|official|deposit|prime|overnight|ocr|repo) rate|rate (decision|statement)|monetary policy|policy (decision|statement|summary)|fomc statement|rate$/.test(t)) return [10, 30];
-  if (/(speaks|speech|press conference|testifies|remarks)/.test(t)) return [0, 30];
-  if (e.imp === 'H') return [5, 20];
-  if (e.imp === 'M') return [5, 15];
-  return [0, 5];
-}
 
-function instrumentsFor(e) {
-  const base = CCY[e.country] ? CCY[e.country].slice() : [];
-  const t = e.title.toLowerCase();
-  if (/crude oil/.test(t) && !base.includes('USD/CAD')) base.push('USD/CAD', 'EUR/CAD');
-  return ALL.filter(i => base.includes(i));
-}
 
-function usdaSlots(weekMon) {
-  const out = [];
-  const month = +weekMon.slice(5, 7);
-  const add = (offset, hhmm, title) => {
-    const dt = new Date(zonedToDate(weekMon, '12:00', TZ).getTime() + offset * 86400000);
-    const ymd = ukParts(dt).ymd;
-    out.push({title, country: 'WHEAT', date: zonedToDate(ymd, hhmm, 'America/New_York').toISOString(), impact: 'Medium', forecast: '', previous: '', recurring: true});
-  };
-  if (month >= 4 && month <= 11) add(0, '16:00', 'USDA Crop Progress');
-  add(3, '08:30', 'USDA Export Sales');
-  return out;
-}
 
-function prepare(raw) {
-  const list = raw.map(r => {
-    const d = new Date(r.date);
-    const u = ukParts(d);
-    const e = {title: r.title, country: r.country, imp: IMPACT[r.impact] || 'L', forecast: r.forecast || '', previous: r.previous || '', recurring: !!r.recurring, at: d, ymd: u.ymd, min: u.min, dow: u.dow};
-    e.win = windowFor(e);
-    e.ins = instrumentsFor(e);
-    return e;
-  });
-  return list.filter(e => e.dow >= 1 && e.dow <= 5);
-}
 
 function weekDays() {
   const now = new Date();
@@ -457,15 +562,6 @@ function el(tag, attrs, text) {
   return n;
 }
 
-function shortName(t) {
-  return t
-    .replace(/^(FOMC Member|FOMC|Fed Chair|Fed Vice Chair|ECB President|ECB Vice President|ECB|BOE Gov|BOE|MPC Member|SNB Chairman|BOC Gov|RBA Gov|RBNZ Gov|BOJ Gov)\s+/i, '')
-    .replace(/\s+Speaks$/i, '')
-    .replace(/Flash Manufacturing PMI|Flash Services PMI/i, 'PMI')
-    .replace(/Unemployment Claims/i, 'Claims')
-    .replace(/Core Durable Goods Orders m\/m|Durable Goods Orders m\/m/i, 'Durables')
-    .slice(0, 22);
-}
 
 function drawMap(days, now) {
   const svg = document.getElementById('map');
@@ -580,7 +676,7 @@ function renderLists(days, now) {
     const d = document.createElement('span'); d.className = 'd';
     const fc = [e.forecast && `forecast ${e.forecast}`, e.previous && `previous ${e.previous}`].filter(Boolean).join(', ');
     d.textContent = fill(VOICE.hits, {instruments: e.ins.filter(i => selected.has(i)).join(', ')}) + (fc ? ' ' + cap(fc) + '.' : '') + (e.recurring ? ' ' + VOICE.recurringNote : '');
-    li.append(t, ev, d);
+    li.append(t, ' ', ev, ' ', d);
     ol.appendChild(li);
   });
   const quiet = quietList(list), hols = holidayList(focus.ymd);
@@ -722,69 +818,113 @@ function renderNotes(now) {
   });
 }
 
-// The briefing: a few sentences assembled from the focus day's data. Order: greeting; count or
-// nothing-scheduled; the state line (live, next, or all done); at most one further line, by the
-// priority below; signoff. Five lines at most. Variants are date-seeded, so it reads the same all
-// day and differently tomorrow.
+// The briefing: an intro paragraph (greeting, orientation, the live or next window, one caveat),
+// then High / Medium / Low sections with one block per event — time, event, window, the data the
+// list carries, and a remark chosen by the event's kind and state — then the signoff. Variants are
+// date-seeded; per-event remarks are seeded by the event's minute too, so neighbours differ.
 function renderBrief(days, now) {
   const u = ukParts(now), sec = document.getElementById('briefSec'), host = document.getElementById('brief');
   if (loadState === 'pending') { sec.hidden = true; return; }
   sec.hidden = false;
-  const L = VOICE.lines, G = VOICE.greetings, ms = now.getTime();
+  host.textContent = '';
+  const L = VOICE.lines, G = VOICE.greetings, B = VOICE.brief, ms = now.getTime();
   const weekend = u.dow === 0 || u.dow === 6;
   const focus = focusDay(days, u), isToday = focus.ymd === u.ymd, past = focus.ymd < u.ymd;
-  const out = [];
+  const add = (tag, cls, text) => { const el = document.createElement(tag); if (cls) el.className = cls; el.textContent = text; host.appendChild(el); return el; };
+  const span = (cls, text) => { const s = document.createElement('span'); s.className = cls; s.textContent = text; return s; };
+  // A variant whose placeholders are all available; otherwise the next one along.
+  const pickSafe = (arr, offset, vars) => { for (let i = 0; i < arr.length; i++) { const s = arr[(+u.ymd.replace(/-/g, '') + offset + i) % arr.length]; if (!/\{(\w+)\}/.test(s.replace(/\{(\w+)\}/g, (m, k) => vars[k] ? '' : m))) return s; } return arr[0]; };
   const gv = {day: focus.label, name: NAME};
   const greet = past ? fill(G.weekendPast, gv) : fill(pick(weekend ? G.weekend : u.min < 300 ? G.night : u.min < 720 ? G.morning : u.min < 1080 ? G.afternoon : u.min < 1320 ? G.evening : G.night, 0, u), gv);
-  out.push(greet);
+  const intro = [greet];
   let sign = pick(L.signoff, 8, u);
-  if (loadState === 'failed' && !events.length) out.push(pick(L.loadFailed, 1, u));
+  const failed = loadState === 'failed' && !events.length;
+  let hmList = [], lows = [];
+  if (failed) intro.push(pick(L.loadFailed, 1, u));
   else {
-    const list = selected.size ? dayWindows(focus.ymd) : [];
-    const high = list.filter(e => e.imp === 'H').length, medium = list.length - high;
-    const cv = {high, medium, day: focus.label};
-    // Live windows are judged against the clock, not the focus day: a window that opened before midnight counts.
+    const all = selected.size ? events.filter(e => e.ymd === focus.ymd && visible(e) && e.imp !== 'X').sort((a, b) => (a.min - a.win[0]) - (b.min - b.win[0]) || a.min - b.min) : [];
+    hmList = all.filter(e => e.imp === 'H' || e.imp === 'M'); lows = all.filter(e => e.imp === 'L');
     const cand = selected.size ? events.filter(e => (e.imp === 'H' || e.imp === 'M') && visible(e)) : [];
     const lives = cand.filter(e => ms >= startMs(e) && ms <= endMs(e));
-    if (!selected.size) out.push(VOICE.noSelection);
-    else if (past) out.push(fill(L.pastDay, cv));
-    else if (!list.length) out.push(fill(pick(isToday ? L.noEvents.slice(0, 3) : [L.noEvents[3]], 2, u), cv));
-    else out.push(fill(pick(!isToday ? [L.count[8], L.count[9]] : high >= 1 && medium >= 1 ? [L.count[0], L.count[1]] : high === 0 && medium >= 2 ? [L.count[2], L.count[3]] : medium === 0 && high >= 2 ? [L.count[4], L.count[5]] : high === 1 ? [L.count[6]] : [L.count[7]], 2, u), cv));
+    // Orientation replaces the old count line: what shape the day has, without the arithmetic.
+    if (!selected.size) intro.push(VOICE.noSelection);
+    else if (!past) {
+      // Shape of the day, without the arithmetic: two-thirds before noon is front-loaded, two-thirds after is back-loaded.
+      if (!hmList.length && !lows.length) intro.push(pick(B.noEvents, 15, u));
+      else if (!hmList.length) intro.push(pick(B.orientation.empty, 11, u));
+      else if (hmList.length === 1) intro.push(pick(B.orientation.single, 11, u));
+      else { const am = hmList.filter(e => e.min < 720).length / hmList.length; intro.push(pick(am >= 2/3 ? B.orientation.frontLoaded : am <= 1/3 ? B.orientation.backLoaded : B.orientation.spread, 11, u)); }
+    }
     if (selected.size && !past) {
-      const upcoming = list.filter(e => startMs(e) > ms);
+      const upcoming = hmList.filter(e => startMs(e) > ms);
       if (lives.length) {
         const e = lives.reduce((a, b) => endMs(b) > endMs(a) ? b : a), end = runEnd(lives, cand), v = {event: evLabel(e), endTime: hm(ukParts(new Date(end)).min)};
-        out.push(fill(end > endMs(e) ? L.liveRun : pick(L.liveNow, 3, u), v));
+        intro.push(fill(end > endMs(e) ? L.liveRun : pick(L.liveNow, 3, u), v));
       } else if (!isToday || upcoming.length) {
-        const e = isToday ? upcoming[0] : list[0], s = e.min - e.win[0];
-        // "when {event} arrives" reads badly for "… Speaks"; the other two hold the title after a colon or full stop.
-        const fb = !isToday ? [L.firstBlackout[3]] : /speaks|speech|conference|testif|remarks/i.test(e.title) ? [L.firstBlackout[0], L.firstBlackout[2]] : L.firstBlackout.slice(0, 3);
-        let line = fill(pick(fb, 3, u), {time: hm(s), event: evLabel(e), instruments: e.ins.filter(i => selected.has(i)).join(', '), day: focus.label});
-        if (s >= 480 && s <= 485) line += VOICE.londonOpenNote;
-        out.push(line);
-      } else if (list.length) out.push(pick(L.allDone, 3, u));
+        const e = isToday ? upcoming[0] : hmList[0];
+        if (e) {
+          const s = e.min - e.win[0];
+          const fb = !isToday ? [L.firstBlackout[3]] : /speaks|speech|conference|testif|remarks/i.test(e.title) ? [L.firstBlackout[0], L.firstBlackout[2]] : L.firstBlackout.slice(0, 3);
+          let line = fill(pick(fb, 3, u), {time: hm(s), event: evLabel(e), instruments: e.ins.filter(i => selected.has(i)).join(', '), day: focus.label});
+          if (s >= 480 && s <= 485) line += VOICE.londonOpenNote;
+          intro.push(line);
+        }
+      } else if (hmList.length) intro.push(pick(B.allDone, 15, u));
     }
     // One further line at most, first that applies. The two data caveats outrank everything else.
     const stale = source === 'forexfactory' && !weekend && fetchedAt && !isNaN(fetchedAt.getTime()) && ms - fetchedAt.getTime() > 86400000;
-    const run = past ? null : largestRun(list.filter(e => !isToday || endMs(e) > ms));
-    const overnight = isToday ? list.filter(e => e.min < 420 && ms > endMs(e)).length : 0;
-    const hols = holidayList(focus.ymd), quiet = quietList(list), wheat = selected.has('Chicago Wheat') && list.some(e => e.recurring);
+    const run = past ? null : largestRun(hmList.filter(e => !isToday || endMs(e) > ms));
+    const overnight = isToday ? hmList.filter(e => e.min < 420 && ms > endMs(e)).length : 0;
+    const hols = holidayList(focus.ymd), quiet = quietList(hmList), wheat = selected.has('Chicago Wheat') && hmList.some(e => e.recurring);
     const friday = ukParts(zonedToDate(focus.ymd, '12:00', TZ)).dow === 5;
     let fifth = '';
     if (source === 'seed') fifth = pick(L.seedCaveat, 4, u);
     else if (stale) fifth = fill(pick(L.stale, 4, u), {when: fmtWhen(fetchedAt, now)});
     else if (run) fifth = fill(pick(L.crowded, 4, u), {count: run.count, first: hm(run.first), last: hm(run.last)});
     else if (overnight) fifth = fill(VOICE.overnightNote, {n: overnight});
-    else if (hols.length) fifth = fill(pick(isToday ? L.holidays : L.holidays.slice(1), 4, u), {list: hols.join(', ')});
+    else if (hols.length && !past) fifth = fill(pick(isToday ? L.holidays : L.holidays.slice(1), 4, u), {list: hols.join(', ')});
     else if (wheat && !past) fifth = pick(L.wheat, 4, u);
     else if (quiet.length >= 1 && quiet.length <= 6 && quiet.length < selected.size && !past) fifth = fill(pick(isToday ? L.quiet : [L.quiet[0], L.quiet[2]], 4, u), {list: quiet.join(', ')});
     else if (friday && isToday) fifth = VOICE.fridayNote;
-    if (fifth) out.push(fifth);
+    if (fifth) intro.push(fifth);
     const week = cand.filter(e => days.some(d => d.ymd === e.ymd));
     if (u.dow === 5 && week.length && week.every(e => ms > endMs(e))) sign = VOICE.weekSign;
   }
-  out.push(sign);
-  host.textContent = out.map(cap).join(' ');
+  add('p', 'lede', intro.map(cap).join(' '));
+  // Sections only when something is scheduled at some weight; an empty calendar is one sentence, not three headings.
+  if (!failed && selected.size && (hmList.length || lows.length)) {
+    const session = m => m < 420 ? 'overnight' : m < 720 ? 'morning' : m < 1020 ? 'afternoon' : 'evening';
+    for (const [imp, key] of [['H', 'high'], ['M', 'medium']]) {
+      const list = hmList.filter(e => e.imp === imp);
+      add('h3', '', B.sectionTitles[key]);
+      // A section is "done" once every window in it has passed today, and always on a focus day already behind us.
+      const iv = B.sectionIntro[key], done = list.length > 0 && (past || (isToday && list.every(e => ms > endMs(e))));
+      add('p', 'sx', cap(fill(pick(!list.length ? iv.none : done ? (list.length === 1 ? iv.doneOne : iv.doneMany) : list.length === 1 ? iv.one : iv.many, key === 'high' ? 12 : 13, u), {n: list.length, day: focus.label})));
+      // Sub-sections by session once a section is long or spread: five or more events, or three sessions.
+      const split = list.length >= 5 || new Set(list.map(e => session(e.min))).size >= 3;
+      let lastSession = null;
+      list.forEach((e, idx) => {
+        const sess = session(e.min);
+        if (split && sess !== lastSession) { add('h4', '', B.subsections[sess]); lastSession = sess; }
+        const state = past ? 'past' : !isToday ? 'upcoming' : ms > endMs(e) ? 'past' : ms >= startMs(e) ? 'live' : 'upcoming';
+        const kind = e.recurring ? 'usda' : kindOf(e) === 'rate' ? 'rate' : kindOf(e) === 'speech' ? 'speech' : 'data';
+        const ins = e.ins.filter(i => selected.has(i)).join(', ');
+        const vars = {event: evLabel(e), time: hm(e.min - e.win[0]), endTime: hm(e.min + e.win[1]), instruments: ins, forecast: e.forecast, previous: e.previous, country: e.country === 'WHEAT' ? 'USDA' : e.country};
+        const p = document.createElement('p'); p.className = 'ev ' + e.imp + (state === 'past' ? ' past' : state === 'live' ? ' now' : '');
+        const b = document.createElement('b'); b.textContent = evLabel(e);
+        const fc = [e.forecast && `forecast ${e.forecast}`, e.previous && `previous ${e.previous}`].filter(Boolean).join(', ');
+        // Spaces between the spans so copied or read-aloud text does not run together; the CSS ignores them.
+        p.append(span('t mono', hm(e.min)), ' ', b, ' ', span('w mono', winText(e)), ' ',
+          span('d', fill(VOICE.hits, {instruments: ins}) + (fc ? ' ' + cap(fc) + '.' : '') + (e.recurring ? ' ' + VOICE.recurringNote : '')), ' ',
+          span('r', cap(fill(pickSafe(B.eventRemark[kind][state], 16 + idx, vars), vars))));
+        host.appendChild(p);
+      });
+    }
+    add('h3', '', B.sectionTitles.low);
+    if (lows.length) { add('p', 'sx', cap(pick(B.sectionIntro.low.some, 14, u))); add('p', 'sx', cap(fill(pick(B.lowSummary, 14, u), {list: lows.map(e => `${hm(e.min)} ${evLabel(e)}`).join('; ')}))); }
+    else add('p', 'sx', cap(pick(B.sectionIntro.low.none, 14, u)));
+  }
+  add('p', 'lede', cap(sign));
 }
 
 function renderAll() {
@@ -801,20 +941,9 @@ function renderAll() {
 async function load() {
   const slow = setTimeout(() => { if (loadState === 'pending') document.getElementById('fresh').textContent = VOICE.loadingSlow; }, 5000);
   try {
-    const r = await fetch('data/ff_week.json', {cache: 'no-cache'});
-    const j = await r.json();
-    fetchedAt = j.fetchedAt ? new Date(j.fetchedAt) : null;
-    source = j.source || 'forexfactory';
-    const raw = (j.events || []).slice();
-    const firstMon = (() => {
-      const pre = prepare(raw);
-      const d = pre.length ? pre[0] : null;
-      if (!d) return null;
-      const back = d.dow - 1;
-      return ukParts(new Date(zonedToDate(d.ymd, '12:00', TZ).getTime() - back * 86400000)).ymd;
-    })();
-    if (firstMon && !raw.some(e => e.country === 'WHEAT')) raw.push(...usdaSlots(firstMon));
-    events = prepare(raw).sort((a, b) => a.at - b.at);
+    const w = await NewsFeed.fetchWeek('data/ff_week.json');
+    fetchedAt = w.fetchedAt; source = w.source;
+    events = prepare(w.raw).sort((a, b) => a.at - b.at);
     loadState = 'ok'; refreshFailed = false;
   } catch (e) {
     // A refresh that fails keeps the last good calendar on screen and says so; only a first load with nothing behind it is "failed".

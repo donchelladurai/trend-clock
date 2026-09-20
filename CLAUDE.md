@@ -315,9 +315,25 @@ model, so it cannot mislead optimistically and does not drift with sample size. 
   button reads `Auto (Tue)` / `Auto (all days)` so the pick is visible. `All` is the pooled
   12-month read, still the steadier one for confirmation; Auto is what the user asked to trade
   from (20 Sep 2026), reversing an earlier default of all-days.
-- A greeting sits under the clock — `greeting()` and the `GREET`/`NAME` constants — addressing the
-  owner by name, chosen by time of day and varied by weekday so it holds all day and differs
-  tomorrow. It is the only prose on the page since the footer was dropped (§5 step 3).
+- A **mini brief** sits under the header (`#mini`): the greeting by name (`greeting()`, `GREET`,
+  `NAME`), then one sentence each on what is trending at the threshold in the current window,
+  which rows carry a turn spike now and next, and the news calendar — the window in effect, else
+  the next to start, else nothing left. Strings live in `MV.mini`, chosen by weekday so the line
+  holds all day and differs tomorrow; it re-renders every tick from the same lists the chips use.
+  Outside 08:00–21:00 and at weekends it carries the greeting and one sentence saying so; the
+  banner's notices come from `MV.banner`. It is the only prose on the page since the footer went.
+- **News on the board (added 20 Sep 2026).** `news.js` — shared with brief.html — fetches
+  `data/ff_week.json`; today's blackout windows are drawn as a 3px band along the top of the heat
+  strip on every row the event hits (orange high, light medium, faint low; `.news i`, tooltip data
+  only), with a composite row carrying its constituents' news (`ROW_INS`). Two header rows, **News
+  now** and **News next**, list the high and medium windows overlapping the current and the next
+  fifteen minutes, one chip per time-and-country (two German PMIs at 08:30 collapse to one). The
+  band's minutes run on the board's own axis (`e.s`, `e.f` = minutes from 08:00) and follow the EST
+  toggle through `slotTime()`. Opened from `file://` the fetch is refused; then there are no bands
+  and the chips say the calendar is unavailable rather than nothing. The feed is re-read every 30
+  minutes. The node stub in `tools/board_stats.js` has no `NewsFeed`, so the kick-off is guarded.
+- `favicon.svg` is the board's own: a dark tile, an amber ring, a white hour hand and an orange
+  minute hand that is the trend line. Both pages link it.
 
 ---
 
@@ -520,7 +536,7 @@ degenerates, which produced wrong false-mark counts here once.
 
 ## 9. `brief.html` — news spikes for the week
 
-A second static page, independent of `index.html` apart from one header link. It draws the
+A second static page, sharing `news.js` with `index.html` and linked from its header. It draws the
 Mon–Fri news calendar as blackout windows on a UK-time axis, one row per day, for the same 22
 instruments as the board, with a next-blackout countdown, today's windows, a compact line per
 other day, and a list of high-impact times for the ProRealTime News Blackout indicator (12 slots).
@@ -536,6 +552,13 @@ and is replaced on the first Action run.
 `Intl` to `Europe/London`, so BST/GMT and the weeks when UK and US clocks are out of step are
 handled; nothing is stored in UK time.
 
+**Shared module (added 20 Sep 2026).** The feed logic — the currency-to-instrument map `CCY`, the
+window rules `windowFor`, `instrumentsFor` (in the caller's board order), UK-time conversion,
+the recurring USDA slots and `fetchWeek()` — lives in `news.js` as `window.NewsFeed`, loaded by
+both pages before their inline script, so the two cannot drift on what an event hits or when its
+window runs. brief.html aliases what it uses at the top of its script; index.html uses it for
+the bands, chips and mini brief. Edit a rule once, there.
+
 **Rules the page applies (constants in the script):**
 
 | Thing | Rule |
@@ -546,11 +569,23 @@ handled; nothing is stored in UK time.
 | Week shown | the UK Mon–Fri containing today; at weekends, the week the feed covers, or the coming week when nothing is loaded |
 | Holidays | feed items with impact `Holiday` print as a row note, not a bar |
 
-**The briefing panel.** "This morning's brief" sits at the top of the page and is shown whenever
-the calendar has loaded or failed. Its paragraph is assembled client-side by `renderBrief` from the
-focus day's data (no model call); notes from `data/brief.json` (`{date, headline, sections:[{title,
-items:[…]}]}`) render beneath it only when `date` is today in UK time. Nothing writes that file
-automatically. The file is public on GitHub Pages like the rest of the repo.
+**The briefing panel.** "The brief" (the heading was "This morning's brief" until the voice made it
+an evening and weekend page too) sits at the top of the page and is shown whenever
+the calendar has loaded or failed. It is assembled client-side by `renderBrief` from the focus
+day's data (no model call) and, since 20 Sep 2026, is **sectioned**: an intro paragraph, then
+**High impact**, **Medium impact** and **Low impact**, then the signoff. Each of the first two
+sections opens with a one-line intro chosen by how many events it holds (none / one / several),
+then one block per event — release time, country and title, the blackout window, the data the
+list below also carries (instruments hit, forecast, previous, the USDA caveat), and one remark in
+the voice chosen by the event's **kind** (rate decision, speech, scheduled data, recurring USDA
+slot) and **state** (upcoming, live, past); remarks are seeded by the date and the event's minute
+so neighbours differ. A section with five or more events, or spanning three sessions, is split
+into **Overnight** (before 07:00), **London morning**, **Afternoon** (from 12:00) and **Evening**
+(from 17:00). Low impact is one summary line listing time and title. The old count line ("2
+high-impact, 3 medium-impact") is gone; an orientation sentence (front-loaded, back-loaded, spread,
+a single window, empty) replaces it. Strings live under `VOICE.brief`. Notes from `data/brief.json`
+(`{date, headline, sections:[{title, items:[…]}]}`) render beneath it only when `date` is today in
+UK time; nothing writes that file automatically, and it is public on GitHub Pages like the rest.
 
 **Voice (added 20 Sep 2026).** Every string a person reads that is not pure data lives in the
 `VOICE` object at the top of the script, in a courteous, dry, understated register. The rules,
@@ -566,12 +601,12 @@ which also govern any new string:
   above it runs past two lines. Buckets by minutes to the next window start: 0–2, 2–15, 15–60,
   60–240, 240–1440, 1440+. A window starting within 15 minutes of the current one's end replaces
   the aside with "Then {event} at {time}."; two live windows replace it with the latest end.
-- The briefing is greeting; count (or nothing-scheduled, or no-selection); state line (live, next,
-  or all done); at most one further line by priority — seed caveat, stale feed (>24 h on a
-  weekday), a run of 3+ windows each starting within 20 minutes of the last one's end, overnight
-  windows already over, holidays, the unverified wheat slot, 1–6 quiet instruments, Friday —
-  then signoff. Five lines at most. Greetings: 05:00 morning, 12:00 afternoon, 18:00 evening,
-  22:00 night; weekends use their own set and name the focus day.
+- The briefing's intro is greeting; orientation (or nothing-scheduled, or no-selection); state
+  line (live, next, or all done); at most one further line by priority — seed caveat, stale feed
+  (>24 h on a weekday), a run of 3+ windows each starting within 20 minutes of the last one's end,
+  overnight windows already over, holidays, the unverified wheat slot, 1–6 quiet instruments,
+  Friday. Then the three sections, then the signoff. Greetings: 05:00 morning, 12:00 afternoon,
+  18:00 evening, 22:00 night; weekends use their own set and name the focus day.
 - The owner is addressed by name, once, in the greeting that opens the briefing: `NAME` at the
   top of the script, `{name}` in every greeting variant, and nowhere else, so it reads as an
   address rather than a tic. It replaced a sparing "sir" on 20 Sep 2026. Change `NAME` in both
@@ -584,6 +619,37 @@ which also govern any new string:
   release split into rows, not a successor. Two live windows show a plain "Blackout in effect"
   for the one that ends last; a successor that overlaps says "joins at", one that follows says
   "Then"; the briefing's live line runs to the end of the whole chained stretch.
+- **Second deck (20 Sep 2026, board mini brief, news chips, sectioned briefing).** A second
+  judged panel (three drafts, three lenses, one synthesis; the desk-pragmatic draft won) produced
+  `VOICE.brief` in brief.html and `MV` in index.html. Its rules, as implemented: variant offsets
+  11 orientation, 12 high intro, 13 medium intro, 14 low, 15 no-events and all-done, 16 + index
+  per-event remark, 17 mini trend, 18 mini turn, 19 mini news, 20 outside/weekend/preview, all on
+  the YYYYMMDD seed (the board's `byDay` uses the same seed via `NewsFeed.ukParts`). Name lists in
+  the mini brief are cut to three names plus "and N more" (two each when both now and next print),
+  and only the trend variants that admit a partial list ("among them", "for a start") are
+  eligible when the cut happens; `{profile}` is "all-days" or "Tuesdays", never with an article.
+  Remarks never open on a title or a digit. A remark carrying `{forecast}` is only eligible when
+  the feed supplied it (`pickSafe`). Section intros have `doneOne`/`doneMany` variants (mine, not
+  the deck's) for a section whose every window has passed today. The banner keeps only the
+  Preview-time instruction at weekends and out of hours, because the mini brief already says
+  which it is; `afterGreeting()` strips a leading "It is the weekend" from any follow-on
+  sentence so the phrase can never appear twice on one screen.
+- **Second verification pass (20 Sep 2026)**, three lenses over both pages, and what it changed: a
+  feed that does not reach today (a weekday before the Action has turned it over) is a `stale`
+  state on the board — chips say "calendar older than today", the mini brief says the absence of
+  bands is unknown — rather than a confident nothing; band tooltips are built once and stay in UK
+  time (`ukTime`) whatever the EST toggle shows elsewhere, so their "UK" is always true; a preview
+  set to an out-of-hours time is a preview (banner, frozen countdown, `previewOutside` line), not a
+  closed board; when two news windows are live the sentence names the one ending last, as brief.html
+  does; "News next" reads "nothing new" when the current window simply carries over; chips carry
+  the full title on hover and `shortName` cuts at a word boundary; on brief.html a section on a past
+  focus day uses its done intros, `allDone` speaks only of high and medium windows, the "spread"
+  orientation claims only the noon split it measures, holiday and quiet notes are not offered for a
+  past day, the `joins` aside and every section intro open on a word, greetings no longer promise a
+  remainder the next sentence denies, and the event blocks carry spaces between their spans for
+  copy and screen readers. Left as designed: the header chip rows are per fifteen-minute slot like
+  the trend and turn rows beside them, and a USDA slot that falls in wheat's closed 20:45 cell is
+  still drawn, because the release is real even where the board does not trade.
 - Deviations from the panel's deck, on purpose: the aside is its own `#nextRem` span rather than
   text appended after " — "; the "when {event} arrives" variant is skipped for speech titles;
   a past focus day (weekend after the shown week) gets its own past-tense greeting and count
@@ -611,6 +677,10 @@ carried the feed's provenance, the window rules and the currency-to-instrument m
 specification now lives only in the table above. The page still declares the recurring USDA slot
 unverified and the seed calendar provisional in the lines it draws, so the two claims that most
 need a caveat still carry one.
+
+**Verify the board's news layer** the same way: a faked clock, `await loadNews(); tick();`, then
+count `.news i` per row, read `#newsnowlist`, `#newsnextlist` and `#mini`, and confirm a composite
+row carries its constituents' bands.
 
 **Verify.** Serve the folder over HTTP (fetch does not work from `file://`), then check with a
 browser in a non-UK timezone and a faked clock that a known event lands at its UK time and that

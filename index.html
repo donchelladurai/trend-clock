@@ -47,6 +47,12 @@
   /* Sits directly under the mini brief, so it shares its measure and centring. */
   .banner{max-width:min(1100px, calc(100% - var(--pad-x) * 2));margin:10px auto 0;padding:8px 12px;border:1px solid #5a4a20;background:#241d0f;color:var(--amber);border-radius:6px;display:none}
   .banner.show{display:block}
+  /* The other two pages, as buttons rather than a line of small text. */
+  .navlinks{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .navlink{display:inline-flex;align-items:center;padding:6px 12px;border:1px solid #6a5420;border-radius:6px;
+           background:#2b2616;color:var(--amber);font-weight:600;font-size:13px;text-decoration:none;white-space:nowrap}
+  .navlink:hover{background:#3b3420;color:#fff}
+  .navlink:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   main{padding:8px var(--pad-x) 40px}
   section{position:relative;margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px 12px;overflow-x:auto}
   section h2{margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);position:sticky;left:0}
@@ -81,8 +87,9 @@
         box-shadow:0 6px 22px rgba(0,0,0,.5);
         color:var(--text);font-size:clamp(15px,.72vw,23px);line-height:1.6}
   /* Labelled like the strips below it, so it reads as one of the board's sections. */
-  .mini .k{display:block;color:var(--amber);font-size:clamp(10px,.28vw,14px);text-transform:uppercase;
-           letter-spacing:1.1px;font-weight:700;margin-bottom:6px}
+  /* The heading is the valet announcing the brief — a sentence, not a label — so it is set as one. */
+  .mini .k{display:block;color:var(--amber);font-size:clamp(15px,.72vw,23px);font-weight:700;
+           line-height:1.35;margin-bottom:7px}
   .mini b{color:var(--on);font-weight:700}
   .heat,.bars{display:grid;grid-template-columns:repeat(52,1fr);gap:1px}
   .heat div{height:max(22px, calc(var(--pv, 9px) * 1.25));border-radius:1px;position:relative}
@@ -197,7 +204,7 @@
     <div class="clock mono"><span id="clock">--:--:--</span><small id="zonelab">UK time</small></div>
     <div class="win mono">window <b id="winlab">—</b><span class="cd" id="cd"></span></div>
     <div class="win" id="modelab" style="margin-top:2px"></div>
-    <div class="win" style="margin-top:4px"><a href="brief.html" style="color:var(--amber)">News spikes this week</a></div>
+    <div class="navlinks"><a class="navlink" href="brief.html">News blackouts</a><a class="navlink" href="swing.html">Overnight swing</a></div>
   </div>
   <div class="cdbox">
     <span class="k">Next window in</span>
@@ -229,7 +236,7 @@
     </div>
   </div>
 </header>
-<div class="mini" id="mini"><span class="k">Brief</span><span id="minitext"></span></div>
+<div class="mini" id="mini"><span class="k" id="minihead"></span><span id="minitext"></span></div>
 <div class="banner" id="banner"></div>
 <main id="main"></main>
 <div class="readout mono" id="readout"></div>
@@ -806,7 +813,10 @@ function drawNews(){
 const newsIn = k => NEWS.today.filter(e => e.imp !== "L" && e.s < (k+1)*15 && e.f > k*15);
 // Two releases at the same minute from the same country shorten to the same chip (both German PMIs), so show one.
 const dedupe = list => list.filter((e, i) => list.findIndex(x => x.min === e.min && x.country === e.country && x.short === e.short) === i);
-const setMini = s => { const el = $("minitext"); if (el.textContent !== s) el.textContent = s; };
+// The heading carries the salutation and the offer of the brief; the body carries the brief.
+const setMini = (head, body) => { const h = $("minihead"), b = $("minitext");
+  if (h.textContent !== head) h.textContent = head;
+  if (b.textContent !== body) b.textContent = body; };
 // Date-seeded like brief.html's pick(), so the line holds still across ticks and differs tomorrow.
 const seedDay = () => typeof NewsFeed !== "undefined" ? +NewsFeed.ukParts(new Date()).ymd.replace(/-/g, "") : 0;
 const byDay = (arr, offset) => arr[(seedDay() + offset) % arr.length];
@@ -867,7 +877,8 @@ function tick(){
     document.querySelectorAll(".row").forEach(r=>{ r.classList.remove("on","off","turn"); r.querySelector(".pct").textContent=""; });
     $("trendlist").innerHTML='<span class="chip none">—</span>'; $("turnnowlist").innerHTML='<span class="chip none">—</span>'; $("turnnextlist").innerHTML='<span class="chip none">—</span>';
     $("newsnowlist").innerHTML='<span class="chip none">—</span>'; $("newsnextlist").innerHTML='<span class="chip none">—</span>';
-    { const g = greeting(real, wdIdx); setMini(g + " " + cap(afterGreeting(g, fill(byDay(pv ? MV.mini.previewOutside : weekend ? MV.mini.weekend : MV.mini.outside, 20), {name: NAME, opens: slotLabel(0), time: pvTime})))); }
+    // Off hours there is no brief to offer, so the heading is the salutation alone.
+    { const g = greeting(real, wdIdx); setMini(g, cap(afterGreeting(g, fill(byDay(pv ? MV.mini.previewOutside : weekend ? MV.mini.weekend : MV.mini.outside, 20), {name: NAME, opens: slotLabel(0), time: pvTime})))); }
     return;
   }
   banner.classList.remove("show");
@@ -925,7 +936,7 @@ function tick(){
     const trendNames = names(trend.slice().sort((a,b)=>b[1]-a[1])), cut = trendNames.length > 3;
     const both = turnNow.length && turnNext.length;
     const v = { name: NAME, profile: mode==="all" ? "all-days" : WDL[+mode], window: `${slotLabel(k)}–${slotLabel(k+1)}`, n: trend.length, list: capList(trendNames, 3), thr: thrPc, now: capList(names(turnNow), both ? 2 : 3), next: capList(names(turnNext), both ? 2 : 3) };
-    const parts = [greeting(real, wdIdx), presenting(real, wdIdx)];
+    const parts = [];
     if (preview) parts.push(fill(byDay(M.preview, 20), { time: `${pad(preview.h)}:${pad(preview.m)}` }));
     // A complete list takes the colon form; a truncated one needs a variant that admits it is partial ("among them", "for a start").
     parts.push(fill(byDay(trend.length === 0 ? M.trend.none : trend.length === 1 ? M.trend.one : cut ? M.trend.many.slice(1) : [M.trend.many[0]], 17), v));
@@ -939,7 +950,7 @@ function tick(){
         : next ? fill(byDay(M.news.next, 19), { event: evName(next), time: slotTime(next.s), instruments: capList(next.ins, 3) })
         : fill(byDay(M.news.none, 19), v));
     }
-    setMini(parts.map(cap).join(" "));
+    setMini(greeting(real, wdIdx) + " " + presenting(real, wdIdx), parts.map(cap).join(" "));
   }
   document.querySelectorAll("section").forEach(sec=>{
     sec.classList.add("live");

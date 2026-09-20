@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overnight swing windows — 00:00–08:00 UK</title>
+<link rel="icon" href="favicon.svg">
+<style>
+  :root{--bg:#0e131a;--panel:#141b24;--line:#26313f;--text:#e6ecf3;--muted:#8b97a7;--amber:#ffcf5c;
+        --spike:#ff6a2a;--spike-cap:#d99a5c;--spike-dim:#6a4630;--on:#ffffff;--label-w:150px;--pad-x:22px;--wrap:1500px}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",Inter,system-ui,-apple-system,sans-serif}
+  a{color:var(--amber)}
+  .mono{font-family:"JetBrains Mono","SF Mono",Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  .hwrap{display:flex;flex-wrap:wrap;align-items:stretch;gap:14px 28px;padding:14px var(--pad-x) 12px;max-width:var(--wrap);margin:0 auto}
+  .clock{font-size:40px;font-weight:700;line-height:1;align-self:center}
+  .clock small{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:6px}
+  .lists{display:flex;flex-direction:column;justify-content:center;gap:7px;flex:1;min-width:min(330px,100%)}
+  .lists .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.7px;margin-right:10px;min-width:104px;display:inline-block}
+  .chip{display:inline-flex;align-items:baseline;gap:.38em;padding:.24em .55em;border-radius:.24em;background:#1e2a3a;color:var(--on);font-weight:600;margin:.12em .34em .12em 0;font-size:13px}
+  .chip b{font-family:"JetBrains Mono","SF Mono",Consolas,monospace;color:var(--amber)}
+  .chip.v{background:#152a26;color:#bdf0e0;border:1px solid #2c5f52}
+  .chip.v b{color:#7fe3c4}
+  .chip.t{background:#3a2114;color:#ffb38a;border:1px solid #6e3a1f}
+  .chip.t b{color:#ffb38a}
+  .chip.t.soft{background:transparent;color:#c69a80}
+  .chip.none{background:transparent;color:var(--muted);font-weight:400;padding-left:0}
+  .back{display:inline-flex;align-items:center;gap:.45em;align-self:center;padding:8px 15px;border:1px solid #6a5420;border-radius:6px;
+        background:#2b2616;color:var(--amber);font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+  .back:hover{background:#3b3420;color:#fff}
+  .back:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .navs{display:flex;gap:8px;align-self:center;flex-wrap:wrap}
+  /* The brief panel, the same one the board carries. */
+  .mini{max-width:min(1100px, calc(100% - var(--pad-x) * 2));margin:16px auto 2px;padding:14px 20px 15px;
+        background-color:#17212d;
+        background-image:linear-gradient(90deg,rgba(255,207,92,.10),rgba(255,207,92,.03) 45%,rgba(255,207,92,.015));
+        border:1px solid #3c4657;border-left:4px solid var(--amber);border-radius:8px;
+        box-shadow:0 6px 22px rgba(0,0,0,.5);color:var(--text);font-size:clamp(15px,.72vw,23px);line-height:1.6}
+  .mini .k{display:block;color:var(--amber);font-size:clamp(15px,.72vw,23px);font-weight:700;line-height:1.35;margin-bottom:7px}
+  main{padding:10px var(--pad-x) 40px;max-width:var(--wrap);margin:0 auto}
+  section{position:relative;margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px 14px;overflow-x:auto}
+  section h2{margin:0 0 2px;font-size:13px;font-weight:700;letter-spacing:.6px;color:var(--text)}
+  section h2 span{font-weight:500;color:var(--muted);font-size:12px;letter-spacing:0;margin-left:8px}
+  .ticks{display:grid;margin-left:var(--label-w);gap:1px;margin-bottom:4px}
+  .ticks span{font-size:10px;color:#b8c3d1;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden}
+  .grp{margin:12px 0 2px var(--label-w);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .row{display:grid;grid-template-columns:var(--label-w) 1fr;align-items:center;margin-top:4px}
+  .row .lab{padding-right:10px;text-align:right;font-weight:600;font-size:13px;color:#c9d2dd;line-height:1.15}
+  .row .lab .sub{display:block;font-size:10px;color:var(--muted);font-weight:500}
+  .row:nth-child(odd){background:rgba(255,255,255,.04);box-shadow:0 0 0 4px rgba(255,255,255,.04);border-radius:2px}
+  .strips{position:relative}
+  .heat,.bars{display:grid;gap:1px}
+  .heat div{height:26px;border-radius:1px;position:relative;display:flex;align-items:center;justify-content:center;
+            font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:11px;font-weight:700;
+            color:#f2e6d8;text-shadow:0 2px 4px rgba(0,0,0,1),0 0 5px rgba(0,0,0,.95)}
+  .heat div.thin::after{content:"";position:absolute;inset:0;border-radius:1px;background:repeating-linear-gradient(45deg,transparent 0 2px,rgba(14,19,26,.6) 2px 4px)}
+  .heat div.closed{background:#1b2027}
+  .bars{margin-top:2px;height:13px;align-items:end}
+  .bars div{height:100%;display:flex;align-items:flex-end}
+  .bars div i{display:block;width:100%;background:var(--spike-dim);border-radius:1px 1px 0 0}
+  .bars div.s i{background:var(--spike)}
+  .bars div.m i{background:linear-gradient(var(--spike-cap) 0 3px, var(--spike-dim) 3px)}
+  .now{position:absolute;top:0;bottom:0;background:rgba(255,207,92,.13);border-left:2px solid var(--amber);border-right:2px solid var(--amber);pointer-events:none;display:none;z-index:2}
+  section.live .now{display:block}
+  .legend{color:var(--muted);font-size:12px;margin:8px 0 0}
+  .legend i{display:inline-block;width:10px;height:10px;margin:0 4px 0 14px;vertical-align:-1px;border-radius:2px}
+  .legend i:first-child{margin-left:0}
+  .note{color:var(--muted);font-size:12px;max-width:1100px;margin:16px auto 0;padding:0 2px}
+  .backrow{margin:0;padding:18px 0 4px;text-align:center}
+  @media (max-width:900px){
+    :root{--label-w:104px;--pad-x:13px}
+    header{position:static}
+    .clock{font-size:30px}
+    .heat div{height:22px;font-size:10px}
+  }
+</style>
+</head>
+<body>
+<header>
+<div class="hwrap">
+  <div class="clock mono" id="clock">--:--<small id="date">UK time</small></div>
+  <div class="lists">
+    <div><span class="k">Trending now</span><span id="trendlist"></span></div>
+    <div><span class="k">Most movement</span><span id="vollist"></span></div>
+    <div><span class="k">Turn spike now</span><span id="turnlist"></span></div>
+  </div>
+  <div class="navs">
+    <a class="back" href="./">← Trend Clock</a>
+    <a class="back" href="brief.html">News blackouts</a>
+  </div>
+</div>
+</header>
+<div class="mini" id="mini"><span class="k" id="minihead"></span><span id="minitext"></span></div>
+<main id="main"></main>
+<p class="note" id="note"></p>
+<p class="backrow"><a class="back" href="./">← Back to the Trend Clock</a></p>
+<script>
+// The overnight page: 00:00–08:00 UK on the 4-hour, 1-hour and 30-minute charts, for swing
+// entries taken before London opens. Everything on it is precomputed by tools/gen_swing.py into
+// data/swing.json — the trending share, the movement figure and the turn tiers alike — because
+// this page carries no statistics layer of its own. See CLAUDE.md §10.
+const TZ = 'Europe/London';
+const NAME = 'Don';
+const GROUPS = ['Indices', 'FX — USD pairs', 'FX — EUR crosses', 'FX — other crosses', 'Commodities'];
+const TF = [
+  {key: '4h', mins: 240, slots: 2, title: '4-hour', note: 'two bars cover the session'},
+  {key: '1h', mins: 60, slots: 8, title: '1-hour', note: 'eight bars'},
+  {key: '30m', mins: 30, slots: 16, title: '30-minute', note: 'sixteen bars'}
+];
+const MIN_N = 30;
+// Salutation, then the valet offering the brief, exactly as the other two pages do it.
+const GREET = {morning: ['Good morning, {name}.', 'Morning, {name}.'],
+               afternoon: ['Good afternoon, {name}.', 'Afternoon, {name}.'],
+               evening: ['Good evening, {name}.', 'Evening, {name}.']};
+const PRESENT = {
+  inSession: ['I have your overnight brief ready.', 'Your overnight brief, ready when you are.'],
+  ahead: ['I have the overnight session ready for you.', 'The overnight session, ready when you are.']
+};
+const V = {
+  live: ['It is {slot} UK, so the {tf} bar now forming is the one below.',
+         'The session is under way: {slot} UK, and the {tf} bar forming now is the one marked.'],
+  ahead: ['The session opens at midnight UK, {hours} from now.',
+          'Midnight UK is {hours} away; what follows is how those eight hours usually behave.'],
+  after: ['The overnight session is behind us for today; what follows is how it usually behaves.',
+          'The session closed at 08:00; below is the record of how it usually runs.'],
+  trend: {none: ['Nothing is trending better than an ordinary overnight bar in this slot.'],
+          some: ['Trending best in this slot: {list}.'],
+          ahead: ['Over the session as a whole, {list} trend most reliably.']},
+  vol: {some: ['Most movement in this slot: {list}, at {top} of a day’s range in half an hour.'],
+        ahead: ['Most movement over the session: {list}.']},
+  turn: {none: ['No turn spike is marked in this slot.'],
+         some: ['Turn spikes marked here on {list}.'],
+         ahead: ['Turns cluster most on {list}.']},
+  failed: ['The overnight data did not load, so I can tell you nothing about it.'],
+  thin: ['Where a cell is hatched the instrument barely trades then, so read it as absent rather than calm.']
+};
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => v[k] != null ? String(v[k]) : m);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const hm = m => pad(Math.floor(((m % 1440) + 1440) % 1440 / 60)) + ':' + pad(m % 60);
+const ukParts = () => {
+  const p = {};
+  new Intl.DateTimeFormat('en-GB', {timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'})
+    .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+  return {min: (+p.hour) * 60 + (+p.minute), sec: +p.second, hm: `${p.hour}:${p.minute}`, wd: p.weekday};
+};
+// The board's blue scale, so a cell means the same thing on both pages.
+function heatColor(v){
+  const a = [26,36,49], b = [39,89,142], c = [98,176,255];
+  const mix = (p, q, t) => p.map((x, i) => Math.round(x + (q[i] - x) * t));
+  return `rgb(${(v < 0.5 ? mix(a, b, v / 0.5) : mix(b, c, (v - 0.5) / 0.5)).join(',')})`;
+}
+let DATA = null, state = 'pending';
+
+function slotLabel(tf, k){ return hm(k * tf.mins) + '–' + hm((k + 1) * tf.mins); }
+
+function build(){
+  const main = $('main');
+  main.textContent = '';
+  for (const tf of TF){
+    const sec = document.createElement('section');
+    sec.dataset.tf = tf.key;
+    const h2 = document.createElement('h2');
+    h2.textContent = tf.title + ' chart';
+    const sp = document.createElement('span');
+    sp.textContent = `${tf.note} · 00:00–08:00 UK`;
+    h2.appendChild(sp);
+    sec.appendChild(h2);
+    const ticks = document.createElement('div');
+    ticks.className = 'ticks';
+    ticks.style.gridTemplateColumns = `repeat(${tf.slots},1fr)`;
+    for (let k = 0; k < tf.slots; k++){
+      const s = document.createElement('span');
+      s.textContent = slotLabel(tf, k);
+      ticks.appendChild(s);
+    }
+    sec.appendChild(ticks);
+    const body = document.createElement('div');
+    body.style.position = 'relative';
+    sec.appendChild(body);
+    // Overnight trending shares sit in a narrow band — roughly 30% to 70% — so the board's 0-to-1
+    // colour scale would paint the whole section one shade of blue. Stretch it to this chart's own
+    // 2nd-to-98th percentile instead, and say in the legend what the two ends are worth.
+    const vals = [];
+    for (const r of DATA.rows){
+      const d = r.tf[tf.key];
+      for (let k = 0; k < tf.slots; k++) if (d.n[k] >= MIN_N) vals.push(d.trend[k]);
+    }
+    vals.sort((a, b) => a - b);
+    const lo = vals.length ? vals[Math.floor(vals.length * 0.02)] : 0;
+    const hi = vals.length ? vals[Math.floor(vals.length * 0.98)] : 1;
+    const norm = v => Math.max(0, Math.min(1, (v - lo) / ((hi - lo) || 1)));
+    for (const g of GROUPS){
+      const rows = DATA.rows.filter(r => r.group === g);
+      if (!rows.length) continue;
+      const gl = document.createElement('div');
+      gl.className = 'grp';
+      gl.textContent = g;
+      body.appendChild(gl);
+      for (const r of rows){
+        const d = r.tf[tf.key];
+        const row = document.createElement('div');
+        row.className = 'row';
+        const lab = document.createElement('div');
+        lab.className = 'lab';
+        lab.textContent = r.label;
+        const sub = document.createElement('span');
+        sub.className = 'sub';
+        sub.textContent = d.days + ' nights';
+        lab.appendChild(sub);
+        row.appendChild(lab);
+        const strips = document.createElement('div');
+        strips.className = 'strips';
+        const heat = document.createElement('div');
+        heat.className = 'heat';
+        heat.style.gridTemplateColumns = `repeat(${tf.slots},1fr)`;
+        const bars = document.createElement('div');
+        bars.className = 'bars';
+        bars.style.gridTemplateColumns = `repeat(${tf.slots},1fr)`;
+        for (let k = 0; k < tf.slots; k++){
+          const c = document.createElement('div');
+          // No nights at all means the instrument does not trade then — grey, as the board marks
+          // a closed window — rather than a dark cell that could be read as calm.
+          const off = d.n[k] === 0;
+          const thin = !off && (d.n[k] < MIN_N || d.n[k] < d.days * 0.5);
+          if (off){
+            c.className = 'closed';
+            c.title = `${r.label}  ${slotLabel(tf, k)} UK\nnot trading in this slot on this feed`;
+            heat.appendChild(c);
+            const bo = document.createElement('div');
+            bo.appendChild(document.createElement('i'));
+            bars.appendChild(bo);
+            continue;
+          }
+          c.style.background = heatColor(norm(d.trend[k]));
+          if (thin) c.classList.add('thin');
+          c.textContent = Math.round(d.vol[k] * 100) + '%';
+          // Data only, as on the board: what happened, how often, and how sure.
+          c.title = `${r.label}  ${slotLabel(tf, k)} UK · ${tf.title} bar\n`
+            + `trending on ${Math.round(d.trend[k] * 100)}% of ${d.n[k]} nights\n`
+            + `typical range ${(d.vol[k] * 100).toFixed(1)}% of a day's range, busy night ${(d.volHi[k] * 100).toFixed(1)}%\n`
+            + `${d.turns[k]} turn${d.turns[k] === 1 ? '' : 's'} here, ${d.turnRatio[k].toFixed(1)}× this row's average`
+            + (d.tier[k] === 2 ? `\np ${d.p[k] < 0.001 ? '< 0.001' : '= ' + d.p[k].toFixed(3)} — clears this row's 10% false-discovery cut`
+              : d.tier[k] === 1 ? `\np ${d.p[k] < 0.001 ? '< 0.001' : '= ' + d.p[k].toFixed(3)} — clears the looser 40% cut`
+              : ``)
+            + (thin ? `\nthin: the instrument barely trades in this slot` : ``);
+          heat.appendChild(c);
+          const b = document.createElement('div');
+          const i = document.createElement('i');
+          i.style.height = Math.round(Math.min(d.turnRatio[k] / 1.8, 1) * 100) + '%';
+          if (d.tier[k] === 2) b.className = 's'; else if (d.tier[k] === 1) b.className = 'm';
+          b.appendChild(i);
+          bars.appendChild(b);
+        }
+        strips.appendChild(heat);
+        strips.appendChild(bars);
+        row.appendChild(strips);
+        body.appendChild(row);
+      }
+    }
+    const now = document.createElement('div');
+    now.className = 'now';
+    body.appendChild(now);
+    const leg = document.createElement('p');
+    leg.className = 'legend';
+    leg.innerHTML = '<i style="background:' + heatColor(0) + '"></i>Trending ' + Math.round(lo * 100) + '% of nights or fewer'
+      + '<i style="background:' + heatColor(1) + '"></i>' + Math.round(hi * 100) + '% or more'
+      + '<i style="background:var(--spike)"></i>Turn spike'
+      + '<i style="background:var(--spike-dim)"></i>Ordinary turns'
+      + '<i style="background:#1b2027"></i>Not trading'
+      + ' · the figure on each cell is the share of a day’s range that bar typically covers.';
+    sec.appendChild(leg);
+    main.appendChild(sec);
+  }
+}
+
+// Which slot of each timeframe is live, and the column marker over it.
+function markNow(){
+  const u = ukParts(), inSession = u.min < 480;
+  document.querySelectorAll('section').forEach(sec => {
+    const tf = TF.find(t => t.key === sec.dataset.tf);
+    const body = sec.querySelector('div[style*="position"]'), now = sec.querySelector('.now');
+    const strip = sec.querySelector('.strips');
+    if (!strip || !body || !now) return;
+    sec.classList.toggle('live', inSession);
+    if (!inSession) return;
+    const k = Math.floor(u.min / tf.mins);
+    const b = body.getBoundingClientRect(), s = strip.getBoundingClientRect(), w = s.width / tf.slots;
+    now.style.left = (s.left - b.left + k * w) + 'px';
+    now.style.width = w + 'px';
+  });
+}
+
+// Top few instruments by a measure, for the header chips and the brief. Not named top(): the
+// browser already owns that identifier on the global object, and a clash there kills the script.
+function topBy(tfKey, k, field, n){
+  return DATA.rows
+    .map(r => ({label: r.label, v: r.tf[tfKey][field][k], ok: r.tf[tfKey].n[k] >= MIN_N}))
+    .filter(x => x.ok)
+    .sort((a, b) => b.v - a.v)
+    .slice(0, n);
+}
+function turnRows(tfKey, k){
+  return DATA.rows.filter(r => r.tf[tfKey].tier[k] > 0 && r.tf[tfKey].n[k] >= MIN_N)
+    .map(r => ({label: r.label, tier: r.tf[tfKey].tier[k], v: r.tf[tfKey].turnRatio[k]}))
+    .sort((a, b) => b.tier - a.tier || b.v - a.v);
+}
+const chips = (list, cls, empty, fmt) => list.length
+  ? list.map(x => `<span class="chip ${cls}${x.tier === 1 ? ' soft' : ''}">${x.label}<b>${fmt(x)}</b></span>`).join('')
+  : `<span class="chip none">${empty}</span>`;
+
+function render(){
+  const u = ukParts();
+  $('clock').firstChild.textContent = u.hm;
+  $('date').textContent = new Intl.DateTimeFormat('en-GB', {timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long'}).format(new Date()) + ' · UK time';
+  if (state !== 'ok'){
+    $('minihead').textContent = greeting(u);
+    $('minitext').textContent = V.failed[0];
+    return;
+  }
+  const inSession = u.min < 480;
+  const k30 = Math.floor(u.min / 30);
+  // The chips read the 30-minute chart, the finest of the three.
+  if (inSession){
+    const tr = topBy('30m', k30, 'trend', 4).filter(x => x.v > 0);
+    const vo = topBy('30m', k30, 'vol', 4);
+    $('trendlist').innerHTML = chips(tr, '', 'none', x => Math.round(x.v * 100) + '%');
+    $('vollist').innerHTML = chips(vo, 'v', 'none', x => (x.v * 100).toFixed(1) + '%');
+    // A two-year sample detects small but real differences, so a slot can flag on most rows at
+    // once; the chips take the strongest few rather than printing the whole board back.
+    $('turnlist').innerHTML = chips(turnRows('30m', k30).slice(0, 5), 't', 'none', x => x.v.toFixed(1) + '×');
+  } else {
+    const idle = '<span class="chip none">session runs 00:00–08:00 UK</span>';
+    $('trendlist').innerHTML = idle; $('vollist').innerHTML = idle; $('turnlist').innerHTML = idle;
+  }
+  markNow();
+  renderBrief(u, inSession, k30);
+}
+
+function greeting(u){
+  const set = u.min < 720 ? GREET.morning : u.min < 1080 ? GREET.afternoon : GREET.evening;
+  return set[seed() % set.length].replace('{name}', NAME);
+}
+// Date-seeded like the other two pages, so the wording holds all day and differs tomorrow.
+function seed(){
+  const p = {};
+  new Intl.DateTimeFormat('en-GB', {timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit'})
+    .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+  return +(p.year + p.month + p.day);
+}
+const byDay = (arr, off) => arr[(seed() + off) % arr.length];
+const names = list => list.map(x => x.label).join(', ');
+
+function renderBrief(u, inSession, k30){
+  const present = byDay(inSession ? PRESENT.inSession : PRESENT.ahead, 1);
+  $('minihead').textContent = greeting(u) + ' ' + present;
+  const parts = [];
+  if (inSession){
+    parts.push(fill(byDay(V.live, 2), {slot: hm(k30 * 30) + '–' + hm(k30 * 30 + 30), tf: '30-minute'}));
+    const tr = topBy('30m', k30, 'trend', 3).filter(x => x.v >= 0.5);
+    parts.push(tr.length ? fill(byDay(V.trend.some, 3), {list: names(tr)}) : byDay(V.trend.none, 3));
+    const vo = topBy('30m', k30, 'vol', 3);
+    if (vo.length) parts.push(fill(byDay(V.vol.some, 4), {list: names(vo), top: (vo[0].v * 100).toFixed(1) + '%'}));
+    const tu = turnRows('30m', k30);
+    parts.push(tu.length ? fill(byDay(V.turn.some, 5), {list: names(tu.slice(0, 3))}) : byDay(V.turn.none, 5));
+  } else {
+    const mins = 1440 - u.min;
+    // Just closed, or a long way off: both are true at different hours, so both get said.
+    parts.push(u.min < 720 ? byDay(V.after, 2)
+      : fill(byDay(V.ahead, 2), {hours: Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm'}));
+    // Averaged over the session rather than a single slot, since no slot is live. An instrument
+    // that trades only the last half hour — France 40 on this feed — would otherwise top the list
+    // on the average of its two good slots, so it has to cover half the session to be ranked.
+    const avg = f => DATA.rows.map(r => {
+      const d = r.tf['30m'], ok = d.n.filter(n => n >= MIN_N).length;
+      return {label: r.label, ok, v: ok ? d[f].reduce((a, b, i) => a + (d.n[i] >= MIN_N ? b : 0), 0) / ok : 0};
+    }).filter(x => x.ok >= 8).sort((a, b) => b.v - a.v).slice(0, 3);
+    parts.push(fill(byDay(V.trend.ahead, 3), {list: names(avg('trend'))}));
+    parts.push(fill(byDay(V.vol.ahead, 4), {list: names(avg('vol'))}));
+  }
+  $('minitext').textContent = parts.map(cap).join(' ');
+}
+
+async function load(){
+  try {
+    const r = await fetch('data/swing.json', {cache: 'no-cache'});
+    DATA = await r.json();
+    state = 'ok';
+    build();
+    const m = DATA.meta;
+    $('note').textContent = `${DATA.rows.length} instruments, ${m.from} to ${m.to}, from histdata.com 1-minute bars cut on UK local time. `
+      + `A cell is blue by how often the ${m.trendRule.maLen}-period EMA of that chart moved more than a typical overnight bar of it — `
+      + `the threshold is the median move across every instrument and slot, so the rows compare with each other rather than with an absolute. `
+      + `The figure on the cell is the share of a day's range that bar usually covers, and the orange bar beneath counts trend starts and stops, `
+      + `flagged where there are more than ordinary variation would give, at the same false-discovery rates the board uses. `
+      + `Hatched cells rest on fewer than ${MIN_N} nights or on less than half the instrument's nights: the instrument barely trades then. `
+      + (m.unavailable.length ? `${m.unavailable.join(' and ')} are on the board but not on this page; the source has no symbol for them. ` : '')
+      + `Slots are UK clock time the year round, so they follow BST.`;
+  } catch (e) {
+    state = 'failed';
+    $('note').textContent = 'data/swing.json could not be loaded. Served over http it should be there; opened straight from disk, the fetch is refused.';
+  }
+  render();
+}
+load();
+setInterval(render, 1000);
+window.addEventListener('resize', markNow);
+</script>
+</body>
+</html>

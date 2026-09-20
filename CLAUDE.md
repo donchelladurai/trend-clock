@@ -527,6 +527,8 @@ degenerates, which produced wrong false-mark counts here once.
 
 ## 8. Conventions
 
+- Three pages, cross-linked in the header: `index.html` the board (08:00–21:00, 5-minute),
+  `brief.html` the news blackouts, `swing.html` the overnight session (00:00–08:00, §10).
 - All times are **UK clock time**. Slot `k` starts at `08:00 + 15k`. The EST toggle shifts
   labels only; the data is not re-bucketed. For the ~4 weeks a year when UK and US clocks are out
   of step, US-session features land an hour — **four slots** — earlier than labelled.
@@ -711,3 +713,56 @@ and snapshots `#next .k`, `#nextBig`, `#nextSub`, `#nextRem`, `#todayH`, `#quiet
 worth covering: idle under an hour, idle a day away, live (speech, rate decision, two at once),
 nothing further (Friday after 15:00, weekend), a stale Forex Factory feed, nothing selected, and
 a failed load.
+
+---
+
+## 10. `swing.html` — the overnight session, 00:00–08:00 UK
+
+A third static page, added 20 Sep 2026 for swing entries taken before London opens. Same
+instruments and the same visual language as the board, but the axis is the eight hours the board
+does not cover, and the rows are cut on the three charts the owner reads: **4-hour** (two bars),
+**1-hour** (eight) and **30-minute** (sixteen). Each section is a grid of instruments against the
+bars of that chart, and each cell carries three things:
+
+| Encoding | Means |
+|---|---|
+| Cell colour | share of nights that bar was trending |
+| Figure on the cell | the share of a day's range that bar typically covers |
+| Bar beneath | turn spikes — trend starts and stops — bright where flagged, capped at the looser tier |
+| Grey cell | the instrument does not trade in that slot on this feed |
+| Hatched cell | fewer than 30 nights, or under half the instrument's nights |
+
+**Data.** `data/swing.json`, written by `tools/gen_swing.py` from the same histdata.com M1 zips
+`tools/fetch_histdata.js` downloads. 20 instruments, 2 Jan 2024 to 11 Sep 2026, ~690 nights each.
+The generator streams each instrument once, cuts every timeframe on UK local time so the slots
+follow BST, and computes:
+
+- **trending** — `|EMA20[t] − EMA20[t−1]| >= TH × the 14-day ATR of UK calendar days`, with `TH`
+  fitted per timeframe as the **median** of that quantity across every instrument and slot, so
+  "trending" reads as "busier than the median overnight bar of this chart". Fitted values land at
+  0.0375 (4h), 0.0159 (1h) and 0.0098 (30m) of a daily ATR. Carrying the board's absolute 5-minute
+  rule over with a `sqrt(minutes/15)` scaling was tried first and left every instrument between
+  10% and 18% — too strict to mean anything.
+- **movement** — the bar's range over that daily ATR, median across nights, with the 90th
+  percentile in the tooltip. Needs no calibration and is comparable across instruments.
+- **turns** — the board's three-state hysteresis (enter at 2 × TH, hold above 0.5 × TH), counted
+  per slot, with the Poisson tail and both Benjamini-Hochberg tiers **precomputed in the
+  generator**, because this page carries no statistics layer of its own. That does not reintroduce
+  the staleness hazard of §5: the tiers and the counts are written by the same run, so a refresh
+  moves them together.
+
+**Missing.** Wall Street and Chicago Wheat are on the board but not here — histdata has no symbol
+for either, and no proxy was substituted. France 40's feed carries nothing before 07:00 UK, so
+fourteen of its sixteen 30-minute slots are grey; that is the instrument, not the page.
+
+**Colour scale.** Overnight trending shares cluster between about 30% and 70%, so the board's
+0-to-1 blue ramp would paint a section one flat shade. Each section stretches the ramp to its own
+2nd-to-98th percentile and the legend states what the two ends are worth.
+
+**Refresh.** `node tools/fetch_histdata.js <symbol> 2024 2026 9 data` for anything new, then
+`python tools/gen_swing.py data data/swing.json`. Two passes over every instrument, about three
+minutes. The fitted thresholds move with the data, so the legend and the note follow by themselves.
+
+**Trap.** `top` is a read-only global in browsers; a top-level `function top()` in the page script
+throws "Identifier 'top' has already been declared" and kills the whole file before anything
+renders. The helper is `topBy()` for that reason.

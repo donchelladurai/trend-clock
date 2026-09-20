@@ -569,6 +569,11 @@ the bands, chips and mini brief. Edit a rule once, there.
 | Week shown | the UK Mon–Fri containing today; at weekends, the week the feed covers, or the coming week when nothing is loaded |
 | Holidays | feed items with impact `Holiday` print as a row note, not a bar |
 
+**Layout.** The page is a centred column: `main` and the header's `.hwrap` share `max-width:1500px`
+with automatic side margins, while `header` itself spans the window so its rule and background
+reach both edges. The way back to the board is a button (`.back`), in the header and again at the
+foot of the page, since the page is long enough that scrolling back up to a text link was a chore.
+
 **The briefing panel.** "The brief" (the heading was "This morning's brief" until the voice made it
 an evening and weekend page too) sits at the top of the page and is shown whenever
 the calendar has loaded or failed. It is assembled client-side by `renderBrief` from the focus
@@ -601,16 +606,26 @@ which also govern any new string:
   above it runs past two lines. Buckets by minutes to the next window start: 0–2, 2–15, 15–60,
   60–240, 240–1440, 1440+. A window starting within 15 minutes of the current one's end replaces
   the aside with "Then {event} at {time}."; two live windows replace it with the latest end.
-- The briefing's intro is greeting; orientation (or nothing-scheduled, or no-selection); state
-  line (live, next, or all done); at most one further line by priority — seed caveat, stale feed
-  (>24 h on a weekday), a run of 3+ windows each starting within 20 minutes of the last one's end,
-  overnight windows already over, holidays, the unverified wheat slot, 1–6 quiet instruments,
-  Friday. Then the three sections, then the signoff. Greetings: 05:00 morning, 12:00 afternoon,
-  18:00 evening, 22:00 night; weekends use their own set and name the focus day.
-- The owner is addressed by name, once, in the greeting that opens the briefing: `NAME` at the
-  top of the script, `{name}` in every greeting variant, and nowhere else, so it reads as an
-  address rather than a tic. It replaced a sparing "sir" on 20 Sep 2026. Change `NAME` in both
-  pages to rename. No exclamation marks, no naming the character, British spelling.
+- The briefing's intro is greeting; the line presenting the brief; orientation (or
+  nothing-scheduled, or no-selection); state line (live, next, or all done); at most one further
+  line by priority — seed caveat, stale feed (>24 h on a weekday), a run of 3+ windows each
+  starting within 20 minutes of the last one's end, overnight windows already over, holidays, the
+  unverified wheat slot, 1–6 quiet instruments, Friday. Then the three sections, then the signoff.
+- **The greeting is a salutation and nothing more** (20 Sep 2026, at the owner's request): the
+  hour plus the name — "Good morning, Don." — and never a clause after it. The hour alone picks
+  it, weekends included: before 12:00 morning, before 18:00 afternoon, otherwise evening, so the
+  wording is always true of the clock. `VOICE.greetings.morning|afternoon|evening` on brief.html,
+  `GREET` on index.html.
+- **Then the valet presents the brief**, which is the sentence that follows: "I have your morning
+  brief ready." `VOICE.greetings.present` (keyed `smallHours` before 05:00, then the same three
+  buckets, plus `weekend` naming the focus day and `weekendPast`) and `PRESENT` on the board.
+  There is no brief to present when the calendar failed to load, when nothing is selected, or —
+  on the board — outside 08:00–21:00 and at weekends, so the line is omitted in those states and
+  the greeting runs straight into what is wrong.
+- The owner is addressed by name **once**, in that salutation, and nowhere else: `NAME` at the top
+  of each script, `{name}` only in the greeting variants. It replaced a sparing "sir" on 20 Sep
+  2026. Change `NAME` in both pages to rename. No exclamation marks, no naming the character,
+  British spelling.
 - Unknown is never dressed as quiet: while the fetch is pending the lists say "Consulting the
   calendar…", after a failed first load they say the calendar did not load and the header says
   "unknown", and a failed refresh keeps the last calendar and says so on the freshness line.

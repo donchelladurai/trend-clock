@@ -609,15 +609,26 @@ function applyThreshold(mode, thr){
 }
 const NAME = "Don";
 const GREET = {
-  morning: ["Good morning, {name}.", "Morning, {name}. The day as the profile has it."],
-  afternoon: ["Good afternoon, {name}.", "Afternoon, {name}. What is left of the day."],
-  evening: ["Good evening, {name}.", "Evening, {name}. The tail of the session."],
-  night: ["An unsociable hour, {name}.", "Late, or early, {name}. The board does not mind which."],
-  weekend: ["It is the weekend, {name}."]
+  morning: ["Good morning, {name}.", "Morning, {name}."],
+  afternoon: ["Good afternoon, {name}.", "Afternoon, {name}."],
+  evening: ["Good evening, {name}.", "Evening, {name}."]
 };
+// The sentence that hands the brief over, between the salutation and the brief itself. Only while
+// the board is open: off hours and at weekends there is nothing to present.
+const PRESENT = {
+  smallHours: ["I have the board ready, unsociable hour notwithstanding.", "Since you are up, the board is ready."],
+  morning: ["I have your morning brief ready.", "Your morning brief, ready when you are."],
+  afternoon: ["I have your afternoon brief ready.", "Your afternoon brief, such as the day has left of it."],
+  evening: ["I have your evening brief ready.", "Your evening brief, for completeness."]
+};
+const todBucket = t => t.h < 12 ? "morning" : t.h < 18 ? "afternoon" : "evening";
 function greeting(t, wdIdx){
-  const set = wdIdx < 0 ? GREET.weekend : t.h < 5 ? GREET.night : t.h < 12 ? GREET.morning : t.h < 18 ? GREET.afternoon : t.h < 22 ? GREET.evening : GREET.night;
+  const set = GREET[todBucket(t)];
   return set[Math.max(wdIdx, 0) % set.length].replace("{name}", NAME);
+}
+function presenting(t, wdIdx){
+  const set = t.h < 5 ? PRESENT.smallHours : PRESENT[todBucket(t)];
+  return set[Math.max(wdIdx, 0) % set.length];
 }
 // ---- News windows on the board ----------------------------------------------------------------
 // Today's blackout windows from the feed brief.html reads (news.js): a band on each row the event
@@ -902,7 +913,7 @@ function tick(){
     const trendNames = names(trend.slice().sort((a,b)=>b[1]-a[1])), cut = trendNames.length > 3;
     const both = turnNow.length && turnNext.length;
     const v = { name: NAME, profile: mode==="all" ? "all-days" : WDL[+mode], window: `${slotLabel(k)}–${slotLabel(k+1)}`, n: trend.length, list: capList(trendNames, 3), thr: thrPc, now: capList(names(turnNow), both ? 2 : 3), next: capList(names(turnNext), both ? 2 : 3) };
-    const parts = [greeting(real, wdIdx)];
+    const parts = [greeting(real, wdIdx), presenting(real, wdIdx)];
     if (preview) parts.push(fill(byDay(M.preview, 20), { time: `${pad(preview.h)}:${pad(preview.m)}` }));
     // A complete list takes the colon form; a truncated one needs a variant that admits it is partial ("among them", "for a start").
     parts.push(fill(byDay(trend.length === 0 ? M.trend.none : trend.length === 1 ? M.trend.one : cut ? M.trend.many.slice(1) : [M.trend.many[0]], 17), v));

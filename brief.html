@@ -10,8 +10,17 @@
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",Inter,system-ui,-apple-system,sans-serif}
   a{color:var(--amber)}
+  /* The way back to the board: a button rather than a line of small text, in the header and again
+     at the foot, so it is to hand without scrolling back up. */
+  .back{display:inline-flex;align-items:center;gap:.45em;align-self:center;padding:8px 15px;border:1px solid #6a5420;border-radius:6px;background:#2b2616;color:var(--amber);font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+  .back:hover{background:#3b3420;color:#fff}
+  .back:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .backrow{margin:0;padding:4px 0 8px;text-align:center}
   .mono{font-family:"JetBrains Mono","SF Mono",Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}
-  header{display:flex;flex-wrap:wrap;align-items:stretch;gap:14px 28px;padding:14px var(--pad-x) 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  /* The bar spans the window so its rule and background reach both edges; its contents sit in
+     the same centred column as main. */
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  .hwrap{display:flex;flex-wrap:wrap;align-items:stretch;gap:14px 28px;padding:14px var(--pad-x) 12px;max-width:1500px;margin:0 auto}
   .clock{font-size:40px;font-weight:700;line-height:1;align-self:center}
   .clock small{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:6px}
   .next{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 20px;border-left:1px solid var(--line);border-right:1px solid var(--line);min-width:260px;max-width:560px}
@@ -20,7 +29,7 @@
   .next.live .big{color:var(--spike)}
   .next .sub{font-size:13px;color:var(--med)}
   .meta{display:flex;flex-direction:column;justify-content:center;gap:4px;font-size:12px;color:var(--muted)}
-  main{padding:18px var(--pad-x) 40px;max-width:1500px}
+  main{padding:18px var(--pad-x) 40px;max-width:1500px;margin:0 auto}
   section{margin:0 0 30px}
   h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;margin:0 0 12px}
   .chips{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 6px}
@@ -86,9 +95,12 @@
 </head>
 <body>
 <header>
+<div class="hwrap">
   <div class="clock mono" id="clock">--:--<small id="date">UK time</small></div>
   <div class="next" id="next"><span class="k">Next blackout</span><span class="big mono" id="nextBig">—</span><span class="sub" id="nextSub"></span><span class="rem" id="nextRem" hidden></span></div>
-  <div class="meta"><span id="fresh">Consulting the calendar…</span><span><a href="./">Trend Clock</a></span></div>
+  <div class="meta"><span id="fresh">Consulting the calendar…</span></div>
+  <a class="back" href="./">← Trend Clock</a>
+</div>
 </header>
 <main>
   <section id="briefSec" hidden>
@@ -119,6 +131,7 @@
     <pre id="bl" class="mono"></pre>
     <p style="margin:8px 0 0"><button class="act" id="copy" type="button">Copy list</button> <span id="copied" class="quiet"></span></p>
   </section>
+  <p class="backrow"><a class="back" href="./">← Back to the Trend Clock</a></p>
 </main>
 <script src="news.js"></script>
 <script>
@@ -204,13 +217,20 @@ const VOICE = {
     [1440, 1e9, ['Not today. The calendar leaves the day to you.', "Another day's concern.", 'A clear day, on paper.']]
   ],
   live: ['It is under way. You need not be.', 'I would advise against anything clever until it clears.', 'Anything placed now is a guess with a spread.', 'Nothing to do but wait, so I shall.', 'Stops are the only thing I would touch at present.'],
+  // The salutation carries the name and nothing else — the hour and the name, as a valet would
+  // open. `present` is the sentence that hands the brief over; the brief itself follows it.
   greetings: {
-    morning: ['Good morning, {name}. Here is the day as the calendar has it.', "Good morning, {name}. Today's windows, UK time, in order.", 'Morning, {name}. I have taken the liberty of reading the calendar so that you need not.', "Good morning, {name}. The day's calendar, such as it is."],
-    afternoon: ['Good afternoon, {name}. The afternoon, as the calendar has it.', 'Good afternoon, {name}. The day so far, and what is left of it.', 'Afternoon, {name}. The rest of the day, for the record.'],
-    evening: ['Good evening, {name}. Most of the day is behind you; the remainder follows.', "Good evening, {name}. The evening's calendar, such as it is.", 'Good evening, {name}. The evening, for completeness.'],
-    night: ["An unsociable hour, {name}. The day's calendar, for the record.", 'Late, or early, {name}. The calendar does not mind which.', 'The calendar does not sleep either, {name}. Today, in order.'],
-    weekend: ['It is the weekend, {name}. What follows is {day}, in outline.', 'It is the weekend, {name}. The markets are closed, which is more than can be said for the calendar. What follows is {day}.', 'It is the weekend, {name}. {day} as the calendar currently has it.', 'The markets are closed, {name}; I would suggest following their example. Nonetheless, here is {day}.'],
-    weekendPast: 'It is the weekend, {name}, and the week shown has passed. {day}, for the record.'
+    morning: ['Good morning, {name}.', 'Morning, {name}.'],
+    afternoon: ['Good afternoon, {name}.', 'Afternoon, {name}.'],
+    evening: ['Good evening, {name}.', 'Evening, {name}.'],
+    present: {
+      smallHours: ["I have the day's brief ready, unsociable hour notwithstanding.", 'Since you are up, the brief is ready.', 'The brief is ready, though the hour is not a civilised one.'],
+      morning: ['I have your morning brief ready.', 'Your morning brief, ready when you are.', 'I have read the calendar so that you need not; your morning brief follows.'],
+      afternoon: ['I have your afternoon brief ready.', 'Your afternoon brief, such as the day has left of it.', 'The brief for the afternoon, ready when you are.'],
+      evening: ['I have your evening brief ready.', 'Your evening brief, for completeness.', 'The brief for what remains of the evening.'],
+      weekend: ['It is the weekend; I have the brief for {day} ready.', 'It is the weekend, so I have prepared {day} in outline.', 'The markets are closed; I have the brief for {day} ready regardless.'],
+      weekendPast: 'It is the weekend, and the week shown has passed; this is {day}, for the record.'
+    }
   },
   // The sectioned briefing (renderBrief): section headings, their intros by count, sub-section
   // labels, one remark per event by kind and state, the low-impact summary, and the orientation
@@ -835,10 +855,16 @@ function renderBrief(days, now) {
   // A variant whose placeholders are all available; otherwise the next one along.
   const pickSafe = (arr, offset, vars) => { for (let i = 0; i < arr.length; i++) { const s = arr[(+u.ymd.replace(/-/g, '') + offset + i) % arr.length]; if (!/\{(\w+)\}/.test(s.replace(/\{(\w+)\}/g, (m, k) => vars[k] ? '' : m))) return s; } return arr[0]; };
   const gv = {day: focus.label, name: NAME};
-  const greet = past ? fill(G.weekendPast, gv) : fill(pick(weekend ? G.weekend : u.min < 300 ? G.night : u.min < 720 ? G.morning : u.min < 1080 ? G.afternoon : u.min < 1320 ? G.evening : G.night, 0, u), gv);
-  const intro = [greet];
-  let sign = pick(L.signoff, 8, u);
+  // Salutation by the clock alone, then the sentence that presents the brief.
+  const tod = u.min < 720 ? 'morning' : u.min < 1080 ? 'afternoon' : 'evening';
+  const greet = fill(pick(G[tod], 0, u), gv);
+  const present = past ? fill(G.present.weekendPast, gv)
+    : fill(pick(weekend ? G.present.weekend : u.min < 300 ? G.present.smallHours : G.present[tod], 1, u), gv);
   const failed = loadState === 'failed' && !events.length;
+  // There is no brief to present when the calendar did not load or nothing is selected; the
+  // greeting goes straight to saying so.
+  const intro = (failed || !selected.size) ? [greet] : [greet, present];
+  let sign = pick(L.signoff, 8, u);
   let hmList = [], lows = [];
   if (failed) intro.push(pick(L.loadFailed, 1, u));
   else {

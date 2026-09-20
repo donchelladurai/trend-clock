@@ -310,6 +310,11 @@ model, so it cannot mislead optimistically and does not drift with sample size. 
   right label appears. Numbers are drawn only at `colWidth >= 26px`.
 - The **Trend if ≥** control outlines every heat cell meeting the threshold, in every profile,
   whether or not the market is open. Default 75%.
+- The **Auto** day profile follows the real UK weekday and is re-derived every tick, so it moves
+  to the new day at midnight without a reload; Saturday and Sunday fall back to all-days. The
+  button reads `Auto (Tue)` / `Auto (all days)` so the pick is visible. `All` is the pooled
+  12-month read the footer recommends for confirmation; Auto is what the user asked to trade
+  from (20 Sep 2026), reversing an earlier default of all-days.
 
 ---
 

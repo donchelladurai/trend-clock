@@ -527,16 +527,76 @@ handled; nothing is stored in UK time.
 
 | Thing | Rule |
 |---|---|
-| Blackout window | high 5 before / 20 after; medium 5 / 15; low 0 / 5; high-impact rate, policy or statement items 10 / 30; titles with speaks, speech, press conference, testifies, remarks 0 / 30 |
-| Instruments hit | fixed map by currency in `CCY`: USD also maps to US 500, US Tech 100, Wall Street, Spot Gold; EUR to Germany 40, France 40; GBP to FTSE 100; CNY to AUD/USD, AUD/JPY, NZD/USD; crude oil titles add USD/CAD, EUR/CAD |
+| Blackout window | high 5 before / 20 after; medium 5 / 15; low 0 / 5; high-impact policy-rate decisions and statements (policy, cash, funds, bank, prime, overnight… rate; rate decision or statement; monetary policy; never unemployment, inflation or participation rates) 10 / 30; titles with speaks, speech, press conference, testifies, remarks 0 / 30 |
+| Instruments hit | fixed map by currency in `CCY`: USD also maps to US 500, US Tech 100, Wall Street, Spot Gold; EUR to Germany 40, France 40; GBP to FTSE 100; CNY to AUD/USD, AUD/JPY, NZD/USD; crude oil titles add USD/CAD, EUR/CAD; printed everywhere in board order |
 | Chicago Wheat | synthetic USDA slots: Crop Progress Mondays 16:00 ET (April–November), Export Sales Thursdays 08:30 ET. Not checked against USDA holiday shifts or WASDE dates |
-| Week shown | the UK Mon–Fri containing today; at weekends, the week the feed covers |
+| Week shown | the UK Mon–Fri containing today; at weekends, the week the feed covers, or the coming week when nothing is loaded |
 | Holidays | feed items with impact `Holiday` print as a row note, not a bar |
 
-**Optional notes.** `data/brief.json` (`{date, headline, sections:[{title, items:[…]}]}`) renders a
-"This morning's brief" panel only when `date` is today in UK time. Nothing writes it
-automatically yet. The file is public on GitHub Pages like the rest of the repo.
+**The briefing panel.** "This morning's brief" sits at the top of the page and is shown whenever
+the calendar has loaded or failed. Its paragraph is assembled client-side by `renderBrief` from the
+focus day's data (no model call); notes from `data/brief.json` (`{date, headline, sections:[{title,
+items:[…]}]}`) render beneath it only when `date` is today in UK time. Nothing writes that file
+automatically. The file is public on GitHub Pages like the rest of the repo.
+
+**Voice (added 20 Sep 2026).** Every string a person reads that is not pure data lives in the
+`VOICE` object at the top of the script, in a courteous, dry, understated register. The rules,
+which also govern any new string:
+
+- Facts first, wit as garnish. A remark never replaces a time, instrument, forecast or count, and
+  list items, tags and map tooltips carry data only.
+- Variants are chosen by the UK date: `pick(arr, offset, u)` = `arr[(YYYYMMDD + offset) %
+  arr.length]`, with offsets 0 greeting, 1 load-failed, 2 count, 3 state line, 4 fifth line, 8
+  signoff, 9 countdown aside, 10 live aside. So wording changes daily and holds still across the
+  once-a-minute re-renders.
+- The aside under the countdown (`#nextRem`) is garnish: it is hidden whenever the data line
+  above it runs past two lines. Buckets by minutes to the next window start: 0–2, 2–15, 15–60,
+  60–240, 240–1440, 1440+. A window starting within 15 minutes of the current one's end replaces
+  the aside with "Then {event} at {time}."; two live windows replace it with the latest end.
+- The briefing is greeting; count (or nothing-scheduled, or no-selection); state line (live, next,
+  or all done); at most one further line by priority — seed caveat, stale feed (>24 h on a
+  weekday), a run of 3+ windows each starting within 20 minutes of the last one's end, overnight
+  windows already over, holidays, the unverified wheat slot, 1–6 quiet instruments, Friday —
+  then signoff. Five lines at most. Greetings: 05:00 morning, 12:00 afternoon, 18:00 evening,
+  22:00 night; weekends use their own set and name the focus day.
+- "Sir" lives only in marked greeting and signoff variants and is capped at one per briefing;
+  no other string carries it. No exclamation marks, no naming the character, British spelling.
+- Unknown is never dressed as quiet: while the fetch is pending the lists say "Consulting the
+  calendar…", after a failed first load they say the calendar did not load and the header says
+  "unknown", and a failed refresh keeps the last calendar and says so on the freshness line.
+- Windows are ordered by when their blackout starts, in the list, the header and the briefing,
+  so all three name the same next window; a window that started at the same minute is the same
+  release split into rows, not a successor. Two live windows show a plain "Blackout in effect"
+  for the one that ends last; a successor that overlaps says "joins at", one that follows says
+  "Then"; the briefing's live line runs to the end of the whole chained stretch.
+- Deviations from the panel's deck, on purpose: the aside is its own `#nextRem` span rather than
+  text appended after " — "; the "when {event} arrives" variant is skipped for speech titles;
+  a past focus day (weekend after the shown week) gets its own past-tense greeting and count
+  and no next-window line; the "today" variants of the quiet and holiday lines are skipped when
+  the focus day is not today. An adversarial pass (correctness, fidelity, voice) ran on 20 Sep
+  2026 over 22 rendered states; everything it found is fixed or listed here.
+- State-driven quirks: "Speech in effect" / "Rate decision in effect" labels (from the window
+  shape, 0/30 and 10/30); rate and speech notes and a US-open note appended to the idle data
+  line after " · "; "all {n} selected instruments" when a window hits every selected one;
+  "Next blackout" with the weekday when the next start is a day or more away; the tab title
+  becomes "until HH:MM · event" while live and "{mins}m · event" under an hour; the clock
+  caption gains "· London open" / "· US open" for five minutes; the freshness line gains
+  "older than I would like" and a clocks-out-of-step note when UK and New York are four hours
+  apart; "Today's windows, all done"; "· provisional" on the heading while the calendar is seed
+  data; the Copy button reads "Nothing to copy" and is disabled on an empty list; a failed load
+  says "unknown" everywhere rather than "nothing".
+
+The deck behind this was produced by a judged panel (three drafts, three lenses, one synthesis)
+and the winning register was the film-faithful one; the calibration lives in the session, not
+the repo. Editing a string means editing `VOICE`; editing a rule means editing the renderer that
+applies it and this list.
 
 **Verify.** Serve the folder over HTTP (fetch does not work from `file://`), then check with a
 browser in a non-UK timezone and a faked clock that a known event lands at its UK time and that
-the header switches to "In a blackout window" inside it and that the console shows no errors.
+the header switches to "Blackout in effect" inside it and that the console shows no errors. The
+quickest rig: append a `<script>` that overrides `Date` to a fixed instant, calls `renderAll()`,
+and snapshots `#next .k`, `#nextBig`, `#nextSub`, `#nextRem`, `#todayH`, `#quiet`, `#bl`,
+`#brief` and `document.title` into a `<pre>`; dump the DOM headless and read it back. States
+worth covering: idle under an hour, idle a day away, live (speech, rate decision, two at once),
+nothing further (Friday after 15:00, weekend), a stale Forex Factory feed, nothing selected, and
+a failed load.

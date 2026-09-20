@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Morning brief — news spikes</title>
+<title>Morning brief — news blackouts</title>
 <link rel="icon" href="favicon.svg">
 <style>
   :root{--bg:#0e131a;--panel:#141b24;--line:#26313f;--text:#e6ecf3;--muted:#8b97a7;--amber:#ffcf5c;--spike:#ff6a2a;--med:#c9d2dd;--low:#4a5667;--pad-x:22px}
@@ -14,7 +14,7 @@
   header{display:flex;flex-wrap:wrap;align-items:stretch;gap:14px 28px;padding:14px var(--pad-x) 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
   .clock{font-size:40px;font-weight:700;line-height:1;align-self:center}
   .clock small{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:6px}
-  .next{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 20px;border-left:1px solid var(--line);border-right:1px solid var(--line);min-width:260px}
+  .next{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 20px;border-left:1px solid var(--line);border-right:1px solid var(--line);min-width:260px;max-width:560px}
   .next .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.7px}
   .next .big{font-size:30px;font-weight:700;line-height:1;color:var(--amber)}
   .next.live .big{color:var(--spike)}
@@ -54,6 +54,10 @@
   .notes h3{font-size:15px;margin:0 0 8px}
   .notes ul{margin:6px 0 0;padding-left:18px}
   .notes li{margin:4px 0;color:var(--med)}
+  .notes .lede{margin:0;font-size:15px;line-height:1.55;color:var(--text)}
+  #notes:empty{display:none}
+  #notes h3{margin-top:12px}
+  .next .rem{font-size:12px;color:var(--muted)}
   footer{padding:0 var(--pad-x) 30px;color:var(--muted);font-size:12px;max-width:1100px}
   @media (max-width:640px){
     :root{--pad-x:14px}
@@ -69,17 +73,21 @@
 <body>
 <header>
   <div class="clock mono" id="clock">--:--<small id="date">UK time</small></div>
-  <div class="next" id="next"><span class="k">Next spike</span><span class="big mono" id="nextBig">—</span><span class="sub" id="nextSub"></span></div>
-  <div class="meta"><span id="fresh">Loading calendar…</span><span><a href="./">Trend Clock</a></span></div>
+  <div class="next" id="next"><span class="k">Next blackout</span><span class="big mono" id="nextBig">—</span><span class="sub" id="nextSub"></span><span class="rem" id="nextRem" hidden></span></div>
+  <div class="meta"><span id="fresh">Consulting the calendar…</span><span><a href="./">Trend Clock</a></span></div>
 </header>
 <main>
+  <section id="briefSec" hidden>
+    <h2>This morning's brief</h2>
+    <div class="notes"><p id="brief" class="lede"></p><div id="notes"></div></div>
+  </section>
   <section>
-    <h2>My instruments</h2>
+    <h2>Your instruments</h2>
     <div class="chips" id="chips"></div>
   </section>
   <section>
     <h2>News spikes this week, UK time</h2>
-    <p class="legend"><i style="background:var(--spike)"></i>High <i style="background:var(--med)"></i>Medium <i style="background:var(--low)"></i>Low <i style="background:transparent;outline:1px dashed var(--muted)"></i>Recurring USDA slot. Bar width is the suggested blackout window. Dashed lines mark the London (08:00) and US (14:30) opens. Hover or tap a bar for details.</p>
+    <p class="legend"><i style="background:var(--spike)"></i>High <i style="background:var(--med)"></i>Medium <i style="background:var(--low)"></i>Low <i style="background:transparent;outline:1px dashed var(--muted)"></i>Recurring USDA slot, unverified. Bar width is the suggested blackout window. Dashed lines mark the London open at 08:00 and the US open at 14:30. Hover or tap a bar for the particulars.</p>
     <div class="mapwrap"><svg id="map" role="img" aria-label="News spike windows, Monday to Friday, UK time"></svg></div>
   </section>
   <section>
@@ -88,22 +96,18 @@
     <p class="quiet" id="quiet"></p>
   </section>
   <section>
-    <h2>Rest of the week</h2>
+    <h2>The rest of the week</h2>
     <div id="rest"></div>
   </section>
   <section>
     <h2>For the News Blackout indicator</h2>
-    <p class="quiet" style="margin:0">High-impact times for the instruments selected above, UK clock, in order. The indicator holds 12 a week, so anything past 12 is marked.</p>
+    <p class="quiet" style="margin:0">High-impact times for the instruments selected above, UK clock, in order. The indicator holds 12 a week; anything past 12 is marked, and which 12 to keep is your call rather than its.</p>
     <pre id="bl" class="mono"></pre>
     <p style="margin:8px 0 0"><button class="act" id="copy" type="button">Copy list</button> <span id="copied" class="quiet"></span></p>
   </section>
-  <section id="notesSec" hidden>
-    <h2>This morning's brief</h2>
-    <div class="notes" id="notes"></div>
-  </section>
 </main>
 <footer>
-  <p>Calendar: <a href="https://www.forexfactory.com/calendar">Forex Factory</a> weekly feed, pulled by a GitHub Action and converted here to UK clock time, so BST and GMT are handled. Chicago Wheat slots are USDA's recurring schedule (Crop Progress Mondays 4 PM ET, April to November; Export Sales Thursdays 8:30 AM ET) and are not checked against USDA's holiday shifts or WASDE dates. Suggested windows: high impact 5 minutes before to 20 after, medium 5 before to 15 after, rate decisions 10 before to 30 after, speeches and press conferences from the start to 30 after. Which instruments an event hits is a fixed mapping by currency (USD events also map to US indices and Spot Gold, EUR to Germany 40 and France 40, GBP to FTSE 100, CNY to AUD and NZD), so a surprise can still move instruments outside it.</p>
+  <p>Calendar: <a href="https://www.forexfactory.com/calendar">Forex Factory</a> weekly feed, pulled by a GitHub Action and converted here to UK clock time, so BST and GMT are handled. Chicago Wheat slots are USDA's recurring schedule (Crop Progress Mondays 4 PM ET, April to November; Export Sales Thursdays 8:30 AM ET) and are not checked against USDA's holiday shifts or WASDE dates. Suggested windows: high impact 5 minutes before to 20 after, medium 5 before to 15 after, rate decisions 10 before to 30 after, speeches and press conferences from the start to 30 after. Which instruments an event hits is a fixed mapping by currency (USD events also map to US indices and Spot Gold, EUR to Germany 40 and France 40, GBP to FTSE 100, CNY to AUD and NZD), so a surprise can still move instruments outside it. I can only flag what is scheduled; the market is under no obligation to keep to it.</p>
 </footer>
 <script>
 const TZ = 'Europe/London';
@@ -129,10 +133,223 @@ const CCY = {
 const IMPACT = {High: 'H', Medium: 'M', Low: 'L', Holiday: 'X'};
 const COL = {H: '#ff6a2a', M: '#c9d2dd', L: '#4a5667'};
 const DAYN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+// ---- Voice ----------------------------------------------------------------------------------
+// Everything a person reads here that is not pure data lives in VOICE, so the tone can be edited
+// without touching the renderers. Variants are chosen by the UK date (pick), so wording varies
+// from day to day and holds still across the once-a-minute re-renders. House rules (CLAUDE.md §9):
+// facts first, wit as garnish; list items, tags and tooltips carry data only; the aside under the
+// countdown is dropped before the data line ever is; "sir" appears only in the marked greeting and
+// signoff variants, at most once per page; nothing claims what the page cannot know. Nothing here
+// is fetched from a model.
+const VOICE = {
+  pageTitle: 'Morning brief — news blackouts',
+  nextIdle: 'Next blackout begins in', nextIdleFar: 'Next blackout',
+  nextLive: 'Blackout in effect', nextLiveRate: 'Rate decision in effect', nextLiveSpeech: 'Speech in effect',
+  nextNone: 'Next blackout', nextNoneBig: 'nothing further',
+  nextNoneSub: 'this week, for the selected instruments. I shall keep watch regardless.',
+  nextNoneSubFriday: 'this week, for the selected instruments. The desk can be closed with a clear conscience.',
+  nextNoneSubWeekend: 'this week, for the selected instruments. If the feed has not turned over yet, Monday will look different.',
+  nextNoneSubNoSel: 'no instruments are selected.',
+  nextFailedBig: 'unknown', nextFailedSub: 'the calendar did not load, so I cannot say.',
+  liveUntil: 'until {time}',
+  loading: 'Consulting the calendar…',
+  loadingSlow: 'Still consulting the calendar. The connection is being uncooperative.',
+  calendarFF: 'Calendar: Forex Factory', calendarWhen: ', last changed {when}',
+  calendarSeed: 'Calendar: seed data from a manual check, provisional until the first Action run replaces it',
+  calendarFailed: 'Calendar: could not be loaded. An empty board here means unknown, not quiet.',
+  calendarRefreshFailed: 'Calendar: the refresh failed; showing the calendar as it was',
+  calendarOld: ' — older than I would like',
+  clocksOutOfStep: ' · US clocks out of step this week; times here are already UK',
+  londonOpen: ' · London open', usOpen: ' · US open',
+  todayH: "Today's windows", todayHDone: "Today's windows, all done", dayH: 'Windows for {day}', provisional: ' · provisional',
+  copyButton: 'Copy list', nothingToCopy: 'Nothing to copy',
+  copiedN: "On your clipboard. {n} lines, within the indicator's 12.",
+  copiedOver: 'On your clipboard. {n} lines; the indicator takes 12.',
+  copyBlocked: 'Clipboard refused. Select the list and copy it by hand.',
+  emptyToday: 'Nothing high or medium for the selected instruments.',
+  emptyRest: 'Nothing high or medium, on paper.',
+  emptyBlackout: 'Nothing high-impact this week for the selected instruments. The indicator may rest.',
+  emptyFailed: 'The calendar did not load, so I cannot say what is scheduled.',
+  noSelectionPlain: 'No instruments selected.',
+  noSelection: 'No instruments selected. I can hardly warn you about nothing.',
+  hits: 'Hits {instruments}.',
+  recurringNote: 'Recurring USDA slot, not checked against holiday shifts or WASDE dates.',
+  quiet: 'Quiet, on paper: {list}.',
+  quietAll: 'Quiet across the board, on paper. I would not mistake that for safety.',
+  holidays: 'Holidays: {list}. The markets concerned are usually thinner for it.',
+  restHigh: ' (high)', over12: '(over 12) ',
+  rateNote: 'Rate decision: the window runs 10 before to 30 after.',
+  speechNote: 'A speech: from the start to 30 after, and they do overrun.',
+  usOpenNote: 'It lands on the US open, which is weather enough on its own.',
+  allSelected: '{time} {event} · all {n} selected instruments',
+  usdaSub: '{time} {event} · {instruments} · unverified slot',
+  farSub: '{day} {time} · {event} · {instruments}', unverified: ' · unverified slot',
+  then: 'Then {event} at {time}.', joins: '{event} joins at {time}.',
+  several: 'Several at once; treat them as one.',
+  overnightNote: 'Overnight windows, before 07:00, already ended: {n}. Whatever happened there has happened.',
+  fridayNote: 'It is Friday. Anything carried over the weekend is carried at your own risk.',
+  londonOpenNote: ' It sits on the London open; treat the open as part of the window.',
+  weekSign: 'That is the week.',
+  // Aside under the countdown, by minutes to the next window start: [from, to, variants]. Kept
+  // under 60 characters, and never a restatement of the figure above it.
+  countdown: [
+    [0, 2, ['Any moment now. Hands off, if you please.', 'Imminent. Nothing new, if you please.', 'Nothing new; manage what is open.']],
+    [2, 15, ['Time enough to tidy up, not to start something.', 'Shortly. Check the stops; do not add to them.', 'Inside the quarter-hour; it lands on anything opened now.']],
+    [15, 60, ['Inside the hour. One eye on the clock, if you would.', 'Time enough, though not to spare.', 'Close enough to plan around. I shall count it down.']],
+    [60, 240, ['Time in hand. I shall say so nearer the time.', 'Ample time, which is usually when carelessness happens.', 'Comfortably distant, on paper. The countdown will tighten.']],
+    [240, 1440, ['Nothing pressing. I shall keep watch.', 'A clear stretch ahead. Do try to use it well.', 'Hours away. It will come round regardless.']],
+    [1440, 1e9, ['Not today. The calendar leaves the day to you.', "Another day's concern.", 'A clear day, on paper.']]
+  ],
+  live: ['It is under way. You need not be.', "I'd advise against anything clever until it clears.", 'Anything placed now is a guess with a spread.', 'Nothing to do but wait, so I shall.', 'Stops are the only thing I would touch at present.'],
+  greetings: {
+    morning: ['Good morning. Here is the day as the calendar has it.', "Good morning, sir. Today's windows, UK time, in order.", 'Morning. I have taken the liberty of reading the calendar so that you need not.', "Good morning. The day's calendar, such as it is."],
+    afternoon: ['Good afternoon. What remains of the day, in order.', 'Good afternoon. The day so far, and what is left of it.', 'Afternoon, sir. What the calendar still owes you.'],
+    evening: ['Good evening. Most of the day is behind you; the remainder follows.', 'Good evening. Little left on the calendar, which is how I prefer it.', 'Good evening. For completeness, what is still scheduled.'],
+    night: ["An unsociable hour. The day's calendar, for the record.", 'Late, or early. The board does not mind which.', 'The calendar does not sleep either. Today, in order.'],
+    weekend: ['It is the weekend. The list below is for {day}, in outline.', 'It is the weekend. The markets are closed, which is more than can be said for the calendar. What follows is {day}.', 'It is the weekend, sir. {day} as the calendar currently has it.', 'The markets are closed; I would suggest following their example. Nonetheless, here is {day}.'],
+    weekendPast: 'It is the weekend, and the week shown has passed; the feed has not turned over yet. {day}, for the record.'
+  },
+  lines: {
+    // count: [0,1] high>=1 & medium>=1; [2,3] no high, medium>=2; [4,5] no medium, high>=2; [6] one high only; [7] one medium only; [8,9] another day.
+    count: [
+      'On the calendar today: {high} high-impact, {medium} medium-impact, for the instruments selected.',
+      'Today carries {high} high and {medium} medium across your instruments.',
+      'Nothing high-impact today. Medium-impact: {medium}, which I would not dismiss entirely.',
+      'No high-impact windows today; {medium} of medium weight, for the record.',
+      'High-impact windows today: {high}. Nothing of medium weight.',
+      'High-impact windows today: {high}, and none of medium weight. The day turns on a few minutes.',
+      'A single high-impact window today, and I would plan the day around it.',
+      'A single medium-impact window today. Not much, but enough to be careless around.',
+      'For {day}: {high} high-impact, {medium} medium-impact, for the instruments selected.',
+      '{day} carries {high} high and {medium} medium across your instruments.'
+    ],
+    pastDay: '{day} carried {high} high and {medium} medium across your instruments.',
+    // Titles are held after a colon or full stop so "… Speaks" and "1-y …" survive substitution.
+    firstBlackout: [
+      'The next window opens at {time} for {event}. It covers {instruments}.',
+      'Nothing to avoid until {time}, when {event} arrives for {instruments}.',
+      'At {time}: {event}. Instruments: {instruments}. I would have things tidy by then.',
+      'On {day}, the first window opens at {time} for {event}. It covers {instruments}.'
+    ],
+    liveNow: [
+      'We are inside the window for {event}, clear at {endTime}. Nothing new until then.',
+      'A blackout is in effect for {event} until {endTime}. Manage what is open; start nothing.',
+      'Currently inside the window for {event}, which clears at {endTime}. Patience.'
+    ],
+    liveRun: 'We are inside the window for {event}; with what follows on its heels, the stretch clears at {endTime}. Nothing new until then.',
+    allDone: [
+      'That is everything for today. The rest of the session is yours, as far as the calendar is concerned.',
+      'No further windows today. Whatever moves from here will not have been scheduled.',
+      "Today's windows are all behind you. What remains is ordinary trading, if there is such a thing.",
+      'The calendar is finished with today. I shall stay on nonetheless.'
+    ],
+    // quiet[1] and holidays[0] say "today" and are only eligible when the focus day is today.
+    quiet: [
+      'Nothing scheduled for {list}. Quiet on paper, which is not the same as quiet.',
+      'The calendar is silent on {list} today; silence is not a guarantee.',
+      'No windows for {list}, which I would read as an absence of warnings rather than a promise.'
+    ],
+    holidays: [
+      'Holidays today: {list}. The markets concerned are usually thinner for it.',
+      'Note the holidays: {list}. Thin books, as a rule; I would size accordingly.',
+      'Holidays: {list}. Expect fewer participants in the markets concerned.'
+    ],
+    wheat: [
+      "The Chicago Wheat slot is USDA's recurring schedule, not a checked date; I have not verified it against holiday shifts or WASDE.",
+      'Treat the USDA wheat slot as a habit rather than an appointment. It is unverified.',
+      "For wheat I am relying on USDA's routine rather than its calendar; the slot is unchecked for holiday shifts."
+    ],
+    crowded: [
+      'A run of {count} windows between {first} and {last}. I would not try to trade through that stretch.',
+      'Between {first} and {last} there are {count} windows in close succession. Consider it a single blackout.',
+      'The calendar bunches up: {count} windows from {first} to {last}. Trading between them is possible; I merely note that it is inadvisable.'
+    ],
+    seedCaveat: [
+      'One caveat: this calendar is seed data from a manual check, not the feed. Verify before relying on it.',
+      'I should mention the calendar is a manual seed, not a live pull. My best reading of the week, not the record.',
+      'The calendar behind this is seed data from a manual check, to be replaced on the first Action run. Until then, trust it accordingly.'
+    ],
+    loadFailed: [
+      'I could not load the calendar, so there is nothing to brief. I would treat the absence of windows as unknown, not as none.',
+      'The calendar did not load. I cannot tell you what is scheduled, only that I cannot see it.',
+      "Calendar unavailable. I am working blind, and I'd advise against your doing the same."
+    ],
+    noEvents: [
+      'Nothing on the calendar today for your instruments, high or medium. Quiet days have their own hazards; I merely note it.',
+      'The calendar has nothing for you today. I would not read that as permission.',
+      'No high or medium windows today for the selected instruments, which is not the same as safe.',
+      'Nothing high or medium on {day} for your instruments. On paper, at least.'
+    ],
+    stale: [
+      'The calendar last changed {when}, which is longer ago than I would like. Revisions since then are not reflected.',
+      'A word of caution: the feed has not changed since {when}. Treat anything after that as unconfirmed.',
+      'The calendar dates from {when}. If it has been revised since, I have not seen it.'
+    ],
+    signoff: [
+      'That is all. I shall keep the clock.',
+      'That will be all, unless the market disagrees.',
+      'That is the whole of it. Do try to trade the plan rather than the news.',
+      'Nothing further, sir. I shall be here.'
+    ]
+  }
+};
+const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => v[k] != null ? String(v[k]) : m);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const pick = (arr, offset, u) => arr[(+u.ymd.replace(/-/g, '') + offset) % arr.length];
+const setText = (el, s) => { if (el.textContent !== s) el.textContent = s; };
+const evLabel = e => (e.country === 'WHEAT' ? '' : e.country + ' ') + e.title;
+const kindOf = e => e.win[0] === 10 && e.win[1] === 30 ? 'rate' : e.win[0] === 0 && e.win[1] === 30 ? 'speech' : '';
+const startMs = e => e.at.getTime() - e.win[0] * 60000, endMs = e => e.at.getTime() + e.win[1] * 60000;
+// "Tue 07:15 UK", or with the date once it is more than six days old, so a fortnight does not read as a weekday.
+function fmtWhen(d, now) {
+  const old = now && now.getTime() - d.getTime() > 6 * 86400000;
+  const o = old ? {timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'} : {timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'};
+  return new Intl.DateTimeFormat('en-GB', o).format(d).replace(',', '') + ' UK';
+}
+function zoneOffset(d, zone) {
+  const m = new Date(Math.floor(d.getTime() / 60000) * 60000), p = {};
+  new Intl.DateTimeFormat('en-US', {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).formatToParts(m).forEach(x => { p[x.type] = x.value; });
+  return Math.round((Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - m.getTime()) / 60000);
+}
+// The UK and New York are normally five hours apart; for a few weeks a year they are four.
+const clocksOutOfStep = d => zoneOffset(d, TZ) - zoneOffset(d, 'America/New_York') !== 300;
+function focusDay(days, u) { const i = days.findIndex(d => d.ymd === u.ymd); return i >= 0 ? days[i] : days.find(d => d.ymd > u.ymd) || days[0]; }
+// Windows in order of when their blackout STARTS, which is what the header counts down to.
+const dayWindows = ymd => events.filter(e => e.ymd === ymd && visible(e) && (e.imp === 'H' || e.imp === 'M')).sort((a, b) => (a.min - a.win[0]) - (b.min - b.win[0]) || a.min - b.min);
+const holidayList = ymd => events.filter(e => e.ymd === ymd && e.imp === 'X' && visible(e)).map(e => `${e.country} ${e.title.toLowerCase()}`);
+const quietList = list => { const hit = new Set(list.flatMap(e => e.ins)); return ALL.filter(i => selected.has(i) && !hit.has(i)); };
+// Three or more windows each starting within 20 minutes of the previous one's end read as one stretch.
+function largestRun(list) {
+  let best = null, run = [];
+  const flush = () => { if (run.length >= 3 && (!best || run.length > best.count)) best = {count: run.length, first: Math.min(...run.map(e => e.min - e.win[0])), last: Math.max(...run.map(e => e.min + e.win[1]))}; };
+  for (const e of list) {
+    if (run.length && e.min - e.win[0] <= Math.max(...run.map(x => x.min + x.win[1])) + 20) run.push(e); else { flush(); run = [e]; }
+  }
+  flush();
+  return best;
+}
+// The end of the current blackout stretch: the live windows, extended by anything that starts within 15 minutes of that end.
+function runEnd(lives, cand) {
+  let end = Math.max(...lives.map(endMs));
+  for (;;) { const more = cand.filter(e => startMs(e) > end - 1 && startMs(e) <= end + 15 * 60000 && endMs(e) > end); if (!more.length) return end; end = Math.max(...more.map(endMs)); }
+}
+// The calendar-freshness line, recomputed from the stored source each render so the staleness note keeps up with the clock.
+function renderFresh(now) {
+  const el = document.getElementById('fresh');
+  if (loadState === 'pending') return;
+  if (loadState === 'failed') { setText(el, VOICE.calendarFailed); return; }
+  const u = ukParts(now), ok = fetchedAt && !isNaN(fetchedAt.getTime());
+  let s = refreshFailed ? VOICE.calendarRefreshFailed : source === 'seed' ? VOICE.calendarSeed : VOICE.calendarFF;
+  if (ok) s += fill(VOICE.calendarWhen, {when: fmtWhen(fetchedAt, now)});
+  if (source !== 'seed' && u.dow >= 1 && u.dow <= 5 && ok && now - fetchedAt > 86400000) s += VOICE.calendarOld;
+  if (clocksOutOfStep(now)) s += VOICE.clocksOutOfStep;
+  setText(el, s);
+}
 
 let events = [];
 let fetchedAt = null;
 let notes = null;
+let source = null, loadState = 'pending', refreshFailed = false, blCount = 0;
 let selected = new Set(ALL);
 
 try {
@@ -175,7 +392,7 @@ function zonedToDate(ymd, hhmm, zone) {
 
 function windowFor(e) {
   const t = e.title.toLowerCase();
-  if (e.imp === 'H' && /(rate|policy|monetary|statement|decision)/.test(t) && !/speaks/.test(t)) return [10, 30];
+  if (e.imp === 'H' && !/speaks|unemployment|inflation|participation|savings/.test(t) && /(policy|cash|funds|refinancing|interest|bank|official|deposit|prime|overnight|ocr|repo) rate|rate (decision|statement)|monetary policy|policy (decision|statement|summary)|fomc statement|rate$/.test(t)) return [10, 30];
   if (/(speaks|speech|press conference|testifies|remarks)/.test(t)) return [0, 30];
   if (e.imp === 'H') return [5, 20];
   if (e.imp === 'M') return [5, 15];
@@ -186,7 +403,7 @@ function instrumentsFor(e) {
   const base = CCY[e.country] ? CCY[e.country].slice() : [];
   const t = e.title.toLowerCase();
   if (/crude oil/.test(t) && !base.includes('USD/CAD')) base.push('USD/CAD', 'EUR/CAD');
-  return base;
+  return ALL.filter(i => base.includes(i));
 }
 
 function usdaSlots(weekMon) {
@@ -220,7 +437,7 @@ function weekDays() {
   let anchor = events.length ? events[0].at : now;
   if (u.dow >= 1 && u.dow <= 5) anchor = now;
   const a = ukParts(anchor);
-  const back = a.dow === 0 ? -1 : (a.dow === 6 ? -5 : a.dow - 1);
+  const back = a.dow === 0 ? -1 : (a.dow === 6 ? -2 : a.dow - 1);
   const noon = zonedToDate(a.ymd, '12:00', TZ).getTime();
   const days = [];
   for (let i = 0; i < 5; i++) {
@@ -294,7 +511,7 @@ function drawMap(days, now) {
     }
     const ends = [-1e9, -1e9, -1e9, -1e9, -1e9];
     dayEv.filter(e => e.imp !== 'X').forEach(e => {
-      const tip = `${hm(e.min)} UK · ${e.country === 'WHEAT' ? 'USDA' : e.country} ${e.title}` + (e.forecast ? ` · f/c ${e.forecast}` : '') + (e.previous ? ` · prev ${e.previous}` : '') + ` · ${e.ins.join(', ')}` + (e.recurring ? ' · recurring slot, unverified' : '');
+      const tip = `${hm(e.min)} UK · ${evLabel(e)}` + (e.forecast ? ` · f/c ${e.forecast}` : '') + (e.previous ? ` · prev ${e.previous}` : '') + ` · ${e.ins.join(', ')}` + (e.recurring ? ' · recurring slot, unverified' : '');
       if (e.min < T0) {
         if (e.imp === 'L') return;
         const x = G0 + 8 + (e.min / T0) * (G1 - G0 - 16);
@@ -337,53 +554,54 @@ function winText(e) {
 }
 
 function renderLists(days, now) {
-  const u = ukParts(now);
-  const todayIdx = days.findIndex(d => d.ymd === u.ymd);
-  const focus = todayIdx >= 0 ? days[todayIdx] : days.find(d => d.ymd > u.ymd) || days[0];
-  document.getElementById('todayH').textContent = (focus.ymd === u.ymd ? "Today's windows" : focus.label + ' windows');
+  const u = ukParts(now), ms = now.getTime();
+  const focus = focusDay(days, u), isToday = focus.ymd === u.ymd;
   const ol = document.getElementById('today');
   ol.textContent = '';
-  const list = events.filter(e => e.ymd === focus.ymd && visible(e) && (e.imp === 'H' || e.imp === 'M')).sort((a, b) => a.min - b.min);
+  const list = dayWindows(focus.ymd);
+  // Before the calendar has arrived, or if it never does, the lists say so rather than "quiet".
+  const unknown = loadState !== 'ok' && !events.length, unknownText = loadState === 'failed' ? VOICE.emptyFailed : VOICE.loading;
+  const allDone = isToday && list.length > 0 && list.every(e => ms > endMs(e));
+  document.getElementById('todayH').textContent = (isToday ? (allDone ? VOICE.todayHDone : VOICE.todayH) : fill(VOICE.dayH, {day: focus.label})) + (source === 'seed' ? VOICE.provisional : '');
   if (!list.length) {
     const li = document.createElement('li');
-    li.textContent = 'No high or medium events for the selected instruments.';
+    li.textContent = unknown ? unknownText : selected.size ? VOICE.emptyToday : VOICE.noSelectionPlain;
     ol.appendChild(li);
   }
+  // List items carry data only: window, event, weight, instruments, forecast. The voice stays out.
   list.forEach(e => {
     const li = document.createElement('li');
-    const s = e.min - e.win[0], f = e.min + e.win[1];
-    if (focus.ymd === u.ymd) {
-      if (u.min > f) li.className = 'past';
-      else if (u.min >= s) li.className = 'now';
+    if (isToday) {
+      if (ms > endMs(e)) li.className = 'past';
+      else if (ms >= startMs(e)) li.className = 'now';
     }
     const t = document.createElement('span'); t.className = 't mono'; t.textContent = winText(e);
     const ev = document.createElement('span'); ev.className = 'e';
-    ev.textContent = `${e.country === 'WHEAT' ? '' : e.country + ' '}${e.title}`;
+    ev.textContent = evLabel(e);
     const b = document.createElement('span'); b.className = 'imp ' + e.imp; b.textContent = e.imp === 'H' ? 'High' : 'Medium';
     ev.appendChild(b);
     const d = document.createElement('span'); d.className = 'd';
     const fc = [e.forecast && `forecast ${e.forecast}`, e.previous && `previous ${e.previous}`].filter(Boolean).join(', ');
-    d.textContent = `Hits ${e.ins.filter(i => selected.has(i)).join(', ')}.` + (fc ? ` ${fc[0].toUpperCase() + fc.slice(1)}.` : '') + (e.recurring ? ' Recurring USDA slot, not checked for holiday shifts.' : '');
+    d.textContent = fill(VOICE.hits, {instruments: e.ins.filter(i => selected.has(i)).join(', ')}) + (fc ? ' ' + cap(fc) + '.' : '') + (e.recurring ? ' ' + VOICE.recurringNote : '');
     li.append(t, ev, d);
     ol.appendChild(li);
   });
-  const hit = new Set(list.flatMap(e => e.ins));
-  const quiet = ALL.filter(i => selected.has(i) && !hit.has(i));
-  const hols = events.filter(e => e.ymd === focus.ymd && e.imp === 'X').map(e => `${e.country} ${e.title.toLowerCase()}`);
-  document.getElementById('quiet').textContent = [hols.length ? 'Holidays: ' + hols.join(', ') + '.' : '', quiet.length ? 'Quiet: ' + quiet.join(', ') + '.' : ''].filter(Boolean).join(' ');
+  const quiet = quietList(list), hols = holidayList(focus.ymd);
+  const quietText = unknown || !selected.size ? '' : quiet.length === selected.size ? VOICE.quietAll : quiet.length ? fill(VOICE.quiet, {list: quiet.join(', ')}) : '';
+  document.getElementById('quiet').textContent = [hols.length ? fill(VOICE.holidays, {list: hols.join(', ')}) : '', quietText].filter(Boolean).join(' ');
 
   const rest = document.getElementById('rest');
   rest.textContent = '';
   days.forEach(d => {
     if (d.ymd === focus.ymd) return;
-    const evs = events.filter(e => e.ymd === d.ymd && visible(e) && (e.imp === 'H' || e.imp === 'M')).sort((a, b) => a.min - b.min);
+    const evs = dayWindows(d.ymd);
     const p = document.createElement('p'); p.className = 'day';
     if (d.ymd < u.ymd) p.style.opacity = '.45';
     const b = document.createElement('b'); b.textContent = d.label;
     p.appendChild(b);
-    const hols = events.filter(e => e.ymd === d.ymd && e.imp === 'X').map(e => `${e.country} ${e.title.toLowerCase()}`);
-    const parts = evs.map(e => `${winText(e)} ${e.country === 'WHEAT' ? '' : e.country + ' '}${shortName(e.title)}${e.imp === 'H' ? ' (high)' : ''}`);
-    p.appendChild(document.createTextNode((parts.length ? parts.join(' · ') : 'Nothing high or medium.') + (hols.length ? ' · Holidays: ' + hols.join(', ') : '')));
+    const dh = holidayList(d.ymd);
+    const parts = evs.map(e => `${winText(e)} ${e.country === 'WHEAT' ? '' : e.country + ' '}${shortName(e.title)}${e.imp === 'H' ? VOICE.restHigh : ''}`);
+    p.appendChild(document.createTextNode((parts.length ? parts.join(' · ') : unknown ? unknownText : VOICE.emptyRest) + (dh.length ? ' · Holidays: ' + dh.join(', ') : '')));
     rest.appendChild(p);
   });
 
@@ -394,42 +612,75 @@ function renderLists(days, now) {
     if (last && last.at.getTime() === e.at.getTime() && last.country === e.country) last.title += ' + ' + e.title;
     else merged.push({at: e.at, dow: e.dow, min: e.min, country: e.country, title: e.title});
   });
-  const lines = merged.map((e, i) => `${i >= 12 ? '(over 12) ' : ''}${DAYN[e.dow]} ${hm(e.min)}  ${e.country} ${e.title}`);
-  document.getElementById('bl').textContent = lines.length ? lines.join('\n') : 'No high-impact events for the selected instruments.';
+  const lines = merged.map((e, i) => `${i >= 12 ? VOICE.over12 : ''}${DAYN[e.dow]} ${hm(e.min)}  ${e.country} ${e.title}`);
+  blCount = lines.length;
+  document.getElementById('bl').textContent = lines.length ? lines.join('\n') : unknown ? unknownText : selected.size ? VOICE.emptyBlackout : VOICE.noSelectionPlain;
+  const copyBtn = document.getElementById('copy');
+  copyBtn.disabled = !lines.length;
+  copyBtn.textContent = lines.length ? VOICE.copyButton : VOICE.nothingToCopy;
 }
 
 function renderHeader(now) {
   const u = ukParts(now);
   const c = document.getElementById('clock');
-  c.firstChild.textContent = u.hm;
-  document.getElementById('date').textContent = new Intl.DateTimeFormat('en-GB', {timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long'}).format(now) + ' · UK';
-  const box = document.getElementById('next');
+  setText(c.firstChild, u.hm);
+  const wk = u.dow >= 1 && u.dow <= 5;
+  setText(document.getElementById('date'), new Intl.DateTimeFormat('en-GB', {timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long'}).format(now) + ' · UK time'
+    + (wk && u.min >= 480 && u.min < 485 ? VOICE.londonOpen : wk && u.min >= 870 && u.min < 875 ? VOICE.usOpen : ''));
+  const box = document.getElementById('next'), big = document.getElementById('nextBig'), sub = document.getElementById('nextSub'), rem = document.getElementById('nextRem');
   const cand = events.filter(e => (e.imp === 'H' || e.imp === 'M') && visible(e));
-  let live = null, next = null;
+  const ms = now.getTime(), lives = [], future = [];
   for (const e of cand) {
-    const s = e.at.getTime() - e.win[0] * 60000, f = e.at.getTime() + e.win[1] * 60000;
-    if (now >= s && now <= f) { if (!live || f < live.f) live = {e, f}; }
-    else if (s > now && (!next || s < next.s)) next = {e, s};
+    const s = startMs(e), f = endMs(e);
+    if (ms >= s && ms <= f) lives.push({e, s, f});
+    else if (s > ms) future.push({e, s, f});
   }
-  const big = document.getElementById('nextBig'), sub = document.getElementById('nextSub');
-  if (live) {
-    box.className = 'next live';
-    box.querySelector('.k').textContent = 'In a blackout window';
-    big.textContent = 'until ' + hm(ukParts(new Date(live.f)).min);
-    sub.textContent = `${live.e.country === 'WHEAT' ? '' : live.e.country + ' '}${live.e.title} · ${live.e.ins.filter(i => selected.has(i)).join(', ')}`;
+  lives.sort((a, b) => b.f - a.f); future.sort((a, b) => a.s - b.s);
+  const live = lives[0], next = future[0];
+  const selIns = e => e.ins.filter(i => selected.has(i)).join(', ');
+  const at = t => hm(ukParts(new Date(t)).min);
+  // What follows the current window: "Then …" when it starts at or after the end, "… joins" when it
+  // overlaps. A window starting at the same minute is the same release split into rows, not a successor.
+  const follow = (cur, list) => { const x = list.find(y => y.s > cur.s && y.s <= cur.f + 15 * 60000); return x ? fill(x.s >= cur.f ? VOICE.then : VOICE.joins, {event: evLabel(x.e), time: at(x.s)}) : ''; };
+  let label, bigText, subText, remark = '', title = VOICE.pageTitle, cls = 'next';
+  if (loadState === 'pending') { label = VOICE.nextNone; bigText = '—'; subText = ''; }
+  else if (loadState === 'failed' && !events.length) { label = VOICE.nextNone; bigText = VOICE.nextFailedBig; subText = VOICE.nextFailedSub; }
+  else if (live) {
+    // Several at once: the figure and the name belong to the one that ends last, and no kind is claimed.
+    const e = live.e, k = lives.length > 1 ? '' : kindOf(e);
+    cls = 'next live';
+    label = k === 'rate' ? VOICE.nextLiveRate : k === 'speech' ? VOICE.nextLiveSpeech : VOICE.nextLive;
+    bigText = fill(VOICE.liveUntil, {time: at(live.f)});
+    subText = `${evLabel(e)} · ${selIns(e)}`;
+    remark = lives.length > 1 ? VOICE.several : follow(live, future) || pick(VOICE.live, 10, u);
+    title = `until ${at(live.f)} · ${evLabel(e)}`;
   } else if (next) {
-    box.className = 'next';
-    box.querySelector('.k').textContent = 'Next blackout starts in';
-    const mins = Math.ceil((next.s - now) / 60000);
-    const pu = ukParts(new Date(next.s));
-    big.textContent = mins >= 1440 ? `${DAYN[pu.dow]} ${pu.hm}` : (mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`);
-    sub.textContent = `${hm(pu.min)} ${next.e.country === 'WHEAT' ? '' : next.e.country + ' '}${next.e.title} · ${next.e.ins.filter(i => selected.has(i)).join(', ')}`;
+    const e = next.e, mins = Math.ceil((next.s - ms) / 60000), pu = ukParts(new Date(next.s)), far = mins >= 1440, k = kindOf(e);
+    label = far ? VOICE.nextIdleFar : VOICE.nextIdle;
+    bigText = far ? `${DAYN[pu.dow]} ${pu.hm}` : (mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`);
+    const v = {time: hm(pu.min), event: evLabel(e), instruments: selIns(e), n: selected.size, day: DAYN[pu.dow]};
+    if (far) subText = fill(VOICE.farSub, v) + (e.country === 'WHEAT' ? VOICE.unverified : '');
+    else if (e.country === 'WHEAT') subText = fill(VOICE.usdaSub, v);
+    else if (e.ins.filter(i => selected.has(i)).length === selected.size && selected.size > 4) subText = fill(VOICE.allSelected, v);
+    else subText = `${v.time} ${v.event} · ${v.instruments}`;
+    // One note at most, set off from the data with a dash so a scanning eye can stop at the instruments.
+    const note = k === 'rate' ? VOICE.rateNote : k === 'speech' ? VOICE.speechNote : (pu.min >= 860 && pu.min <= 875) ? VOICE.usOpenNote : '';
+    if (note) subText += ' — ' + note;
+    const bucket = VOICE.countdown.find(b => mins >= b[0] && mins < b[1]);
+    remark = follow(next, future) || (bucket ? pick(bucket[2], 9, u) : '');
+    if (mins < 60) title = `${mins}m · ${evLabel(e)}`;
   } else {
-    box.className = 'next';
-    box.querySelector('.k').textContent = 'Next blackout';
-    big.textContent = 'none left';
-    sub.textContent = 'this week, for the selected instruments';
+    label = VOICE.nextNone; bigText = VOICE.nextNoneBig;
+    subText = !selected.size ? VOICE.nextNoneSubNoSel : (u.dow === 0 || u.dow === 6) ? VOICE.nextNoneSubWeekend : (u.dow === 5 && u.min >= 900) ? VOICE.nextNoneSubFriday : VOICE.nextNoneSub;
   }
+  if (box.className !== cls) box.className = cls;
+  setText(box.querySelector('.k'), label); setText(big, bigText); setText(sub, subText);
+  // The aside is garnish: it shows only while the data line fits in two lines, and the data is never cut to make room for it.
+  setText(rem, remark);
+  const hide = !remark || sub.getBoundingClientRect().height > parseFloat(getComputedStyle(sub).lineHeight) * 2.2;
+  if (rem.hidden !== hide) rem.hidden = hide;
+  if (document.title !== title) document.title = title;
+  renderFresh(now);
 }
 
 function renderChips() {
@@ -462,11 +713,9 @@ function save() {
 }
 
 function renderNotes(now) {
-  const sec = document.getElementById('notesSec');
   const host = document.getElementById('notes');
   host.textContent = '';
-  if (!notes || notes.date !== ukParts(now).ymd) { sec.hidden = true; return; }
-  sec.hidden = false;
+  if (!notes || notes.date !== ukParts(now).ymd) return;
   if (notes.headline) { const h = document.createElement('h3'); h.textContent = notes.headline; host.appendChild(h); }
   (notes.sections || []).forEach(s => {
     const p = document.createElement('p'); p.style.margin = '10px 0 0'; p.style.fontWeight = '600'; p.textContent = s.title; host.appendChild(p);
@@ -476,6 +725,72 @@ function renderNotes(now) {
   });
 }
 
+// The briefing: a few sentences assembled from the focus day's data. Order: greeting; count or
+// nothing-scheduled; the state line (live, next, or all done); at most one further line, by the
+// priority below; signoff. Five lines at most. Variants are date-seeded, so it reads the same all
+// day and differently tomorrow.
+function renderBrief(days, now) {
+  const u = ukParts(now), sec = document.getElementById('briefSec'), host = document.getElementById('brief');
+  if (loadState === 'pending') { sec.hidden = true; return; }
+  sec.hidden = false;
+  const L = VOICE.lines, G = VOICE.greetings, ms = now.getTime();
+  const weekend = u.dow === 0 || u.dow === 6;
+  const focus = focusDay(days, u), isToday = focus.ymd === u.ymd, past = focus.ymd < u.ymd;
+  const out = [];
+  const greet = past ? fill(G.weekendPast, {day: focus.label}) : fill(pick(weekend ? G.weekend : u.min < 300 ? G.night : u.min < 720 ? G.morning : u.min < 1080 ? G.afternoon : u.min < 1320 ? G.evening : G.night, 0, u), {day: focus.label});
+  out.push(greet);
+  let sign = pick(L.signoff, 8, u);
+  if (loadState === 'failed' && !events.length) out.push(pick(L.loadFailed, 1, u));
+  else {
+    const list = selected.size ? dayWindows(focus.ymd) : [];
+    const high = list.filter(e => e.imp === 'H').length, medium = list.length - high;
+    const cv = {high, medium, day: focus.label};
+    // Live windows are judged against the clock, not the focus day: a window that opened before midnight counts.
+    const cand = selected.size ? events.filter(e => (e.imp === 'H' || e.imp === 'M') && visible(e)) : [];
+    const lives = cand.filter(e => ms >= startMs(e) && ms <= endMs(e));
+    if (!selected.size) out.push(VOICE.noSelection);
+    else if (past) out.push(fill(L.pastDay, cv));
+    else if (!list.length) out.push(fill(pick(isToday ? L.noEvents.slice(0, 3) : [L.noEvents[3]], 2, u), cv));
+    else out.push(fill(pick(!isToday ? [L.count[8], L.count[9]] : high >= 1 && medium >= 1 ? [L.count[0], L.count[1]] : high === 0 && medium >= 2 ? [L.count[2], L.count[3]] : medium === 0 && high >= 2 ? [L.count[4], L.count[5]] : high === 1 ? [L.count[6]] : [L.count[7]], 2, u), cv));
+    if (selected.size && !past) {
+      const upcoming = list.filter(e => startMs(e) > ms);
+      if (lives.length) {
+        const e = lives.reduce((a, b) => endMs(b) > endMs(a) ? b : a), end = runEnd(lives, cand), v = {event: evLabel(e), endTime: hm(ukParts(new Date(end)).min)};
+        out.push(fill(end > endMs(e) ? L.liveRun : pick(L.liveNow, 3, u), v));
+      } else if (!isToday || upcoming.length) {
+        const e = isToday ? upcoming[0] : list[0], s = e.min - e.win[0];
+        // "when {event} arrives" reads badly for "… Speaks"; the other two hold the title after a colon or full stop.
+        const fb = !isToday ? [L.firstBlackout[3]] : /speaks|speech|conference|testif|remarks/i.test(e.title) ? [L.firstBlackout[0], L.firstBlackout[2]] : L.firstBlackout.slice(0, 3);
+        let line = fill(pick(fb, 3, u), {time: hm(s), event: evLabel(e), instruments: e.ins.filter(i => selected.has(i)).join(', '), day: focus.label});
+        if (s >= 480 && s <= 485) line += VOICE.londonOpenNote;
+        out.push(line);
+      } else if (list.length) out.push(pick(L.allDone, 3, u));
+    }
+    // One further line at most, first that applies. The two data caveats outrank everything else.
+    const stale = source === 'forexfactory' && !weekend && fetchedAt && !isNaN(fetchedAt.getTime()) && ms - fetchedAt.getTime() > 86400000;
+    const run = past ? null : largestRun(list.filter(e => !isToday || endMs(e) > ms));
+    const overnight = isToday ? list.filter(e => e.min < 420 && ms > endMs(e)).length : 0;
+    const hols = holidayList(focus.ymd), quiet = quietList(list), wheat = selected.has('Chicago Wheat') && list.some(e => e.recurring);
+    const friday = ukParts(zonedToDate(focus.ymd, '12:00', TZ)).dow === 5;
+    let fifth = '';
+    if (source === 'seed') fifth = pick(L.seedCaveat, 4, u);
+    else if (stale) fifth = fill(pick(L.stale, 4, u), {when: fmtWhen(fetchedAt, now)});
+    else if (run) fifth = fill(pick(L.crowded, 4, u), {count: run.count, first: hm(run.first), last: hm(run.last)});
+    else if (overnight) fifth = fill(VOICE.overnightNote, {n: overnight});
+    else if (hols.length) fifth = fill(pick(isToday ? L.holidays : L.holidays.slice(1), 4, u), {list: hols.join(', ')});
+    else if (wheat && !past) fifth = pick(L.wheat, 4, u);
+    else if (quiet.length >= 1 && quiet.length <= 6 && quiet.length < selected.size && !past) fifth = fill(pick(isToday ? L.quiet : [L.quiet[0], L.quiet[2]], 4, u), {list: quiet.join(', ')});
+    else if (friday && isToday) fifth = VOICE.fridayNote;
+    if (fifth) out.push(fifth);
+    const week = cand.filter(e => days.some(d => d.ymd === e.ymd));
+    if (u.dow === 5 && week.length && week.every(e => ms > endMs(e))) sign = VOICE.weekSign;
+  }
+  // "Sir" at most once per briefing.
+  if (/\bsir\b/.test(greet) && /\bsir\b/.test(sign)) sign = L.signoff[0];
+  out.push(sign);
+  host.textContent = out.map(cap).join(' ');
+}
+
 function renderAll() {
   const now = new Date();
   const days = weekDays();
@@ -483,14 +798,17 @@ function renderAll() {
   drawMap(days, now);
   renderLists(days, now);
   renderHeader(now);
+  renderBrief(days, now);
   renderNotes(now);
 }
 
 async function load() {
+  const slow = setTimeout(() => { if (loadState === 'pending') document.getElementById('fresh').textContent = VOICE.loadingSlow; }, 5000);
   try {
     const r = await fetch('data/ff_week.json', {cache: 'no-cache'});
     const j = await r.json();
     fetchedAt = j.fetchedAt ? new Date(j.fetchedAt) : null;
+    source = j.source || 'forexfactory';
     const raw = (j.events || []).slice();
     const firstMon = (() => {
       const pre = prepare(raw);
@@ -501,11 +819,12 @@ async function load() {
     })();
     if (firstMon && !raw.some(e => e.country === 'WHEAT')) raw.push(...usdaSlots(firstMon));
     events = prepare(raw).sort((a, b) => a.at - b.at);
-    const src = j.source === 'seed' ? 'seed data from a manual check, replaced on the first Action run' : 'Forex Factory';
-    document.getElementById('fresh').textContent = `Calendar: ${src}` + (fetchedAt ? `, last changed ${new Intl.DateTimeFormat('en-GB', {timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(fetchedAt)} UK` : '');
+    loadState = 'ok'; refreshFailed = false;
   } catch (e) {
-    document.getElementById('fresh').textContent = 'Calendar could not be loaded.';
+    // A refresh that fails keeps the last good calendar on screen and says so; only a first load with nothing behind it is "failed".
+    if (loadState === 'ok') refreshFailed = true; else loadState = 'failed';
   }
+  clearTimeout(slow);
   try {
     const r = await fetch('data/brief.json', {cache: 'no-cache'});
     notes = r.ok ? await r.json() : null;
@@ -517,9 +836,9 @@ document.getElementById('copy').addEventListener('click', async () => {
   const msg = document.getElementById('copied');
   try {
     await navigator.clipboard.writeText(document.getElementById('bl').textContent);
-    msg.textContent = 'Copied.';
+    msg.textContent = fill(blCount <= 12 ? VOICE.copiedN : VOICE.copiedOver, {n: blCount});
   } catch (e) {
-    msg.textContent = 'Copy is blocked here. Select the list and copy it by hand.';
+    msg.textContent = VOICE.copyBlocked;
   }
   setTimeout(() => { msg.textContent = ''; }, 3000);
 });

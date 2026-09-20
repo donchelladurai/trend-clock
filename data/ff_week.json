@@ -1,0 +1,278 @@
+{
+ "source": "seed",
+ "fetchedAt": "2026-09-20T15:20:00Z",
+ "events": [
+  {
+   "title": "Bank Holiday",
+   "country": "JPY",
+   "date": "2026-09-21T00:00:00+01:00",
+   "impact": "Holiday",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "1-y Loan Prime Rate",
+   "country": "CNY",
+   "date": "2026-09-21T02:15:00+01:00",
+   "impact": "High",
+   "forecast": "3.00%",
+   "previous": "3.00%"
+  },
+  {
+   "title": "FOMC Member Goolsbee Speaks",
+   "country": "USD",
+   "date": "2026-09-21T11:30:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "CB National Activity Index",
+   "country": "USD",
+   "date": "2026-09-21T13:30:00+01:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "BOC Gov Macklem Speaks",
+   "country": "CAD",
+   "date": "2026-09-21T16:00:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "RBA Gov Bullock Speaks",
+   "country": "AUD",
+   "date": "2026-09-22T04:10:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Consumer Confidence",
+   "country": "EUR",
+   "date": "2026-09-22T15:00:00+01:00",
+   "impact": "Medium",
+   "forecast": "-15.5",
+   "previous": ""
+  },
+  {
+   "title": "Richmond Manufacturing Index",
+   "country": "USD",
+   "date": "2026-09-22T15:00:00+01:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "FOMC Member Williams Speaks",
+   "country": "USD",
+   "date": "2026-09-22T15:05:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Fed Vice Chair Jefferson Speaks",
+   "country": "USD",
+   "date": "2026-09-22T15:20:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "FOMC Member Barkin Speaks",
+   "country": "USD",
+   "date": "2026-09-22T18:00:00+01:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "German Flash Services PMI",
+   "country": "EUR",
+   "date": "2026-09-23T08:30:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": "56.1"
+  },
+  {
+   "title": "Flash Services PMI",
+   "country": "EUR",
+   "date": "2026-09-23T09:00:00+01:00",
+   "impact": "High",
+   "forecast": "51.6",
+   "previous": ""
+  },
+  {
+   "title": "Flash Services PMI",
+   "country": "GBP",
+   "date": "2026-09-23T09:30:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": "52.6"
+  },
+  {
+   "title": "Flash Services PMI",
+   "country": "USD",
+   "date": "2026-09-23T14:45:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": "56.8"
+  },
+  {
+   "title": "FOMC Member Barr Speaks",
+   "country": "USD",
+   "date": "2026-09-23T15:05:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Crude Oil Inventories",
+   "country": "USD",
+   "date": "2026-09-23T15:30:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "ECB Chief Economist Lane Speaks",
+   "country": "EUR",
+   "date": "2026-09-23T17:30:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Employment Change",
+   "country": "AUD",
+   "date": "2026-09-24T02:30:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": "-15.8K"
+  },
+  {
+   "title": "Unemployment Rate",
+   "country": "AUD",
+   "date": "2026-09-24T02:30:00+01:00",
+   "impact": "High",
+   "forecast": "4.5%",
+   "previous": "4.4%"
+  },
+  {
+   "title": "ECB Executive Board Member Schnabel Speaks",
+   "country": "EUR",
+   "date": "2026-09-24T08:15:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "SNB Policy Rate",
+   "country": "CHF",
+   "date": "2026-09-24T08:30:00+01:00",
+   "impact": "High",
+   "forecast": "0.00%",
+   "previous": "0.00%"
+  },
+  {
+   "title": "SNB Press Conference",
+   "country": "CHF",
+   "date": "2026-09-24T09:00:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "German ifo Business Climate",
+   "country": "EUR",
+   "date": "2026-09-24T09:00:00+01:00",
+   "impact": "Medium",
+   "forecast": "89.2",
+   "previous": "88.8"
+  },
+  {
+   "title": "MPC Member Dhingra Speaks",
+   "country": "GBP",
+   "date": "2026-09-24T10:30:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Unemployment Claims",
+   "country": "USD",
+   "date": "2026-09-24T13:30:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "MPC Member Breeden Speaks",
+   "country": "GBP",
+   "date": "2026-09-24T14:30:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "New Home Sales",
+   "country": "USD",
+   "date": "2026-09-24T15:00:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "MPC Member Lombardelli Speaks",
+   "country": "GBP",
+   "date": "2026-09-24T15:00:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Bank Holiday",
+   "country": "CNY",
+   "date": "2026-09-25T00:00:00+01:00",
+   "impact": "Holiday",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "German GfK Consumer Climate",
+   "country": "EUR",
+   "date": "2026-09-25T07:00:00+01:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "FOMC Member Williams Speaks",
+   "country": "USD",
+   "date": "2026-09-25T10:15:00+01:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Core Durable Goods Orders m/m",
+   "country": "USD",
+   "date": "2026-09-25T13:30:00+01:00",
+   "impact": "High",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "Revised UoM Consumer Sentiment",
+   "country": "USD",
+   "date": "2026-09-25T15:00:00+01:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": "47.8"
+  }
+ ]
+}

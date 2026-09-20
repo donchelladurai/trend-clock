@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morning brief — news spikes</title>
+<link rel="icon" href="favicon.svg">
+<style>
+  :root{--bg:#0e131a;--panel:#141b24;--line:#26313f;--text:#e6ecf3;--muted:#8b97a7;--amber:#ffcf5c;--spike:#ff6a2a;--med:#c9d2dd;--low:#4a5667;--pad-x:22px}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",Inter,system-ui,-apple-system,sans-serif}
+  a{color:var(--amber)}
+  .mono{font-family:"JetBrains Mono","SF Mono",Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}
+  header{display:flex;flex-wrap:wrap;align-items:stretch;gap:14px 28px;padding:14px var(--pad-x) 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  .clock{font-size:40px;font-weight:700;line-height:1;align-self:center}
+  .clock small{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:6px}
+  .next{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 20px;border-left:1px solid var(--line);border-right:1px solid var(--line);min-width:260px}
+  .next .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.7px}
+  .next .big{font-size:30px;font-weight:700;line-height:1;color:var(--amber)}
+  .next.live .big{color:var(--spike)}
+  .next .sub{font-size:13px;color:var(--med)}
+  .meta{display:flex;flex-direction:column;justify-content:center;gap:4px;font-size:12px;color:var(--muted)}
+  main{padding:18px var(--pad-x) 40px;max-width:1500px}
+  section{margin:0 0 30px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;margin:0 0 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 6px}
+  .grp{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+  .grp .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-right:2px}
+  button.chip{font:inherit;font-size:12px;font-weight:600;padding:5px 9px;border-radius:4px;border:1px solid var(--line);background:#1e2a3a;color:#fff;cursor:pointer;min-height:30px}
+  button.chip[aria-pressed="false"]{background:transparent;color:var(--muted)}
+  button.chip:focus-visible,button.act:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  button.act{font:inherit;font-size:12px;font-weight:600;padding:5px 10px;border-radius:4px;border:1px solid var(--line);background:transparent;color:var(--amber);cursor:pointer;min-height:30px}
+  .legend{font-size:12px;color:var(--muted);margin:0 0 8px}
+  .legend i{display:inline-block;width:10px;height:10px;margin:0 4px 0 12px;vertical-align:-1px}
+  .legend i:first-child{margin-left:0}
+  .mapwrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+  #map{display:block;min-width:900px;width:100%}
+  ol.win{list-style:none;margin:0;padding:0}
+  ol.win li{display:grid;grid-template-columns:128px 1fr;gap:4px 16px;padding:10px 0;border-top:1px solid var(--line)}
+  ol.win li:first-child{border-top:0}
+  ol.win li.past{opacity:.45}
+  ol.win li.now .t{color:var(--spike)}
+  ol.win .t{font-weight:700;color:var(--amber)}
+  ol.win .e{font-weight:600}
+  ol.win .d{color:var(--med);font-size:13px;grid-column:2}
+  .imp{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:1px 5px;border-radius:3px;margin-left:8px;vertical-align:1px}
+  .imp.H{background:#3a2114;color:#ffb38a;border:1px solid #6e3a1f}
+  .imp.M{background:#1e2a3a;color:var(--med);border:1px solid var(--line)}
+  .day{margin:0 0 10px;color:var(--med);font-size:13px}
+  .day b{color:var(--text);margin-right:8px}
+  .quiet{color:var(--muted);font-size:13px;margin:10px 0 0}
+  pre#bl{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin:8px 0 0;white-space:pre-wrap;font-size:13px;color:var(--text)}
+  .notes{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+  .notes h3{font-size:15px;margin:0 0 8px}
+  .notes ul{margin:6px 0 0;padding-left:18px}
+  .notes li{margin:4px 0;color:var(--med)}
+  footer{padding:0 var(--pad-x) 30px;color:var(--muted);font-size:12px;max-width:1100px}
+  @media (max-width:640px){
+    :root{--pad-x:14px}
+    header{position:static}
+    .clock{font-size:30px}
+    .next{border:0;padding:0;min-width:0}
+    .next .big{font-size:24px}
+    ol.win li{grid-template-columns:1fr}
+    ol.win .d{grid-column:1}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="clock mono" id="clock">--:--<small id="date">UK time</small></div>
+  <div class="next" id="next"><span class="k">Next spike</span><span class="big mono" id="nextBig">—</span><span class="sub" id="nextSub"></span></div>
+  <div class="meta"><span id="fresh">Loading calendar…</span><span><a href="./">Trend Clock</a></span></div>
+</header>
+<main>
+  <section>
+    <h2>My instruments</h2>
+    <div class="chips" id="chips"></div>
+  </section>
+  <section>
+    <h2>News spikes this week, UK time</h2>
+    <p class="legend"><i style="background:var(--spike)"></i>High <i style="background:var(--med)"></i>Medium <i style="background:var(--low)"></i>Low <i style="background:transparent;outline:1px dashed var(--muted)"></i>Recurring USDA slot. Bar width is the suggested blackout window. Dashed lines mark the London (08:00) and US (14:30) opens. Hover or tap a bar for details.</p>
+    <div class="mapwrap"><svg id="map" role="img" aria-label="News spike windows, Monday to Friday, UK time"></svg></div>
+  </section>
+  <section>
+    <h2 id="todayH">Today's windows</h2>
+    <ol class="win" id="today"></ol>
+    <p class="quiet" id="quiet"></p>
+  </section>
+  <section>
+    <h2>Rest of the week</h2>
+    <div id="rest"></div>
+  </section>
+  <section>
+    <h2>For the News Blackout indicator</h2>
+    <p class="quiet" style="margin:0">High-impact times for the instruments selected above, UK clock, in order. The indicator holds 12 a week, so anything past 12 is marked.</p>
+    <pre id="bl" class="mono"></pre>
+    <p style="margin:8px 0 0"><button class="act" id="copy" type="button">Copy list</button> <span id="copied" class="quiet"></span></p>
+  </section>
+  <section id="notesSec" hidden>
+    <h2>This morning's brief</h2>
+    <div class="notes" id="notes"></div>
+  </section>
+</main>
+<footer>
+  <p>Calendar: <a href="https://www.forexfactory.com/calendar">Forex Factory</a> weekly feed, pulled by a GitHub Action and converted here to UK clock time, so BST and GMT are handled. Chicago Wheat slots are USDA's recurring schedule (Crop Progress Mondays 4 PM ET, April to November; Export Sales Thursdays 8:30 AM ET) and are not checked against USDA's holiday shifts or WASDE dates. Suggested windows: high impact 5 minutes before to 20 after, medium 5 before to 15 after, rate decisions 10 before to 30 after, speeches and press conferences from the start to 30 after. Which instruments an event hits is a fixed mapping by currency (USD events also map to US indices and Spot Gold, EUR to Germany 40 and France 40, GBP to FTSE 100, CNY to AUD and NZD), so a surprise can still move instruments outside it.</p>
+</footer>
+<script>
+const TZ = 'Europe/London';
+const GROUPS = [
+  ['Indices', ['FTSE 100','Germany 40','France 40','US 500','US Tech 100','Wall Street']],
+  ['USD pairs', ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','USD/CAD','AUD/USD','NZD/USD']],
+  ['EUR crosses', ['EUR/GBP','EUR/JPY','EUR/CHF','EUR/AUD','EUR/CAD','EUR/NZD']],
+  ['Other', ['AUD/JPY','Spot Gold','Chicago Wheat']]
+];
+const ALL = GROUPS.flatMap(g => g[1]);
+const CCY = {
+  USD: ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','USD/CAD','AUD/USD','NZD/USD','US 500','US Tech 100','Wall Street','Spot Gold'],
+  EUR: ['EUR/USD','EUR/GBP','EUR/JPY','EUR/CHF','EUR/AUD','EUR/CAD','EUR/NZD','Germany 40','France 40'],
+  GBP: ['GBP/USD','EUR/GBP','FTSE 100'],
+  JPY: ['USD/JPY','EUR/JPY','AUD/JPY'],
+  CHF: ['USD/CHF','EUR/CHF'],
+  CAD: ['USD/CAD','EUR/CAD'],
+  AUD: ['AUD/USD','EUR/AUD','AUD/JPY'],
+  NZD: ['NZD/USD','EUR/NZD'],
+  CNY: ['AUD/USD','AUD/JPY','NZD/USD'],
+  WHEAT: ['Chicago Wheat']
+};
+const IMPACT = {High: 'H', Medium: 'M', Low: 'L', Holiday: 'X'};
+const COL = {H: '#ff6a2a', M: '#c9d2dd', L: '#4a5667'};
+const DAYN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let events = [];
+let fetchedAt = null;
+let notes = null;
+let selected = new Set(ALL);
+
+try {
+  const s = JSON.parse(localStorage.getItem('brief.sel') || 'null');
+  if (Array.isArray(s) && s.length) selected = new Set(s.filter(x => ALL.includes(x)));
+} catch (e) {}
+
+function ukParts(d) {
+  const p = {};
+  new Intl.DateTimeFormat('en-GB', {timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short', hourCycle: 'h23'})
+    .formatToParts(d).forEach(x => { p[x.type] = x.value; });
+  return {
+    ymd: `${p.year}-${p.month}-${p.day}`,
+    min: (+p.hour) * 60 + (+p.minute),
+    sec: +p.second,
+    hm: `${p.hour}:${p.minute}`,
+    dow: DAYN.indexOf(p.weekday),
+    day: +p.day
+  };
+}
+
+function hm(m) {
+  m = ((m % 1440) + 1440) % 1440;
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+
+function zonedToDate(ymd, hhmm, zone) {
+  const [y, mo, d] = ymd.split('-').map(Number);
+  const [h, mi] = hhmm.split(':').map(Number);
+  let guess = Date.UTC(y, mo - 1, d, h, mi);
+  for (let i = 0; i < 2; i++) {
+    const p = {};
+    new Intl.DateTimeFormat('en-US', {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'})
+      .formatToParts(new Date(guess)).forEach(x => { p[x.type] = x.value; });
+    const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+    guess += Date.UTC(y, mo - 1, d, h, mi) - asUtc;
+  }
+  return new Date(guess);
+}
+
+function windowFor(e) {
+  const t = e.title.toLowerCase();
+  if (e.imp === 'H' && /(rate|policy|monetary|statement|decision)/.test(t) && !/speaks/.test(t)) return [10, 30];
+  if (/(speaks|speech|press conference|testifies|remarks)/.test(t)) return [0, 30];
+  if (e.imp === 'H') return [5, 20];
+  if (e.imp === 'M') return [5, 15];
+  return [0, 5];
+}
+
+function instrumentsFor(e) {
+  const base = CCY[e.country] ? CCY[e.country].slice() : [];
+  const t = e.title.toLowerCase();
+  if (/crude oil/.test(t) && !base.includes('USD/CAD')) base.push('USD/CAD', 'EUR/CAD');
+  return base;
+}
+
+function usdaSlots(weekMon) {
+  const out = [];
+  const month = +weekMon.slice(5, 7);
+  const add = (offset, hhmm, title) => {
+    const dt = new Date(zonedToDate(weekMon, '12:00', TZ).getTime() + offset * 86400000);
+    const ymd = ukParts(dt).ymd;
+    out.push({title, country: 'WHEAT', date: zonedToDate(ymd, hhmm, 'America/New_York').toISOString(), impact: 'Medium', forecast: '', previous: '', recurring: true});
+  };
+  if (month >= 4 && month <= 11) add(0, '16:00', 'USDA Crop Progress');
+  add(3, '08:30', 'USDA Export Sales');
+  return out;
+}
+
+function prepare(raw) {
+  const list = raw.map(r => {
+    const d = new Date(r.date);
+    const u = ukParts(d);
+    const e = {title: r.title, country: r.country, imp: IMPACT[r.impact] || 'L', forecast: r.forecast || '', previous: r.previous || '', recurring: !!r.recurring, at: d, ymd: u.ymd, min: u.min, dow: u.dow};
+    e.win = windowFor(e);
+    e.ins = instrumentsFor(e);
+    return e;
+  });
+  return list.filter(e => e.dow >= 1 && e.dow <= 5);
+}
+
+function weekDays() {
+  const now = new Date();
+  const u = ukParts(now);
+  let anchor = events.length ? events[0].at : now;
+  if (u.dow >= 1 && u.dow <= 5) anchor = now;
+  const a = ukParts(anchor);
+  const back = a.dow === 0 ? -1 : (a.dow === 6 ? -5 : a.dow - 1);
+  const noon = zonedToDate(a.ymd, '12:00', TZ).getTime();
+  const days = [];
+  for (let i = 0; i < 5; i++) {
+    const p = ukParts(new Date(noon + (i - back) * 86400000));
+    days.push({ymd: p.ymd, label: DAYN[p.dow] + ' ' + p.day});
+  }
+  return days;
+}
+
+function visible(e) {
+  if (e.imp === 'X') return e.ins.some(i => selected.has(i)) || !e.ins.length;
+  return e.ins.some(i => selected.has(i));
+}
+
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, text) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+function shortName(t) {
+  return t
+    .replace(/^(FOMC Member|FOMC|Fed Chair|Fed Vice Chair|ECB President|ECB Vice President|ECB|BOE Gov|BOE|MPC Member|SNB Chairman|BOC Gov|RBA Gov|RBNZ Gov|BOJ Gov)\s+/i, '')
+    .replace(/\s+Speaks$/i, '')
+    .replace(/Flash Manufacturing PMI|Flash Services PMI/i, 'PMI')
+    .replace(/Unemployment Claims/i, 'Claims')
+    .replace(/Core Durable Goods Orders m\/m|Durable Goods Orders m\/m/i, 'Durables')
+    .slice(0, 22);
+}
+
+function drawMap(days, now) {
+  const svg = document.getElementById('map');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const W = Math.max(900, svg.parentNode.clientWidth || 900);
+  const G0 = 62, G1 = G0 + 56, X0 = G1 + 14, X1 = W - 8, T0 = 7 * 60, T1 = 22 * 60;
+  const k = (X1 - X0) / (T1 - T0), RH = 96, top = 40, H = top + RH * days.length + 6;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('height', H);
+  const u = ukParts(now);
+  days.forEach((d, i) => {
+    const y = top + i * RH;
+    if (d.ymd === u.ymd) svg.appendChild(el('rect', {x: 0, y, width: W, height: RH - 4, fill: '#1b2531'}));
+  });
+  for (let h = 7; h <= 22; h++) {
+    const x = X0 + (h * 60 - T0) * k;
+    svg.appendChild(el('line', {x1: x, y1: top, x2: x, y2: H - 4, stroke: '#1e2733'}));
+    if (h % 2 === 0) svg.appendChild(el('text', {x, y: top - 8, 'font-size': 11, fill: '#8b97a7', 'text-anchor': 'middle'}, hm(h * 60)));
+  }
+  [['08:00', 'London open'], ['14:30', 'US open']].forEach(([t, lab]) => {
+    const m = +t.slice(0, 2) * 60 + +t.slice(3);
+    const x = X0 + (m - T0) * k;
+    svg.appendChild(el('line', {x1: x, y1: top, x2: x, y2: H - 4, stroke: '#8b97a7', 'stroke-dasharray': '2 3'}));
+    svg.appendChild(el('text', {x: x + 3, y: top - 22, 'font-size': 10, fill: '#8b97a7'}, lab));
+  });
+  svg.appendChild(el('text', {x: (G0 + G1) / 2, y: top - 8, 'font-size': 11, fill: '#8b97a7', 'text-anchor': 'middle'}, 'overnight'));
+  days.forEach((d, i) => {
+    const y = top + i * RH, base = y + RH - 20;
+    const isToday = d.ymd === u.ymd, past = d.ymd < u.ymd;
+    const g = el('g', {opacity: past ? 0.4 : 1});
+    svg.appendChild(g);
+    g.appendChild(el('text', {x: 6, y: base + 1, 'font-size': 13, 'font-weight': 700, fill: isToday ? '#ffcf5c' : '#e6ecf3'}, d.label));
+    g.appendChild(el('line', {x1: X0, y1: base, x2: X1, y2: base, stroke: '#5b6878'}));
+    g.appendChild(el('line', {x1: G0 + 2, y1: base, x2: G1 - 2, y2: base, stroke: '#3a4655'}));
+    const dayEv = events.filter(e => e.ymd === d.ymd && visible(e)).sort((a, b) => a.min - b.min);
+    const hols = dayEv.filter(e => e.imp === 'X');
+    if (hols.length) {
+      const txt = hols.map(e => e.country + ' ' + e.title.toLowerCase()).join(', ');
+      g.appendChild(el('text', {x: X1 - 4, y: y + 16, 'font-size': 10, fill: '#ffb38a', 'text-anchor': 'end'}, txt));
+    }
+    const ends = [-1e9, -1e9, -1e9, -1e9, -1e9];
+    dayEv.filter(e => e.imp !== 'X').forEach(e => {
+      const tip = `${hm(e.min)} UK · ${e.country === 'WHEAT' ? 'USDA' : e.country} ${e.title}` + (e.forecast ? ` · f/c ${e.forecast}` : '') + (e.previous ? ` · prev ${e.previous}` : '') + ` · ${e.ins.join(', ')}` + (e.recurring ? ' · recurring slot, unverified' : '');
+      if (e.min < T0) {
+        if (e.imp === 'L') return;
+        const x = G0 + 8 + (e.min / T0) * (G1 - G0 - 16);
+        const c = el('circle', {cx: x, cy: base, r: e.imp === 'H' ? 6 : 4.5, fill: COL[e.imp]});
+        c.appendChild(el('title', {}, tip));
+        g.appendChild(c);
+        g.appendChild(el('text', {x, y: base - 12, 'font-size': 10, fill: e.imp === 'H' ? '#ffb38a' : '#c9d2dd', 'text-anchor': 'middle'}, `${hm(e.min)} ${e.country}`));
+        return;
+      }
+      const a = Math.max(T0, e.min - e.win[0]), b = Math.min(T1, e.min + e.win[1]);
+      const xa = X0 + (a - T0) * k, xb = X0 + (b - T0) * k, w = Math.max(xb - xa, 3);
+      const hgt = {H: 22, M: 13, L: 6}[e.imp];
+      const r = el('rect', {x: xa, y: base - hgt, width: w, height: hgt, fill: COL[e.imp]});
+      if (e.recurring) { r.setAttribute('fill-opacity', '.35'); r.setAttribute('stroke', '#c9d2dd'); r.setAttribute('stroke-dasharray', '2 2'); }
+      r.appendChild(el('title', {}, tip));
+      g.appendChild(r);
+      if (e.imp === 'L') return;
+      const txt = `${hm(e.min)} ${e.country === 'WHEAT' ? '' : e.country + ' '}${shortName(e.title)}`;
+      const tw = txt.length * 5.9 + 6;
+      let lx = xa, anchor = 'start', start = xa;
+      if (xa + tw > X1) { anchor = 'end'; lx = xb; start = xb - tw; }
+      let tier = ends.findIndex(v => start > v);
+      if (tier < 0) tier = 4;
+      ends[tier] = start + tw;
+      const ty = base - 28 - tier * 12;
+      if (tier > 0) g.appendChild(el('line', {x1: xa + 0.5, y1: ty + 2, x2: xa + 0.5, y2: base - hgt, stroke: '#3a4655'}));
+      g.appendChild(el('text', {x: lx, y: ty, 'font-size': 10.5, fill: e.imp === 'H' ? '#ffb38a' : '#c9d2dd', 'text-anchor': anchor}, txt));
+    });
+    if (isToday && u.min >= T0 && u.min <= T1) {
+      const x = X0 + (u.min - T0) * k;
+      const wrap = svg.parentNode;
+      if (!wrap.dataset.scrolled && wrap.clientWidth < W) { wrap.scrollLeft = Math.max(0, x - wrap.clientWidth / 3); wrap.dataset.scrolled = '1'; }
+      g.appendChild(el('line', {x1: x, y1: y + 4, x2: x, y2: base + 6, stroke: '#ffcf5c', 'stroke-width': 2}));
+    }
+  });
+}
+
+function winText(e) {
+  return e.win[0] || e.win[1] ? `${hm(e.min - e.win[0])}–${hm(e.min + e.win[1])}` : hm(e.min);
+}
+
+function renderLists(days, now) {
+  const u = ukParts(now);
+  const todayIdx = days.findIndex(d => d.ymd === u.ymd);
+  const focus = todayIdx >= 0 ? days[todayIdx] : days.find(d => d.ymd > u.ymd) || days[0];
+  document.getElementById('todayH').textContent = (focus.ymd === u.ymd ? "Today's windows" : focus.label + ' windows');
+  const ol = document.getElementById('today');
+  ol.textContent = '';
+  const list = events.filter(e => e.ymd === focus.ymd && visible(e) && (e.imp === 'H' || e.imp === 'M')).sort((a, b) => a.min - b.min);
+  if (!list.length) {
+    const li = document.createElement('li');
+    li.textContent = 'No high or medium events for the selected instruments.';
+    ol.appendChild(li);
+  }
+  list.forEach(e => {
+    const li = document.createElement('li');
+    const s = e.min - e.win[0], f = e.min + e.win[1];
+    if (focus.ymd === u.ymd) {
+      if (u.min > f) li.className = 'past';
+      else if (u.min >= s) li.className = 'now';
+    }
+    const t = document.createElement('span'); t.className = 't mono'; t.textContent = winText(e);
+    const ev = document.createElement('span'); ev.className = 'e';
+    ev.textContent = `${e.country === 'WHEAT' ? '' : e.country + ' '}${e.title}`;
+    const b = document.createElement('span'); b.className = 'imp ' + e.imp; b.textContent = e.imp === 'H' ? 'High' : 'Medium';
+    ev.appendChild(b);
+    const d = document.createElement('span'); d.className = 'd';
+    const fc = [e.forecast && `forecast ${e.forecast}`, e.previous && `previous ${e.previous}`].filter(Boolean).join(', ');
+    d.textContent = `Hits ${e.ins.filter(i => selected.has(i)).join(', ')}.` + (fc ? ` ${fc[0].toUpperCase() + fc.slice(1)}.` : '') + (e.recurring ? ' Recurring USDA slot, not checked for holiday shifts.' : '');
+    li.append(t, ev, d);
+    ol.appendChild(li);
+  });
+  const hit = new Set(list.flatMap(e => e.ins));
+  const quiet = ALL.filter(i => selected.has(i) && !hit.has(i));
+  const hols = events.filter(e => e.ymd === focus.ymd && e.imp === 'X').map(e => `${e.country} ${e.title.toLowerCase()}`);
+  document.getElementById('quiet').textContent = [hols.length ? 'Holidays: ' + hols.join(', ') + '.' : '', quiet.length ? 'Quiet: ' + quiet.join(', ') + '.' : ''].filter(Boolean).join(' ');
+
+  const rest = document.getElementById('rest');
+  rest.textContent = '';
+  days.forEach(d => {
+    if (d.ymd === focus.ymd) return;
+    const evs = events.filter(e => e.ymd === d.ymd && visible(e) && (e.imp === 'H' || e.imp === 'M')).sort((a, b) => a.min - b.min);
+    const p = document.createElement('p'); p.className = 'day';
+    if (d.ymd < u.ymd) p.style.opacity = '.45';
+    const b = document.createElement('b'); b.textContent = d.label;
+    p.appendChild(b);
+    const hols = events.filter(e => e.ymd === d.ymd && e.imp === 'X').map(e => `${e.country} ${e.title.toLowerCase()}`);
+    const parts = evs.map(e => `${winText(e)} ${e.country === 'WHEAT' ? '' : e.country + ' '}${shortName(e.title)}${e.imp === 'H' ? ' (high)' : ''}`);
+    p.appendChild(document.createTextNode((parts.length ? parts.join(' · ') : 'Nothing high or medium.') + (hols.length ? ' · Holidays: ' + hols.join(', ') : '')));
+    rest.appendChild(p);
+  });
+
+  const hi = events.filter(e => e.imp === 'H' && visible(e) && days.some(d => d.ymd === e.ymd)).sort((a, b) => a.at - b.at);
+  const merged = [];
+  hi.forEach(e => {
+    const last = merged[merged.length - 1];
+    if (last && last.at.getTime() === e.at.getTime() && last.country === e.country) last.title += ' + ' + e.title;
+    else merged.push({at: e.at, dow: e.dow, min: e.min, country: e.country, title: e.title});
+  });
+  const lines = merged.map((e, i) => `${i >= 12 ? '(over 12) ' : ''}${DAYN[e.dow]} ${hm(e.min)}  ${e.country} ${e.title}`);
+  document.getElementById('bl').textContent = lines.length ? lines.join('\n') : 'No high-impact events for the selected instruments.';
+}
+
+function renderHeader(now) {
+  const u = ukParts(now);
+  const c = document.getElementById('clock');
+  c.firstChild.textContent = u.hm;
+  document.getElementById('date').textContent = new Intl.DateTimeFormat('en-GB', {timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long'}).format(now) + ' · UK';
+  const box = document.getElementById('next');
+  const cand = events.filter(e => (e.imp === 'H' || e.imp === 'M') && visible(e));
+  let live = null, next = null;
+  for (const e of cand) {
+    const s = e.at.getTime() - e.win[0] * 60000, f = e.at.getTime() + e.win[1] * 60000;
+    if (now >= s && now <= f) { if (!live || f < live.f) live = {e, f}; }
+    else if (s > now && (!next || s < next.s)) next = {e, s};
+  }
+  const big = document.getElementById('nextBig'), sub = document.getElementById('nextSub');
+  if (live) {
+    box.className = 'next live';
+    box.querySelector('.k').textContent = 'In a blackout window';
+    big.textContent = 'until ' + hm(ukParts(new Date(live.f)).min);
+    sub.textContent = `${live.e.country === 'WHEAT' ? '' : live.e.country + ' '}${live.e.title} · ${live.e.ins.filter(i => selected.has(i)).join(', ')}`;
+  } else if (next) {
+    box.className = 'next';
+    box.querySelector('.k').textContent = 'Next blackout starts in';
+    const mins = Math.ceil((next.s - now) / 60000);
+    const pu = ukParts(new Date(next.s));
+    big.textContent = mins >= 1440 ? `${DAYN[pu.dow]} ${pu.hm}` : (mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`);
+    sub.textContent = `${hm(pu.min)} ${next.e.country === 'WHEAT' ? '' : next.e.country + ' '}${next.e.title} · ${next.e.ins.filter(i => selected.has(i)).join(', ')}`;
+  } else {
+    box.className = 'next';
+    box.querySelector('.k').textContent = 'Next blackout';
+    big.textContent = 'none left';
+    sub.textContent = 'this week, for the selected instruments';
+  }
+}
+
+function renderChips() {
+  const host = document.getElementById('chips');
+  host.textContent = '';
+  const allBtn = document.createElement('button');
+  allBtn.type = 'button'; allBtn.className = 'chip';
+  const allOn = selected.size === ALL.length;
+  allBtn.setAttribute('aria-pressed', String(allOn));
+  allBtn.textContent = 'All';
+  allBtn.onclick = () => { selected = new Set(allOn ? [] : ALL); save(); renderAll(); };
+  const g0 = document.createElement('div'); g0.className = 'grp'; g0.appendChild(allBtn); host.appendChild(g0);
+  GROUPS.forEach(([name, list]) => {
+    const g = document.createElement('div'); g.className = 'grp';
+    const k = document.createElement('span'); k.className = 'k'; k.textContent = name; g.appendChild(k);
+    list.forEach(i => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip';
+      b.setAttribute('aria-pressed', String(selected.has(i)));
+      b.textContent = i;
+      b.onclick = () => { selected.has(i) ? selected.delete(i) : selected.add(i); save(); renderAll(); };
+      g.appendChild(b);
+    });
+    host.appendChild(g);
+  });
+}
+
+function save() {
+  try { localStorage.setItem('brief.sel', JSON.stringify([...selected])); } catch (e) {}
+}
+
+function renderNotes(now) {
+  const sec = document.getElementById('notesSec');
+  const host = document.getElementById('notes');
+  host.textContent = '';
+  if (!notes || notes.date !== ukParts(now).ymd) { sec.hidden = true; return; }
+  sec.hidden = false;
+  if (notes.headline) { const h = document.createElement('h3'); h.textContent = notes.headline; host.appendChild(h); }
+  (notes.sections || []).forEach(s => {
+    const p = document.createElement('p'); p.style.margin = '10px 0 0'; p.style.fontWeight = '600'; p.textContent = s.title; host.appendChild(p);
+    const ul = document.createElement('ul');
+    (s.items || []).forEach(it => { const li = document.createElement('li'); li.textContent = it; ul.appendChild(li); });
+    host.appendChild(ul);
+  });
+}
+
+function renderAll() {
+  const now = new Date();
+  const days = weekDays();
+  renderChips();
+  drawMap(days, now);
+  renderLists(days, now);
+  renderHeader(now);
+  renderNotes(now);
+}
+
+async function load() {
+  try {
+    const r = await fetch('data/ff_week.json', {cache: 'no-cache'});
+    const j = await r.json();
+    fetchedAt = j.fetchedAt ? new Date(j.fetchedAt) : null;
+    const raw = (j.events || []).slice();
+    const firstMon = (() => {
+      const pre = prepare(raw);
+      const d = pre.length ? pre[0] : null;
+      if (!d) return null;
+      const back = d.dow - 1;
+      return ukParts(new Date(zonedToDate(d.ymd, '12:00', TZ).getTime() - back * 86400000)).ymd;
+    })();
+    if (firstMon && !raw.some(e => e.country === 'WHEAT')) raw.push(...usdaSlots(firstMon));
+    events = prepare(raw).sort((a, b) => a.at - b.at);
+    const src = j.source === 'seed' ? 'seed data from a manual check, replaced on the first Action run' : 'Forex Factory';
+    document.getElementById('fresh').textContent = `Calendar: ${src}` + (fetchedAt ? `, last changed ${new Intl.DateTimeFormat('en-GB', {timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(fetchedAt)} UK` : '');
+  } catch (e) {
+    document.getElementById('fresh').textContent = 'Calendar could not be loaded.';
+  }
+  try {
+    const r = await fetch('data/brief.json', {cache: 'no-cache'});
+    notes = r.ok ? await r.json() : null;
+  } catch (e) { notes = null; }
+  renderAll();
+}
+
+document.getElementById('copy').addEventListener('click', async () => {
+  const msg = document.getElementById('copied');
+  try {
+    await navigator.clipboard.writeText(document.getElementById('bl').textContent);
+    msg.textContent = 'Copied.';
+  } catch (e) {
+    msg.textContent = 'Copy is blocked here. Select the list and copy it by hand.';
+  }
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+});
+
+load();
+setInterval(() => renderHeader(new Date()), 1000);
+setInterval(() => renderAll(), 60000);
+setInterval(load, 30 * 60000);
+window.addEventListener('resize', () => drawMap(weekDays(), new Date()));
+</script>
+</body>
+</html>

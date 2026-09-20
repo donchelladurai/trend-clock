@@ -502,3 +502,41 @@ degenerates, which produced wrong false-mark counts here once.
   file), not inline `node -e` with the text embedded.
 - Prose is deliberately specific about uncertainty. If a change makes a stated number wrong,
   change the number — do not soften the sentence into something unfalsifiable.
+
+---
+
+## 9. `brief.html` — news spikes for the week
+
+A second static page, independent of `index.html` apart from one header link. It draws the
+Mon–Fri news calendar as blackout windows on a UK-time axis, one row per day, for the same 22
+instruments as the board, with a next-blackout countdown, today's windows, a compact line per
+other day, and a list of high-impact times for the ProRealTime News Blackout indicator (12 slots).
+
+**Data.** `data/ff_week.json` is the Forex Factory weekly feed
+(`nfs.faireconomy.media/ff_calendar_thisweek.json`), filtered to USD EUR GBP JPY CHF CAD AUD NZD CNY
+and written by `tools/fetch_ff.js`. `.github/workflows/ff-calendar.yml` runs it every 2 hours and
+on `workflow_dispatch`, and commits only when the events change. The feed rate-limits frequent
+pulls, so do not shorten the schedule much. A file with `"source": "seed"` was written by hand
+and is replaced on the first Action run.
+
+**Conversion.** Feed times carry a US Eastern offset. The page converts every event with
+`Intl` to `Europe/London`, so BST/GMT and the weeks when UK and US clocks are out of step are
+handled; nothing is stored in UK time.
+
+**Rules the page applies (constants in the script):**
+
+| Thing | Rule |
+|---|---|
+| Blackout window | high 5 before / 20 after; medium 5 / 15; low 0 / 5; high-impact rate, policy or statement items 10 / 30; titles with speaks, speech, press conference, testifies, remarks 0 / 30 |
+| Instruments hit | fixed map by currency in `CCY`: USD also maps to US 500, US Tech 100, Wall Street, Spot Gold; EUR to Germany 40, France 40; GBP to FTSE 100; CNY to AUD/USD, AUD/JPY, NZD/USD; crude oil titles add USD/CAD, EUR/CAD |
+| Chicago Wheat | synthetic USDA slots: Crop Progress Mondays 16:00 ET (April–November), Export Sales Thursdays 08:30 ET. Not checked against USDA holiday shifts or WASDE dates |
+| Week shown | the UK Mon–Fri containing today; at weekends, the week the feed covers |
+| Holidays | feed items with impact `Holiday` print as a row note, not a bar |
+
+**Optional notes.** `data/brief.json` (`{date, headline, sections:[{title, items:[…]}]}`) renders a
+"This morning's brief" panel only when `date` is today in UK time. Nothing writes it
+automatically yet. The file is public on GitHub Pages like the rest of the repo.
+
+**Verify.** Serve the folder over HTTP (fetch does not work from `file://`), then check with a
+browser in a non-UK timezone and a faked clock that a known event lands at its UK time and that
+the header switches to "In a blackout window" inside it and that the console shows no errors.

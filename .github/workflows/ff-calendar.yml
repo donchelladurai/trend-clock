@@ -1,0 +1,40 @@
+name: Refresh news calendar
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/fetch_ff.js'
+      - '.github/workflows/ff-calendar.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ff-calendar
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Fetch Forex Factory week
+        run: node tools/fetch_ff.js data/ff_week.json
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- data/ff_week.json; then
+            echo "Calendar unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/ff_week.json
+          git commit -m "Refresh news calendar"
+          git push

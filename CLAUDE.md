@@ -328,7 +328,7 @@ model, so it cannot mislead optimistically and does not drift with sample size. 
   align. `setMini` writes `#minitext` rather than `#mini`, because the label is a sibling element
   and `textContent` on the parent would erase it. It is the only prose on the page since the footer went.
 - **News on the board (added 20 Sep 2026).** `news.js` — shared with brief.html — fetches
-  `data/ff_week.json`; today's blackout windows are drawn as a 3px band along the top of the heat
+  `data/ff_week.json`; today's news-spike windows are drawn as a 3px band along the top of the heat
   strip on every row the event hits (orange high, light medium, faint low; `.news i`, tooltip data
   only), with a composite row carrying its constituents' news (`ROW_INS`). Two header rows, **News
   now** and **News next**, list the high and medium windows overlapping the current and the next
@@ -528,7 +528,7 @@ degenerates, which produced wrong false-mark counts here once.
 ## 8. Conventions
 
 - Three pages, cross-linked in the header: `index.html` the board (08:00–21:00, 5-minute),
-  `brief.html` the news blackouts, `swing.html` the overnight session (00:00–08:00, §10).
+  `brief.html` the news spikes, `swing.html` the overnight session (00:00–08:00, §10).
 - All times are **UK clock time**. Slot `k` starts at `08:00 + 15k`. The EST toggle shifts
   labels only; the data is not re-bucketed. For the ~4 weeks a year when UK and US clocks are out
   of step, US-session features land an hour — **four slots** — earlier than labelled.
@@ -544,9 +544,18 @@ degenerates, which produced wrong false-mark counts here once.
 ## 9. `brief.html` — news spikes for the week
 
 A second static page, sharing `news.js` with `index.html` and linked from its header. It draws the
-Mon–Fri news calendar as blackout windows on a UK-time axis, one row per day, for the same 22
-instruments as the board, with a next-blackout countdown, today's windows, a compact line per
+Mon–Fri news calendar as news-spike windows on a UK-time axis, one row per day, for the same 22
+instruments as the board, with a next-spike countdown, today's windows, a compact line per
 other day, and a list of high-impact times for the ProRealTime News Blackout indicator (12 slots).
+
+**A spike window is not a blackout** (renamed 21 Sep 2026, at the owner's request). The window is
+where the move is likely to fall, and the page exists so the owner knows it is coming — not so
+they stand aside for it, which they do not necessarily do. Every user-facing string says "news
+spike" or "spike window", and the advice register is awareness rather than instruction: "the
+stretch the move usually falls in", not "be flat or be sized for a miss". The one place the old
+word survives is the heading **For the News Blackout indicator**, because that is the ProRealTime
+indicator's own name, and a line beneath says so. Two identifiers in the script, `firstSpike` and
+`emptySpikes`, were `firstBlackout` and `emptyBlackout` before the rename.
 
 **Data.** `data/ff_week.json` is the Forex Factory weekly feed
 (`nfs.faireconomy.media/ff_calendar_thisweek.json`), filtered to USD EUR GBP JPY CHF CAD AUD NZD CNY
@@ -570,7 +579,7 @@ the bands, chips and mini brief. Edit a rule once, there.
 
 | Thing | Rule |
 |---|---|
-| Blackout window | high 5 before / 20 after; medium 5 / 15; low 0 / 5; high-impact policy-rate decisions and statements (policy, cash, funds, bank, prime, overnight… rate; rate decision or statement; monetary policy; never unemployment, inflation or participation rates) 10 / 30; titles with speaks, speech, press conference, testifies, remarks 0 / 30 |
+| Spike window | high 5 before / 20 after; medium 5 / 15; low 0 / 5; high-impact policy-rate decisions and statements (policy, cash, funds, bank, prime, overnight… rate; rate decision or statement; monetary policy; never unemployment, inflation or participation rates) 10 / 30; titles with speaks, speech, press conference, testifies, remarks 0 / 30 |
 | Instruments hit | fixed map by currency in `CCY`: USD also maps to US 500, US Tech 100, Wall Street, Spot Gold; EUR to Germany 40, France 40; GBP to FTSE 100; CNY to AUD/USD, AUD/JPY, NZD/USD; crude oil titles add USD/CAD, EUR/CAD; printed everywhere in board order |
 | Chicago Wheat | synthetic USDA slots: Crop Progress Mondays 16:00 ET (April–November), Export Sales Thursdays 08:30 ET. Not checked against USDA holiday shifts or WASDE dates |
 | Week shown | the UK Mon–Fri containing today; at weekends, the week the feed covers, or the coming week when nothing is loaded |
@@ -587,7 +596,7 @@ the calendar has loaded or failed. It is assembled client-side by `renderBrief` 
 day's data (no model call) and, since 20 Sep 2026, is **sectioned**: an intro paragraph, then
 **High impact**, **Medium impact** and **Low impact**, then the signoff. Each of the first two
 sections opens with a one-line intro chosen by how many events it holds (none / one / several),
-then one block per event — release time, country and title, the blackout window, the data the
+then one block per event — release time, country and title, the spike window, the data the
 list below also carries (instruments hit, forecast, previous, the USDA caveat), and one remark in
 the voice chosen by the event's **kind** (rate decision, speech, scheduled data, recurring USDA
 slot) and **state** (upcoming, live, past); remarks are seeded by the date and the event's minute
@@ -646,9 +655,9 @@ which also govern any new string:
 - Unknown is never dressed as quiet: while the fetch is pending the lists say "Consulting the
   calendar…", after a failed first load they say the calendar did not load and the header says
   "unknown", and a failed refresh keeps the last calendar and says so on the freshness line.
-- Windows are ordered by when their blackout starts, in the list, the header and the briefing,
+- Windows are ordered by when their spike window starts, in the list, the header and the briefing,
   so all three name the same next window; a window that started at the same minute is the same
-  release split into rows, not a successor. Two live windows show a plain "Blackout in effect"
+  release split into rows, not a successor. Two live windows show a plain "Spike window now"
   for the one that ends last; a successor that overlaps says "joins at", one that follows says
   "Then"; the briefing's live line runs to the end of the whole chained stretch.
 - **Second deck (20 Sep 2026, board mini brief, news chips, sectioned briefing).** A second
@@ -691,7 +700,7 @@ which also govern any new string:
 - State-driven quirks: "Speech in effect" / "Rate decision in effect" labels (from the window
   shape, 0/30 and 10/30); rate and speech notes and a US-open note appended to the idle data
   line after " · "; "all {n} selected instruments" when a window hits every selected one;
-  "Next blackout" with the weekday when the next start is a day or more away; the tab title
+  "Next news spike" with the weekday when the next start is a day or more away; the tab title
   becomes "until HH:MM · event" while live and "{mins}m · event" under an hour; the clock
   caption gains "· London open" / "· US open" for five minutes; the freshness line gains
   "older than I would like" and a clocks-out-of-step note when UK and New York are four hours
@@ -716,7 +725,7 @@ row carries its constituents' bands.
 
 **Verify.** Serve the folder over HTTP (fetch does not work from `file://`), then check with a
 browser in a non-UK timezone and a faked clock that a known event lands at its UK time and that
-the header switches to "Blackout in effect" inside it and that the console shows no errors. The
+the header switches to "Spike window now" inside it and that the console shows no errors. The
 quickest rig: append a `<script>` that overrides `Date` to a fixed instant, calls `renderAll()`,
 and snapshots `#next .k`, `#nextBig`, `#nextSub`, `#nextRem`, `#todayH`, `#quiet`, `#bl`,
 `#brief` and `document.title` into a `<pre>`; dump the DOM headless and read it back. States

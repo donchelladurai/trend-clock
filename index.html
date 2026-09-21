@@ -67,7 +67,7 @@
   .row .lab .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.5px;padding:1px 5px;border-radius:3px;margin-right:5px;vertical-align:middle;background:#3a2114;color:#ffb38a;border:1px solid #6e3a1f;visibility:hidden}
   .row.turn .lab .tag{visibility:visible}
   .strips{position:relative}
-  /* Today's news blackout windows (data/ff_week.json via news.js), as a thin band along the top of
+  /* Today's news-spike windows (data/ff_week.json via news.js), as a thin band along the top of
      the heat strip on every row the event hits: orange for high impact, light for medium, faint
      for low. The band's tooltip is data only. */
   .news{position:absolute;left:0;right:0;top:0;height:4px;pointer-events:none;z-index:1}
@@ -204,7 +204,7 @@
     <div class="clock mono"><span id="clock">--:--:--</span><small id="zonelab">UK time</small></div>
     <div class="win mono">window <b id="winlab">—</b><span class="cd" id="cd"></span></div>
     <div class="win" id="modelab" style="margin-top:2px"></div>
-    <div class="navlinks"><a class="navlink" href="brief.html">News blackouts</a><a class="navlink" href="swing.html">Overnight swing</a></div>
+    <div class="navlinks"><a class="navlink" href="brief.html">News spikes</a><a class="navlink" href="swing.html">Overnight swing</a></div>
   </div>
   <div class="cdbox">
     <span class="k">Next window in</span>
@@ -650,7 +650,7 @@ function presenting(t, wdIdx){
   return set[Math.max(wdIdx, 0) % set.length];
 }
 // ---- News windows on the board ----------------------------------------------------------------
-// Today's blackout windows from the feed brief.html reads (news.js): a band on each row the event
+// Today's news-spike windows from the feed brief.html reads (news.js): a band on each row the event
 // hits, two header rows for the current and next window, and a sentence in the mini brief. The
 // board is often opened from file://, where fetch is refused; then there are no bands and the chips
 // say so rather than nothing.
@@ -697,27 +697,27 @@ const MV = {
     },
     "news": {
       "now": [
-        "News window in effect: {event} until {time}, covering {instruments}.",
-        "Inside a news window until {time}: {event}, touching {instruments}.",
-        "Until {time}: {event}, touching {instruments}; nothing new there."
+        "In a news spike window until {time}: {event}, covering {instruments}.",
+        "Inside a spike window until {time}: {event}, touching {instruments}.",
+        "Until {time} the spike window for {event} is open, touching {instruments}."
       ],
       "next": [
-        "Next news window from {time}: {event}, for {instruments}.",
-        "The next news window opens at {time}: {event}, hitting {instruments}.",
-        "From {time}, a window for {event}, touching {instruments}; nothing before it."
+        "Next news spike from {time}: {event}, for {instruments}.",
+        "The next spike window opens at {time}: {event}, hitting {instruments}.",
+        "From {time}, a spike window for {event}, touching {instruments}; a clear run before it."
       ],
       "none": [
-        "The calendar is clear for the rest of the day, so the board has the floor to itself.",
-        "Nothing further scheduled today; the statistics have it from here.",
+        "The calendar is clear of spikes for the rest of the day, so the board has the floor to itself.",
+        "No further spikes scheduled today; the statistics have it from here.",
         "A clear run on the calendar for the rest of the day."
       ],
       "unavailable": [
-        "I cannot reach the calendar from here, so please treat the news windows as unknown rather than clear.",
+        "I cannot reach the calendar from here, so please treat the news spikes as unknown rather than clear.",
         "The calendar is out of reach on this page; served over http I shall have it for you.",
         "No calendar from here, so the marks are history rather than today's news."
       ],
       "stale": [
-        "My calendar stops short of today, so please treat the news windows as unknown rather than clear.",
+        "My calendar stops short of today, so please treat the news spikes as unknown rather than clear.",
         "Today is not yet in the calendar I hold; I shall have it once the refresh runs."
       ]
     },

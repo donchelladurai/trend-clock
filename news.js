@@ -1,5 +1,5 @@
 // news.js — the Forex Factory week, shared by index.html (news bands and chips on the board) and
-// brief.html (the blackout map and the briefing). Pure functions plus one fetch; nothing here
+// brief.html (the spike map and the briefing). Pure functions plus one fetch; nothing here
 // touches the DOM. Rules are documented in CLAUDE.md §9.
 (function (global) {
   const TZ = 'Europe/London';
@@ -43,7 +43,7 @@
     }
     return new Date(guess);
   }
-  // Blackout window [minutes before, minutes after] by weight and kind. "Unemployment Rate" and
+  // Spike window [minutes before, minutes after] by weight and kind: where the move usually falls. "Unemployment Rate" and
   // "Inflation Rate" are data, not decisions, so the rate-decision test is anchored to policy rates.
   function windowFor(e) {
     const t = e.title.toLowerCase();

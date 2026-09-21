@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Morning brief — news blackouts</title>
+<title>Morning brief — news spikes</title>
 <link rel="icon" href="favicon.svg">
 <style>
   :root{--bg:#0e131a;--panel:#141b24;--line:#26313f;--text:#e6ecf3;--muted:#8b97a7;--amber:#ffcf5c;--spike:#ff6a2a;--med:#c9d2dd;--low:#4a5667;--pad-x:22px}
@@ -100,7 +100,7 @@
 <header>
 <div class="hwrap">
   <div class="clock mono" id="clock">--:--<small id="date">UK time</small></div>
-  <div class="next" id="next"><span class="k">Next blackout</span><span class="big mono" id="nextBig">—</span><span class="sub" id="nextSub"></span><span class="rem" id="nextRem" hidden></span></div>
+  <div class="next" id="next"><span class="k">Next news spike</span><span class="big mono" id="nextBig">—</span><span class="sub" id="nextSub"></span><span class="rem" id="nextRem" hidden></span></div>
   <div class="meta"><span id="fresh">Consulting the calendar…</span></div>
   <div class="navs"><a class="back" href="./">← Trend Clock</a><a class="back" href="swing.html">Overnight swing</a></div>
 </div>
@@ -116,7 +116,7 @@
   </section>
   <section>
     <h2>News spikes this week, UK time</h2>
-    <p class="legend"><i style="background:var(--spike)"></i>High <i style="background:var(--med)"></i>Medium <i style="background:var(--low)"></i>Low <i style="background:transparent;outline:1px dashed var(--muted)"></i>Recurring USDA slot, unverified. Bar width is the suggested blackout window. Dashed lines mark the London open at 08:00 and the US open at 14:30. Hover or tap a bar for the particulars.</p>
+    <p class="legend"><i style="background:var(--spike)"></i>High <i style="background:var(--med)"></i>Medium <i style="background:var(--low)"></i>Low <i style="background:transparent;outline:1px dashed var(--muted)"></i>Recurring USDA slot, unverified. Bar width is the window the spike usually falls in. Dashed lines mark the London open at 08:00 and the US open at 14:30. Hover or tap a bar for the particulars.</p>
     <div class="mapwrap"><svg id="map" role="img" aria-label="News spike windows, Monday to Friday, UK time"></svg></div>
   </section>
   <section>
@@ -130,6 +130,7 @@
   </section>
   <section>
     <h2>For the News Blackout indicator</h2>
+    <p class="quiet" style="margin:0 0 6px">Named for the indicator, not for what you do with it.</p>
     <p class="quiet" style="margin:0">High-impact times for the instruments selected above, UK clock, in order. The indicator holds 12 a week; anything past 12 is marked, and which 12 to keep is your call rather than its.</p>
     <pre id="bl" class="mono"></pre>
     <p style="margin:8px 0 0"><button class="act" id="copy" type="button">Copy list</button> <span id="copied" class="quiet"></span></p>
@@ -161,10 +162,12 @@ const COL = {H: '#ff6a2a', M: '#c9d2dd', L: '#4a5667'};
 // know. Nothing here is fetched from a model.
 const NAME = 'Don';
 const VOICE = {
-  pageTitle: 'Morning brief — news blackouts',
-  nextIdle: 'Next blackout begins in', nextIdleFar: 'Next blackout',
-  nextLive: 'Blackout in effect', nextLiveRate: 'Rate decision in effect', nextLiveSpeech: 'Speech in effect',
-  nextNone: 'Next blackout', nextNoneBig: 'all clear',
+  pageTitle: 'Morning brief — news spikes',
+  // A spike window is when the move is likely, not a period to stand aside for; the page flags it
+  // so the owner knows it is coming, and leaves the decision to them.
+  nextIdle: 'Next news spike in', nextIdleFar: 'Next news spike',
+  nextLive: 'Spike window now', nextLiveRate: 'Rate decision now', nextLiveSpeech: 'Speech under way',
+  nextNone: 'Next news spike', nextNoneBig: 'all clear',
   nextNoneSub: 'for the rest of the week, on your instruments. I shall keep watch regardless.',
   nextNoneSubFriday: 'for the rest of the week. The desk can be closed with a clear conscience.',
   nextNoneSubWeekend: 'for the rest of the week. Monday will bring a fresh calendar, and I shall have it ready.',
@@ -187,7 +190,7 @@ const VOICE = {
   copyBlocked: 'The clipboard is barred here. Select the list and it is yours.',
   emptyToday: 'A clear day on your instruments, at high and medium weight.',
   emptyRest: 'Clear at high and medium weight, on paper.',
-  emptyBlackout: 'A clear week at high impact on your instruments, so the indicator may rest.',
+  emptySpikes: 'A clear week at high impact on your instruments, so the indicator has nothing to hold.',
   emptyFailed: 'The calendar is out of reach, so I would rather say unknown than clear.',
   noSelectionPlain: 'Choose an instrument above.',
   noSelection: 'Choose an instrument above and I shall keep watch over it for you.',
@@ -212,7 +215,7 @@ const VOICE = {
   // Aside under the countdown, by minutes to the next window start: [from, to, variants]. Kept
   // under 60 characters, and never a restatement of the figure above it.
   countdown: [
-    [0, 2, ['Any moment now. Hands steady, if you please.', 'Imminent. Hold what you have, if you please.', 'Manage what is open and you will be fine.']],
+    [0, 2, ['Any moment now.', 'Imminent — worth having the chart in front of you.', 'About to land.']],
     [2, 15, ['Time enough to tidy up, if not to start something.', 'Shortly. A good moment to check the stops.', 'Inside the quarter-hour; it lands on anything opened now.']],
     [15, 60, ['Inside the hour. One eye on the clock, if you would.', 'Time enough, though not to spare.', 'Close enough to plan around. I shall count it down.']],
     [60, 240, ['Time in hand. I shall say so nearer the time.', 'Ample time, which is usually when carelessness happens.', 'Comfortably distant, on paper. The countdown will tighten.']],
@@ -254,12 +257,12 @@ const VOICE = {
         "one": [
           "One window of high weight, and it is the one to respect.",
           "One, and it deserves the whole of your attention.",
-          "A single window of the first order; I would not be in anything through it."
+          "A single window of the first order, and worth knowing exactly when it lands."
         ],
         "many": [
           "Windows of high weight: {n}, set out below in order.",
           "Several, which is {n} more than I would like.",
-          "There are {n} of them. I would treat each as a hard stop, not a suggestion."
+          "There are {n} of them, and each is worth having on your radar."
         ],
         "doneOne": [
           "The one high-impact window has passed; what follows is the record.",
@@ -283,7 +286,7 @@ const VOICE = {
         ],
         "many": [
           "Of medium weight, {n}. Individually minor; together they shape the day.",
-          "There are {n} medium-impact windows. Not the headline, but not to be walked through either.",
+          "There are {n} medium-impact windows. Not the headline, but worth knowing all the same.",
           "Medium weight, {n} of them, in order. Short windows; I would still respect them."
         ],
         "doneOne": [
@@ -318,8 +321,8 @@ const VOICE = {
       "rate": {
         "upcoming": [
           "The decision is one number; the statement behind it is the weather. Allow for both.",
-          "The one window I would clear the desk for.",
-          "Ten before, thirty after. Hold what you have inside it, with the stops checked beforehand."
+          "The one window I would have you at the chart for.",
+          "Ten before, thirty after: the stretch the move usually falls in."
         ],
         "live": [
           "Under way until {endTime}. Let the bank finish its sentence before you start yours.",
@@ -341,7 +344,7 @@ const VOICE = {
         "live": [
           "Under way. Speakers overrun; treat {endTime} as a floor rather than a promise.",
           "Speaking now. Wait for the end, and then a little longer.",
-          "In progress. A headline can land at any minute until {endTime}, so hold what you have."
+          "In progress. A headline can land at any minute until {endTime}."
         ],
         "past": [
           "Over, by the schedule. If it overran, the overrun is not something I can see.",
@@ -352,7 +355,7 @@ const VOICE = {
       "data": {
         "upcoming": [
           "The figure lands on the minute; be tidy by then.",
-          "Five minutes before, be flat or be sized for a miss.",
+          "The five minutes before it are usually the quiet ones.",
           "The figure matters less than its distance from {forecast}."
         ],
         "live": [
@@ -429,18 +432,18 @@ const VOICE = {
   },
   lines: {
     // Titles are held after a colon or full stop so "… Speaks" and "1-y …" survive substitution.
-    firstBlackout: [
+    firstSpike: [
       'The next window opens at {time} for {event}. It covers {instruments}.',
       'You have a clear run until {time}, when {event} arrives for {instruments}.',
       'At {time}: {event}. Instruments: {instruments}. I would have things tidy by then.',
       'The first window that day opens at {time} for {event}. It covers {instruments}.'
     ],
     liveNow: [
-      'We are inside the window for {event}, clear at {endTime}. I shall let you know the moment it lifts.',
-      'A blackout is in effect for {event} until {endTime}. Manage what is open and it will pass quietly.',
-      'Currently inside the window for {event}, which clears at {endTime}. A little patience is all it asks.'
+      'We are inside the spike window for {event}, clear at {endTime}. I shall say when it passes.',
+      'The spike window for {event} runs until {endTime}, so you know where the move may come from.',
+      'Currently inside the spike window for {event}, which clears at {endTime}. Worth knowing while you read the chart.'
     ],
-    liveRun: 'We are inside the window for {event}; with what follows on its heels, the stretch clears at {endTime}. I shall say when it lifts.',
+    liveRun: 'We are inside the spike window for {event}; with what follows on its heels, the stretch clears at {endTime}. I shall say when it passes.',
     // quiet[1] and holidays[0] say "today" and are only eligible when the focus day is today.
     quiet: [
       '{list} have a clear calendar, which is worth having so long as it is not mistaken for a promise.',
@@ -458,9 +461,9 @@ const VOICE = {
       "For wheat I am relying on USDA's routine rather than its calendar; the slot is unchecked for holiday shifts."
     ],
     crowded: [
-      'A run of {count} windows between {first} and {last}; I would treat the whole stretch as one and step round it.',
-      'Between {first} and {last} there are {count} windows in close succession. Easiest to consider it a single blackout.',
-      'The calendar bunches up: {count} windows from {first} to {last}. Trading between them is possible; stepping round them is easier.'
+      'A run of {count} windows between {first} and {last}; the whole stretch is worth treating as one.',
+      'Between {first} and {last} there are {count} windows in close succession, near enough one continuous stretch.',
+      'The calendar bunches up: {count} windows from {first} to {last}, so expect little quiet between them.'
     ],
     seedCaveat: [
       'One caveat: this calendar is seed data from a manual check. Worth verifying before you lean on it.',
@@ -506,7 +509,7 @@ function zoneOffset(d, zone) {
 // The UK and New York are normally five hours apart; for a few weeks a year they are four.
 const clocksOutOfStep = d => zoneOffset(d, TZ) - zoneOffset(d, 'America/New_York') !== 300;
 function focusDay(days, u) { const i = days.findIndex(d => d.ymd === u.ymd); return i >= 0 ? days[i] : days.find(d => d.ymd > u.ymd) || days[0]; }
-// Windows in order of when their blackout STARTS, which is what the header counts down to.
+// Windows in order of when their spike window STARTS, which is what the header counts down to.
 const dayWindows = ymd => events.filter(e => e.ymd === ymd && visible(e) && (e.imp === 'H' || e.imp === 'M')).sort((a, b) => (a.min - a.win[0]) - (b.min - b.win[0]) || a.min - b.min);
 const holidayList = ymd => events.filter(e => e.ymd === ymd && e.imp === 'X' && visible(e)).map(e => `${e.country} ${e.title.toLowerCase()}`);
 const quietList = list => { const hit = new Set(list.flatMap(e => e.ins)); return ALL.filter(i => selected.has(i) && !hit.has(i)); };
@@ -520,7 +523,7 @@ function largestRun(list) {
   flush();
   return best;
 }
-// The end of the current blackout stretch: the live windows, extended by anything that starts within 15 minutes of that end.
+// The end of the current spike stretch: the live windows, extended by anything that starts within 15 minutes of that end.
 function runEnd(lives, cand) {
   let end = Math.max(...lives.map(endMs));
   for (;;) { const more = cand.filter(e => startMs(e) > end - 1 && startMs(e) <= end + 15 * 60000 && endMs(e) > end); if (!more.length) return end; end = Math.max(...more.map(endMs)); }
@@ -730,7 +733,7 @@ function renderLists(days, now) {
   });
   const lines = merged.map((e, i) => `${i >= 12 ? VOICE.over12 : ''}${DAYN[e.dow]} ${hm(e.min)}  ${e.country} ${e.title}`);
   blCount = lines.length;
-  document.getElementById('bl').textContent = lines.length ? lines.join('\n') : unknown ? unknownText : selected.size ? VOICE.emptyBlackout : VOICE.noSelectionPlain;
+  document.getElementById('bl').textContent = lines.length ? lines.join('\n') : unknown ? unknownText : selected.size ? VOICE.emptySpikes : VOICE.noSelectionPlain;
   const copyBtn = document.getElementById('copy');
   copyBtn.disabled = !lines.length;
   copyBtn.textContent = lines.length ? VOICE.copyButton : VOICE.nothingToCopy;
@@ -895,7 +898,7 @@ function renderBrief(days, now) {
         const e = isToday ? upcoming[0] : hmList[0];
         if (e) {
           const s = e.min - e.win[0];
-          const fb = !isToday ? [L.firstBlackout[3]] : /speaks|speech|conference|testif|remarks/i.test(e.title) ? [L.firstBlackout[0], L.firstBlackout[2]] : L.firstBlackout.slice(0, 3);
+          const fb = !isToday ? [L.firstSpike[3]] : /speaks|speech|conference|testif|remarks/i.test(e.title) ? [L.firstSpike[0], L.firstSpike[2]] : L.firstSpike.slice(0, 3);
           let line = fill(pick(fb, 3, u), {time: hm(s), event: evLabel(e), instruments: e.ins.filter(i => selected.has(i)).join(', '), day: focus.label});
           if (s >= 480 && s <= 485) line += VOICE.londonOpenNote;
           intro.push(line);

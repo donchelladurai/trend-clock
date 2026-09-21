@@ -627,10 +627,12 @@ function applyThreshold(mode, thr){
   });
 }
 const NAME = "Don";
+// One form each: the clipped "Morning, Don" was dropped 21 Sep 2026, so the salutation is always
+// the full courtesy.
 const GREET = {
-  morning: ["Good morning, {name}.", "Morning, {name}."],
-  afternoon: ["Good afternoon, {name}.", "Afternoon, {name}."],
-  evening: ["Good evening, {name}.", "Evening, {name}."]
+  morning: ["Good morning, {name}."],
+  afternoon: ["Good afternoon, {name}."],
+  evening: ["Good evening, {name}."]
 };
 // The sentence that hands the brief over, between the salutation and the brief itself. Only while
 // the board is open: off hours and at weekends there is nothing to present.

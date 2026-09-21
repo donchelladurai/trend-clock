@@ -628,7 +628,8 @@ which also govern any new string:
   starting within 20 minutes of the last one's end, overnight windows already over, holidays, the
   unverified wheat slot, 1–6 quiet instruments, Friday. Then the three sections, then the signoff.
 - **The greeting is a salutation and nothing more** (20 Sep 2026, at the owner's request): the
-  hour plus the name — "Good morning, Don." — and never a clause after it. The hour alone picks
+  hour plus the name — "Good morning, Don." — and never a clause after it. One form per
+  bucket: the clipped "Morning, Don." was dropped on 21 Sep 2026, so the courtesy is always full. The hour alone picks
   it, weekends included: before 12:00 morning, before 18:00 afternoon, otherwise evening, so the
   wording is always true of the clock. `VOICE.greetings.morning|afternoon|evening` on brief.html,
   `GREET` on index.html.

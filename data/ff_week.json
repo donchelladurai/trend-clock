@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-09-20T15:31:31.753Z",
+ "fetchedAt": "2026-09-21T12:43:57.624Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -514,6 +514,14 @@
    "impact": "Holiday",
    "forecast": "",
    "previous": ""
+  },
+  {
+   "title": "BOJ Core CPI y/y",
+   "country": "JPY",
+   "date": "2026-09-25T01:00:00-04:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": "1.6%"
   },
   {
    "title": "German GfK Consumer Climate",

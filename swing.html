@@ -115,25 +115,25 @@ const GREET = {morning: ['Good morning, {name}.', 'Morning, {name}.'],
                evening: ['Good evening, {name}.', 'Evening, {name}.']};
 const PRESENT = {
   inSession: ['I have your overnight brief ready.', 'Your overnight brief, ready when you are.'],
-  ahead: ['I have the overnight session ready for you.', 'The overnight session, ready when you are.']
+  ahead: ['I have the overnight session ready for you.', 'The overnight session, ready whenever you are.']
 };
 const V = {
   live: ['It is {slot} UK, so the {tf} bar now forming is the one below.',
          'The session is under way: {slot} UK, and the {tf} bar forming now is the one marked.'],
-  ahead: ['The session opens at midnight UK, {hours} from now.',
-          'Midnight UK is {hours} away; what follows is how those eight hours usually behave.'],
-  after: ['The overnight session is behind us for today; what follows is how it usually behaves.',
-          'The session closed at 08:00; below is the record of how it usually runs.'],
-  trend: {none: ['Nothing is trending better than an ordinary overnight bar in this slot.'],
+  ahead: ['The session opens at midnight UK, {hours} from now, and I shall have it marked for you.',
+          'Midnight UK is {hours} away; what follows is how those eight hours usually behave. Shall I have it ready for you then?'],
+  after: ['The overnight session is behind us for today, and below is how it usually behaves.',
+          'The session closed at 08:00. Below is the record, and I shall be ready again at midnight.'],
+  trend: {none: ['This slot is keeping an ordinary overnight pace; I shall flag the moment one picks up.'],
           some: ['Trending best in this slot: {list}.'],
           ahead: ['Over the session as a whole, {list} trend most reliably.']},
   vol: {some: ['Most movement in this slot: {list}, at {top} of a day’s range in half an hour.'],
         ahead: ['Most movement over the session: {list}.']},
-  turn: {none: ['No turn spike is marked in this slot.'],
+  turn: {none: ['This slot looks settled for turns.'],
          some: ['Turn spikes marked here on {list}.'],
          ahead: ['Turns cluster most on {list}.']},
-  failed: ['The overnight data did not load, so I can tell you nothing about it.'],
-  thin: ['Where a cell is hatched the instrument barely trades then, so read it as absent rather than calm.']
+  failed: ['The overnight data is out of reach just now. Served over http I shall have it ready for you.'],
+  thin: ['A hatched cell means the instrument barely trades then — read it as absent rather than calm.']
 };
 const $ = id => document.getElementById(id);
 const pad = n => String(n).padStart(2, '0');

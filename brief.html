@@ -164,62 +164,62 @@ const VOICE = {
   pageTitle: 'Morning brief — news blackouts',
   nextIdle: 'Next blackout begins in', nextIdleFar: 'Next blackout',
   nextLive: 'Blackout in effect', nextLiveRate: 'Rate decision in effect', nextLiveSpeech: 'Speech in effect',
-  nextNone: 'Next blackout', nextNoneBig: 'nothing further',
-  nextNoneSub: 'this week, for the selected instruments. I shall keep watch regardless.',
-  nextNoneSubFriday: 'this week, for the selected instruments. The desk can be closed with a clear conscience.',
-  nextNoneSubWeekend: 'this week, for the selected instruments. If the feed has not turned over yet, Monday will look different.',
-  nextNoneSubNoSel: 'no instruments are selected.',
-  nextFailedBig: 'unknown', nextFailedSub: 'the calendar did not load, so I cannot say.',
+  nextNone: 'Next blackout', nextNoneBig: 'all clear',
+  nextNoneSub: 'for the rest of the week, on your instruments. I shall keep watch regardless.',
+  nextNoneSubFriday: 'for the rest of the week. The desk can be closed with a clear conscience.',
+  nextNoneSubWeekend: 'for the rest of the week. Monday will bring a fresh calendar, and I shall have it ready.',
+  nextNoneSubNoSel: 'choose an instrument above and I shall watch it for you.',
+  nextFailedBig: 'unknown', nextFailedSub: 'the calendar is out of reach, so I would rather say unknown than clear.',
   liveUntil: 'until {time}',
   loading: 'Consulting the calendar…',
-  loadingSlow: 'Still consulting the calendar. The connection is being uncooperative.',
+  loadingSlow: 'Still consulting the calendar; the connection is taking its time. I shall have it shortly.',
   calendarFF: 'Calendar: Forex Factory', calendarWhen: ', last changed {when}',
   calendarSeed: 'Calendar: seed data from a manual check, provisional until the first Action run replaces it',
-  calendarFailed: 'Calendar: could not be loaded. An empty board here means unknown, not quiet.',
-  calendarRefreshFailed: 'Calendar: the refresh failed; showing the calendar as it was',
-  calendarOld: ' — older than I would like',
+  calendarFailed: 'Calendar: out of reach, so please read an empty board as unknown rather than quiet.',
+  calendarRefreshFailed: 'Calendar: the refresh did not come through; this is the calendar as it stood',
+  calendarOld: ' — I shall refresh it as soon as it is offered',
   clocksOutOfStep: ' · US clocks out of step this week; times here are already UK',
   londonOpen: ' · London open', usOpen: ' · US open',
   todayH: "Today's windows", todayHDone: "Today's windows, all done", dayH: 'Windows for {day}', provisional: ' · provisional',
-  copyButton: 'Copy list', nothingToCopy: 'Nothing to copy',
+  copyButton: 'Copy list', nothingToCopy: 'Nothing to copy yet',
   copiedN: "On your clipboard. {n} lines, within the indicator's 12.",
   copiedOver: 'On your clipboard. {n} lines; the indicator takes 12.',
-  copyBlocked: 'Clipboard refused. Select the list and copy it by hand.',
-  emptyToday: 'Nothing high or medium for the selected instruments.',
-  emptyRest: 'Nothing high or medium, on paper.',
-  emptyBlackout: 'Nothing high-impact this week for the selected instruments. The indicator may rest.',
-  emptyFailed: 'The calendar did not load, so I cannot say what is scheduled.',
-  noSelectionPlain: 'No instruments selected.',
-  noSelection: 'No instruments selected. I can hardly warn you about nothing.',
+  copyBlocked: 'The clipboard is barred here. Select the list and it is yours.',
+  emptyToday: 'A clear day on your instruments, at high and medium weight.',
+  emptyRest: 'Clear at high and medium weight, on paper.',
+  emptyBlackout: 'A clear week at high impact on your instruments, so the indicator may rest.',
+  emptyFailed: 'The calendar is out of reach, so I would rather say unknown than clear.',
+  noSelectionPlain: 'Choose an instrument above.',
+  noSelection: 'Choose an instrument above and I shall keep watch over it for you.',
   hits: 'Hits {instruments}.',
   recurringNote: 'Recurring USDA slot, not checked against holiday shifts or WASDE dates.',
-  quiet: 'Quiet, on paper: {list}.',
-  quietAll: 'Quiet across the board, on paper. I would not mistake that for safety.',
+  quiet: 'Clear on paper: {list}.',
+  quietAll: 'Clear across the board on paper, which is worth having so long as it is not mistaken for safety.',
   holidays: 'Holidays: {list}. The markets concerned are usually thinner for it.',
   restHigh: ' (high)', over12: '(over 12) ',
   rateNote: 'Rate decision: the window runs 10 before to 30 after.',
   speechNote: 'A speech: from the start to 30 after, and they do overrun.',
-  usOpenNote: 'It lands on the US open, which is weather enough on its own.',
+  usOpenNote: 'It lands on the US open, so allow for both at once.',
   allSelected: '{time} {event} · all {n} selected instruments',
   usdaSub: '{time} {event} · {instruments} · unverified slot',
   farSub: '{day} {time} · {event} · {instruments}', unverified: ' · unverified slot',
   then: 'Then {event} at {time}.', joins: 'Joined at {time} by {event}.',
-  several: 'Several at once; treat them as one.',
-  overnightNote: 'Overnight windows, before 07:00, already ended: {n}. Whatever happened there has happened.',
-  fridayNote: 'It is Friday. Anything carried over the weekend is carried at your own risk.',
+  several: 'Several at once; treat them as one and you will be right.',
+  overnightNote: 'Overnight windows already behind you, before 07:00: {n}. The day ahead is the one that matters.',
+  fridayNote: 'It is Friday, so anything carried over the weekend is carried at your own risk.',
   londonOpenNote: ' It sits on the London open; treat the open as part of the window.',
   weekSign: 'That is the week.',
   // Aside under the countdown, by minutes to the next window start: [from, to, variants]. Kept
   // under 60 characters, and never a restatement of the figure above it.
   countdown: [
-    [0, 2, ['Any moment now. Hands off, if you please.', 'Imminent. Nothing new, if you please.', 'Nothing new; manage what is open.']],
-    [2, 15, ['Time enough to tidy up, not to start something.', 'Shortly. Check the stops; do not add to them.', 'Inside the quarter-hour; it lands on anything opened now.']],
+    [0, 2, ['Any moment now. Hands steady, if you please.', 'Imminent. Hold what you have, if you please.', 'Manage what is open and you will be fine.']],
+    [2, 15, ['Time enough to tidy up, if not to start something.', 'Shortly. A good moment to check the stops.', 'Inside the quarter-hour; it lands on anything opened now.']],
     [15, 60, ['Inside the hour. One eye on the clock, if you would.', 'Time enough, though not to spare.', 'Close enough to plan around. I shall count it down.']],
     [60, 240, ['Time in hand. I shall say so nearer the time.', 'Ample time, which is usually when carelessness happens.', 'Comfortably distant, on paper. The countdown will tighten.']],
-    [240, 1440, ['Nothing pressing. I shall keep watch.', 'A clear stretch ahead. Do try to use it well.', 'Hours away. It will come round regardless.']],
-    [1440, 1e9, ['Not today. The calendar leaves the day to you.', "Another day's concern.", 'A clear day, on paper.']]
+    [240, 1440, ['Nothing pressing; I shall keep watch.', 'A clear stretch ahead — do make good use of it.', 'Hours away yet. I shall bring it to your attention in good time.']],
+    [1440, 1e9, ['The calendar leaves today to you.', "Tomorrow's concern, not today's.", 'A clear day, on paper.']]
   ],
-  live: ['It is under way. You need not be.', 'I would advise against anything clever until it clears.', 'Anything placed now is a guess with a spread.', 'Nothing to do but wait, so I shall.', 'Stops are the only thing I would touch at present.'],
+  live: ['It is under way; you need not be.', 'I would let this one clear before anything clever.', 'Anything placed now is a guess with a spread on it.', 'A good moment to wait. I shall tell you when it clears.', 'Stops are the one thing worth touching at present.'],
   // The salutation carries the name and nothing else — the hour and the name, as a valet would
   // open. `present` is the sentence that hands the brief over; the brief itself follows it.
   greetings: {
@@ -247,9 +247,9 @@ const VOICE = {
     "sectionIntro": {
       "high": {
         "none": [
-          "Nothing of high weight for the selected instruments.",
-          "No high-impact windows, on paper. The day is not spared on that account.",
-          "The top tier is empty for your instruments; I would not lower my guard on the strength of it."
+          "A clear day at high weight on your instruments.",
+          "Clear of high-impact windows on paper, though I would keep the guard up regardless.",
+          "The top tier is clear for your instruments — worth having, if not worth relying on."
         ],
         "one": [
           "One window of high weight, and it is the one to respect.",
@@ -272,9 +272,9 @@ const VOICE = {
       },
       "medium": {
         "none": [
-          "Nothing of medium weight.",
-          "No medium-impact windows for your instruments.",
-          "The middle tier is empty, on paper."
+          "Clear at medium weight as well.",
+          "A clear run at medium weight on your instruments.",
+          "The middle tier is clear, on paper."
         ],
         "one": [
           "One of medium weight, easily forgotten and not to be.",
@@ -297,12 +297,12 @@ const VOICE = {
       },
       "low": {
         "none": [
-          "Nothing of low weight either.",
-          "The minor tier is empty.",
-          "No minor prints for your instruments."
+          "Clear at low weight into the bargain.",
+          "The minor tier is clear as well.",
+          "The minor prints leave you alone today."
         ],
         "some": [
-          "The rest, mentioned so that nothing is a surprise.",
+          "The rest, noted so that nothing takes you by surprise.",
           "Low impact, listed for completeness rather than caution.",
           "The minor prints; rarely worth a pause, occasionally worth knowing."
         ]
@@ -319,7 +319,7 @@ const VOICE = {
         "upcoming": [
           "The decision is one number; the statement behind it is the weather. Allow for both.",
           "The one window I would clear the desk for.",
-          "Ten before, thirty after. Nothing new inside it, and the stops checked before it."
+          "Ten before, thirty after. Hold what you have inside it, with the stops checked beforehand."
         ],
         "live": [
           "Under way until {endTime}. Let the bank finish its sentence before you start yours.",
@@ -341,7 +341,7 @@ const VOICE = {
         "live": [
           "Under way. Speakers overrun; treat {endTime} as a floor rather than a promise.",
           "Speaking now. Wait for the end, and then a little longer.",
-          "In progress. A headline can land at any minute until {endTime}; nothing new until then."
+          "In progress. A headline can land at any minute until {endTime}, so hold what you have."
         ],
         "past": [
           "Over, by the schedule. If it overran, the overrun is not something I can see.",
@@ -357,7 +357,7 @@ const VOICE = {
         ],
         "live": [
           "The print is out or about to be; clear at {endTime}. Let the first minutes settle.",
-          "Inside the window until {endTime}. Nothing new on the back of the first candle.",
+          "Inside the window until {endTime}. I would let the first candle pass before acting on it.",
           "Live until {endTime}. The number is what it is; the reaction to it is not scheduled."
         ],
         "past": [
@@ -375,12 +375,12 @@ const VOICE = {
         "live": [
           "In the usual slot, if USDA kept to it this week. Wheat only; the rest carry on.",
           "Wheat's window, by habit, until {endTime}, and only if the schedule held.",
-          "Live on the routine timetable. Whether the report actually came out, I cannot see."
+          "Live on the routine timetable, though whether the report came with it is beyond my sight."
         ],
         "past": [
           "Behind you, assuming USDA kept the appointment.",
-          "The slot has passed. Whether the report came with it, I cannot say.",
-          "Cleared at {endTime}. If USDA shifted the release, the window moved and I did not see it."
+          "The slot has passed; whether the report came with it is beyond my sight.",
+          "Cleared at {endTime}. Should USDA have shifted the release, the window moved with it unseen."
         ]
       }
     },
@@ -390,9 +390,9 @@ const VOICE = {
       "Low impact, noted rather than warned about: {list}."
     ],
     "noEvents": [
-      "Nothing for your instruments, at any weight. The day is unstructured, which is not the same as uneventful.",
-      "Nothing at any weight. The calendar's silence is noted, not trusted.",
-      "No windows at any weight for the selected instruments. Empty describes the calendar, not the market."
+      "A clear calendar on your instruments at every weight: unstructured rather than uneventful, so stay watchful.",
+      "Clear at every weight. I note the calendar's silence without quite trusting it.",
+      "A clear calendar at every weight for your instruments, which describes the calendar rather than the market."
     ],
     "allDone": [
       "Every high and medium window has closed. The remainder of the day is unscheduled at those weights, which is not the same as unwatched.",
@@ -412,7 +412,7 @@ const VOICE = {
       ],
       "spread": [
         "The windows fall on both sides of noon; I shall take them in order.",
-        "Nothing bunched into one half of the day: the calendar has scattered it. In order, then.",
+        "The calendar has scattered the day evenly across both halves. In order, then.",
         "The day is punctuated rather than loaded, morning and afternoon alike. Mind the gaps as much as the windows."
       ],
       "single": [
@@ -421,8 +421,8 @@ const VOICE = {
         "The day turns on one window. I would arrange the rest to suit."
       ],
       "empty": [
-        "Nothing of weight scheduled; the shape of the day is yours to give it.",
-        "Nothing scheduled, which I record without endorsing.",
+        "Nothing of weight scheduled, so the shape of the day is yours to give it.",
+        "A clear calendar, which I record without quite endorsing.",
         "Clear on paper at the weights that matter. That describes the calendar, not the session ahead."
       ]
     }
@@ -431,25 +431,25 @@ const VOICE = {
     // Titles are held after a colon or full stop so "… Speaks" and "1-y …" survive substitution.
     firstBlackout: [
       'The next window opens at {time} for {event}. It covers {instruments}.',
-      'Nothing to avoid until {time}, when {event} arrives for {instruments}.',
+      'You have a clear run until {time}, when {event} arrives for {instruments}.',
       'At {time}: {event}. Instruments: {instruments}. I would have things tidy by then.',
       'The first window that day opens at {time} for {event}. It covers {instruments}.'
     ],
     liveNow: [
-      'We are inside the window for {event}, clear at {endTime}. Nothing new until then.',
-      'A blackout is in effect for {event} until {endTime}. Manage what is open; start nothing.',
-      'Currently inside the window for {event}, which clears at {endTime}. Patience.'
+      'We are inside the window for {event}, clear at {endTime}. I shall let you know the moment it lifts.',
+      'A blackout is in effect for {event} until {endTime}. Manage what is open and it will pass quietly.',
+      'Currently inside the window for {event}, which clears at {endTime}. A little patience is all it asks.'
     ],
-    liveRun: 'We are inside the window for {event}; with what follows on its heels, the stretch clears at {endTime}. Nothing new until then.',
+    liveRun: 'We are inside the window for {event}; with what follows on its heels, the stretch clears at {endTime}. I shall say when it lifts.',
     // quiet[1] and holidays[0] say "today" and are only eligible when the focus day is today.
     quiet: [
-      'Nothing scheduled for {list}. Quiet on paper, which is not the same as quiet.',
-      'The calendar is silent on {list} today; silence is not a guarantee.',
-      'No windows for {list}, which I would read as an absence of warnings rather than a promise.'
+      '{list} have a clear calendar, which is worth having so long as it is not mistaken for a promise.',
+      'The calendar is clear on {list} today, though I would keep half an eye on them regardless.',
+      'A clear run for {list}: an absence of warnings rather than a guarantee.'
     ],
     holidays: [
-      'Holidays today: {list}. The markets concerned are usually thinner for it.',
-      'Note the holidays: {list}. Thin books, as a rule; I would size accordingly.',
+      'Holidays today: {list}. The markets concerned are usually thinner for it, so do size accordingly.',
+      'Worth noting the holidays: {list}. Thin books, as a rule.',
       'Holidays: {list}. Expect fewer participants in the markets concerned.'
     ],
     wheat: [
@@ -458,30 +458,30 @@ const VOICE = {
       "For wheat I am relying on USDA's routine rather than its calendar; the slot is unchecked for holiday shifts."
     ],
     crowded: [
-      'A run of {count} windows between {first} and {last}. I would not try to trade through that stretch.',
-      'Between {first} and {last} there are {count} windows in close succession. Consider it a single blackout.',
-      'The calendar bunches up: {count} windows from {first} to {last}. Trading between them is possible; I merely note that it is inadvisable.'
+      'A run of {count} windows between {first} and {last}; I would treat the whole stretch as one and step round it.',
+      'Between {first} and {last} there are {count} windows in close succession. Easiest to consider it a single blackout.',
+      'The calendar bunches up: {count} windows from {first} to {last}. Trading between them is possible; stepping round them is easier.'
     ],
     seedCaveat: [
-      'One caveat: this calendar is seed data from a manual check, not the feed. Verify before relying on it.',
-      'I should mention the calendar is a manual seed, not a live pull. My best reading of the week, not the record.',
-      'The calendar behind this is seed data from a manual check, to be replaced on the first Action run. Until then, trust it accordingly.'
+      'One caveat: this calendar is seed data from a manual check. Worth verifying before you lean on it.',
+      'I should mention the calendar is a manual seed rather than a live pull — my best reading of the week.',
+      'The calendar behind this is a manual seed, and the first Action run will replace it with the real thing.'
     ],
     loadFailed: [
-      'I could not load the calendar, so there is nothing to brief. I would treat the absence of windows as unknown, not as none.',
-      'The calendar did not load. I cannot tell you what is scheduled, only that I cannot see it.',
-      'Calendar unavailable. I am working blind, and I would advise against your doing the same.'
+      'The calendar is out of reach, so I would read the empty board as unknown rather than clear. I shall keep trying.',
+      'I cannot see the calendar just now. Served over http I shall have it for you.',
+      'Calendar out of reach. I am working blind, and I would rather you did not.'
     ],
     stale: [
-      'The calendar last changed {when}, which is longer ago than I would like. Revisions since then are not reflected.',
-      'A word of caution: the feed has not changed since {when}. Treat anything after that as unconfirmed.',
-      'The calendar dates from {when}. If it has been revised since, I have not seen it.'
+      'The calendar last changed {when}; anything revised since then is not yet reflected. I shall pick it up on the next refresh.',
+      'Worth knowing: the feed has not changed since {when}, so treat anything after that as unconfirmed.',
+      'The calendar dates from {when}. I shall have the newer one as soon as it is offered.'
     ],
     signoff: [
       'That is all. I shall keep the clock.',
       'That will be all, unless the market disagrees.',
       'That is the whole of it. Do try to trade the plan rather than the news.',
-      'Nothing further. I shall be here.'
+      'That is everything. I shall be here if you need me.'
     ]
   }
 };

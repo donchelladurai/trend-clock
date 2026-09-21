@@ -635,10 +635,10 @@ const GREET = {
 // The sentence that hands the brief over, between the salutation and the brief itself. Only while
 // the board is open: off hours and at weekends there is nothing to present.
 const PRESENT = {
-  smallHours: ["I have the board ready, unsociable hour notwithstanding.", "Since you are up, the board is ready."],
+  smallHours: ["I have the board ready for you, unsociable hour notwithstanding.", "Since you are up, the board is ready and waiting."],
   morning: ["I have your morning brief ready.", "Your morning brief, ready when you are."],
-  afternoon: ["I have your afternoon brief ready.", "Your afternoon brief, such as the day has left of it."],
-  evening: ["I have your evening brief ready.", "Your evening brief, for completeness."]
+  afternoon: ["I have your afternoon brief ready.", "Your afternoon brief, ready when you are."],
+  evening: ["I have your evening brief ready.", "Your evening brief, ready when you are."]
 };
 const todBucket = t => t.h < 12 ? "morning" : t.h < 18 ? "afternoon" : "evening";
 function greeting(t, wdIdx){
@@ -658,9 +658,9 @@ const MV = {
   "mini": {
     "trend": {
       "none": [
-        "On the {profile} profile, nothing is trending at {thr} in the {window} window.",
-        "In {window}, no row reaches {thr} on the {profile} profile; the heat strip is cool here.",
-        "The {window} window on the {profile} profile has nothing at or above {thr}."
+        "The {window} window is resting on the {profile} profile; I shall speak up the moment a row reaches {thr}.",
+        "Nothing at {thr} yet in {window} on the {profile} profile — a good window to prepare in.",
+        "The heat strip is cool through {window} on the {profile} profile; I have my eye on it for you."
       ],
       "one": [
         "In {window}, one row trends at {thr} or better on the {profile} profile: {list}.",
@@ -675,14 +675,14 @@ const MV = {
     },
     "turn": {
       "now": [
-        "A turn spike is marked now on {now}; the next window carries none.",
-        "Turns cluster here on {now}, historically; I would advise a lighter hand there.",
-        "Turn spike in this window: {now}; nothing marked for the next."
+        "A turn spike is marked now on {now}, and the next window looks settled.",
+        "Turns cluster here on {now}, historically; a lighter hand would serve you well there.",
+        "Turn spike in this window: {now}. The next should be steadier."
       ],
       "next": [
-        "No turn spike marked now, but the next window is marked on {next}.",
-        "The current window is unmarked for turns; the next is marked on {next}.",
-        "Nothing marked this window; the next carries a turn spike on {next}."
+        "This window is settled; the next is marked for a turn on {next}, so you have a moment to prepare.",
+        "Steady here, with a turn spike marked on {next} in the window after.",
+        "Calm for now. The next window carries a turn spike on {next}."
       ],
       "both": [
         "Turn spikes now on {now}, and next on {next}.",
@@ -690,9 +690,9 @@ const MV = {
         "A turn spike sits on {now} now, and on {next} in the window after."
       ],
       "none": [
-        "No turn spike is marked in this window or the next.",
-        "The orange strip is quiet here and in the window after.",
-        "Turns: nothing marked now, nothing marked next."
+        "Both this window and the next look settled for turns.",
+        "The orange strip is quiet here and in the window after — I shall flag the first that is not.",
+        "Turns are behaving themselves this window and the next."
       ]
     },
     "news": {
@@ -707,29 +707,29 @@ const MV = {
         "From {time}, a window for {event}, touching {instruments}; nothing before it."
       ],
       "none": [
-        "No further news windows today for the board's instruments.",
-        "Nothing further today that warrants a window, so the board is on its own statistics.",
-        "Nothing further today that warrants a window."
+        "The calendar is clear for the rest of the day, so the board has the floor to itself.",
+        "Nothing further scheduled today; the statistics have it from here.",
+        "A clear run on the calendar for the rest of the day."
       ],
       "unavailable": [
-        "The calendar could not be fetched from here, so news windows are unknown rather than absent.",
-        "The news feed did not load; nothing on the board allows for today's calendar.",
-        "The calendar is unavailable from this page; the marks are history, not today's news."
+        "I cannot reach the calendar from here, so please treat the news windows as unknown rather than clear.",
+        "The calendar is out of reach on this page; served over http I shall have it for you.",
+        "No calendar from here, so the marks are history rather than today's news."
       ],
       "stale": [
-        "The calendar on file does not reach today, so news windows are unknown rather than absent.",
-        "Today is not in the calendar I have; treat the absence of news bands as unknown."
+        "My calendar stops short of today, so please treat the news windows as unknown rather than clear.",
+        "Today is not yet in the calendar I hold; I shall have it once the refresh runs."
       ]
     },
     "outside": [
-      "The board is outside its hours; it opens at {opens} UK, and nothing is highlighted until then.",
-      "Between now and {opens} the board is a reference, not a readout.",
-      "Nothing to report from the board until {opens}; the clock, at least, is running."
+      "The board opens at {opens} UK, and I shall start highlighting the moment it does. Might I get you a coffee in the meantime?",
+      "We have until {opens} UK before the board wakes; the record below is yours to study until then.",
+      "Resting until {opens} UK. I shall have the first window marked for you on the stroke of it."
     ],
     "weekend": [
-      "The board has no window to keep until Monday at 08:00.",
-      "The markets are closed and the board follows suit until Monday.",
-      "No live window until Monday at 08:00."
+      "The board resumes on Monday at 08:00, and I shall have it marked from the first window.",
+      "The markets are enjoying the weekend; I shall wake the board with them on Monday.",
+      "Monday at 08:00 is the next live window. Do take the weekend — I shall keep the clock."
     ],
     "preview": [
       "Everything above is the profile at {time}, not the present.",
@@ -737,19 +737,19 @@ const MV = {
       "The marks are what the profile says of {time}, not of now."
     ],
     "previewOutside": [
-      "At {time} the board would be closed; there is nothing to preview there.",
-      "Outside the board's hours at {time}; nothing would be highlighted there."
+      "The board rests at {time}; choose an hour between 08:00 and 21:00 and I shall show you that window.",
+      "{time} falls outside the board's hours. Name one inside them and it is yours."
     ]
   },
   "chips": {
     "newsNowLabel": "News now",
     "newsNextLabel": "News next",
-    "emptyNow": "nothing in effect",
-    "emptyNext": "nothing due",
+    "emptyNow": "all clear",
+    "emptyNext": "clear",
     "unavailable": "calendar not loaded",
     "unavailableTitle": "The calendar could not be fetched. Opened from file://, the page cannot read data/ff_week.json; serve it over http to see news windows.",
     "idle": "—",
-    "emptyNextCarry": "nothing new",
+    "emptyNextCarry": "carries over",
     "unavailableHttp": "The calendar could not be fetched.",
     "stale": "calendar older than today",
     "staleTitle": "data/ff_week.json does not reach today; the refresh Action has not run yet."
@@ -766,8 +766,8 @@ const MV = {
     }
   },
   "banner": {
-    "weekend": "The board keeps 08:00–21:00 UK on trading days; type a time into \"Preview time\" and it will show you that window.",
-    "outside": "Closed rather than quiet until {opens}. \"Preview time\" will show any window in the meantime.",
+    "weekend": "The board keeps 08:00–21:00 UK on trading days. Type a time into \"Preview time\" and I shall show you that window.",
+    "outside": "Resting until {opens}. Type a time into \"Preview time\" and I shall show you any window in the meantime.",
     "preview": "Previewing {time} on the {profile} profile; \"Back to live\" returns the board to the clock."
   }
 };

@@ -629,6 +629,16 @@ which also govern any new string:
   There is no brief to present when the calendar failed to load, when nothing is selected, or —
   on the board — outside 08:00–21:00 and at weekends, so the line is omitted in those states and
   the greeting runs straight into what is wrong.
+- **Say what is, not what is missing** (21 Sep 2026, at the owner's request). The valet is a
+  butler, so the register is positive and attentive: an empty calendar is "a clear day at high
+  weight", not "nothing of high weight"; an idle board "opens at 08:00 and I shall start
+  highlighting the moment it does", not "nothing is highlighted until then". Where the page is
+  waiting or powerless, it says what it will do about it — "I shall keep watch", "I shall have it
+  ready", "Served over http I shall have it for you" — rather than stopping at the lack. A state
+  with genuinely nothing to do may carry one offer of service ("Might I get you a coffee in the
+  meantime?"), but only one per page and never the same offer twice, because the first
+  verification pass flagged a repeated coffee line as sitcom-butler. Honesty outranks cheer: an
+  unknown is still an unknown, and "clear" never replaces "unknown" where the page cannot see.
 - The owner is addressed by name **once**, in that salutation, and nowhere else: `NAME` at the top
   of each script, `{name}` only in the greeting variants. It replaced a sparing "sir" on 20 Sep
   2026. Change `NAME` in both pages to rename. No exclamation marks, no naming the character,

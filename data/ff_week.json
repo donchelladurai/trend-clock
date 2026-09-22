@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-09-21T23:15:26.614Z",
+ "fetchedAt": "2026-09-22T16:55:23.166Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -122,6 +122,14 @@
    "impact": "Low",
    "forecast": "",
    "previous": "16.3K"
+  },
+  {
+   "title": "President Trump Speaks",
+   "country": "USD",
+   "date": "2026-09-22T09:55:00-04:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
   },
   {
    "title": "Consumer Confidence",

@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-09-24T11:41:38.611Z",
+ "fetchedAt": "2026-09-24T17:07:45.806Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -512,6 +512,14 @@
    "country": "USD",
    "date": "2026-09-24T10:10:00-04:00",
    "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "President Trump Speaks",
+   "country": "USD",
+   "date": "2026-09-24T10:15:00-04:00",
+   "impact": "Medium",
    "forecast": "",
    "previous": ""
   },

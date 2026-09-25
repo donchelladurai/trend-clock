@@ -1,5 +1,8 @@
-# Raw market data pulled by tools/fetch_histdata.js and the 5-minute bars tools/hist2m5.py builds.
-# The generated row (data/row_*.json) is committed; the inputs are re-fetchable.
+# Raw market data pulled by tools/fetch_histdata.js and tools/fetch_dukascopy.py, and the bar files
+# tools/hist2bars.py and tools/duka2bars.py build from them. The generated rows (data/rows/*.json)
+# are committed; the inputs are re-fetchable.
 data/*.zip
+data/*.bi5
+data/*_m2.json
 data/*_m5.json
 data/*_h.json

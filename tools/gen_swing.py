@@ -4,7 +4,8 @@
     python tools/gen_swing.py data data/swing.json          # all instruments
     python tools/gen_swing.py data data/swing.json eurusd   # one, for a quick look
 
-Reads the same histdata.com M1 zips tools/fetch_histdata.js downloads (EST-stamped, no DST) and
+Reads the same histdata.com M1 zips tools/fetch_histdata.js downloads (stamped in UK local time
+minus five hours; see tools/hist2bars.py) and
 streams them once per instrument, so memory stays flat whatever the history length.
 
 For every timeframe the bars are cut on UK local time, so a 4-hour bar is 00:00-04:00 UK the year
@@ -116,8 +117,12 @@ def stream_rows(symbol):
                 stamp = p[0]
                 y, mo, d = int(stamp[0:4]), int(stamp[4:6]), int(stamp[6:8])
                 hh, mm = int(stamp[9:11]), int(stamp[11:13])
-                utc = days_from_civil(y, mo, d) * 1440 + hh * 60 + mm + 300   # EST -> UTC
-                yield utc + uk_offset(utc), float(p[1]), float(p[2]), float(p[3]), float(p[4])
+                # histdata's stamp is Europe/London local time minus five hours the year round (its
+                # offset follows the UK clock change, not the American one), so + 300 IS UK local
+                # time. Until 25 Sep 2026 this read it as fixed EST and added the UK offset on top,
+                # which put every summer bar an hour late.
+                uk = days_from_civil(y, mo, d) * 1440 + hh * 60 + mm + 300
+                yield uk, float(p[1]), float(p[2]), float(p[3]), float(p[4])
 
 def build(symbol):
     """Bars per timeframe plus the daily ATR, in one pass."""

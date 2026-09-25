@@ -3,7 +3,9 @@
 //   node tools/inject_row.js data/row_audjpy.json
 // The row file is what tools/gen_row.js --out writes: { row, turnc, meta }.
 // A row whose label already exists is replaced in place. A new row goes after the last row of
-// its group; a new group is added to GROUPS before "Commodities" with the FX guide lines.
+// its group; a new group is added to GROUPS before "Commodities" with the FX guide lines and the
+// 5-minute chart (GROUPS entries are [name, guideLines, minutesPerBar] — CLAUDE.md §1).
+// For a whole-board rebuild use tools/build_board.js; this is for one row at a time.
 const fs = require('fs'), path = require('path');
 const file = path.join(__dirname, '..', 'index.html');
 const { row, turnc } = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -17,7 +19,7 @@ let i = ROWS.findIndex(r => r.label === row.label);
 if (i >= 0){ ROWS[i] = row; TURNC[i] = turnc; console.log('replaced', row.label, 'at', i); }
 else {
   if (!GROUPS.some(g => g[0] === row.group)){
-    const at = GROUPS.findIndex(g => g[0] === 'Commodities'); GROUPS.splice(at < 0 ? GROUPS.length : at, 0, [row.group, [330, 390, 480]]);
+    const at = GROUPS.findIndex(g => g[0] === 'Commodities'); GROUPS.splice(at < 0 ? GROUPS.length : at, 0, [row.group, [330, 390, 480], 5]);
     console.log('added group', row.group);
   }
   const order = GROUPS.map(g => g[0]), gi = order.indexOf(row.group);

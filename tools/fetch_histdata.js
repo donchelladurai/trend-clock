@@ -3,7 +3,8 @@
 //   node tools/fetch_histdata.js audjpy 2021 2026 9 data
 // → data/hist_audjpy_2021.zip … data/hist_audjpy_2025.zip, data/hist_audjpy_2026_01.zip … _09.zip
 // Existing files are skipped, so a re-run only fetches what is new. Requests are paced at 2.5 s.
-// Timestamps inside the zips are EST (UTC-5, no DST) — tools/hist2m5.py converts and aggregates.
+// Timestamps inside the zips are UK local time minus five hours (histdata calls it EST, but the offset
+// follows the UK clock change) — tools/hist2bars.py converts and aggregates (2- or 5-minute).
 const fs = require('fs');
 const [,, pair, fromYear, toYear, toMonth, dir = 'data'] = process.argv;
 if (!pair || !fromYear || !toYear || !toMonth){ console.error('usage: fetch_histdata.js <pair> <fromYear> <toYear> <toMonth> [dir]'); process.exit(1); }

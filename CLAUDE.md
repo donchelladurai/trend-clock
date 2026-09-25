@@ -107,8 +107,8 @@ it off the board; a composite then sums the constituents it has. On this board:
   points at `data/wheat_m2.json`; drop a bar file of the same shape there and the row returns,
   with its pre-open gap and evening drawn closed by the open-window rule below.
 - **Wall Street** — sourced from Dukascopy and on the board, but with fewer days than its
-  neighbours: the pull never got 3 and 4 Aug 2026 (and two days before the window) through the
-  server's timeouts, and a day with no file is a day the generator cannot see. Re-run
+  neighbours: the pull never got 3 and 4 Aug 2026 through the server's timeouts (nor Monday 1 June,
+  before the window; the only other gap, 28 June, is a Sunday), and a day with no file is a day the generator cannot see. Re-run
   `tools/fetch_dukascopy.py` (it skips what is on disk and names what it could not get) and
   rebuild to close the gap.
 
@@ -124,7 +124,7 @@ flag lets the generator see where the feed had nothing.
 | Term | Rule |
 |---|---|
 | MA | 20-period EMA of the bar closes, on the continuous series (weekend gaps ignored) |
-| scale | 14-day Wilder ATR of UK-calendar-day bars, from completed **trading** days only: Mon–Fri with at least six hours of real bars, so the FX feeds' Sunday-evening hour is not a day (counted as one, it deflated the FX scale by ~13% against the index and gold feeds, which open at midnight and have no such stub) |
+| scale | 14-day Wilder ATR of UK-calendar-day bars, from completed **trading** days only: Mon–Fri with at least six hours of real bars, so the FX feeds' Sunday-evening hour is not a day (counted as one, it deflated the FX scale by ~13% against the index and gold feeds, whose own one-hour Sunday stub from 23:00 UK the same rule drops) |
 | move | `d[t] = EMA[t] − EMA[t−L]`, the MA's move over the last 15 minutes of clock time: `L = round(15 / minutes)` — 3 bars on the 5-minute chart, 8 (16 min) on the 2-minute |
 | trending | bar: `abs(d) ≥ TH × scale`; window: any of its bars is trending (3 bars at 5 minutes, 7 or 8 at 2) |
 | TH | **0.015 on the 5-minute chart, 0.027 on the 2-minute chart** — see the fit below |
@@ -160,20 +160,21 @@ enter a trend at 0.054 of a day's range and hold above 0.0135.
 
 **Sample.** 22 Jun – 18 Sep 2026, the 13 full weeks ending on the last complete week histdata
 served on 22 Sep. 65 weekdays on the FX rows and the European indices, except France 40 (64),
-EUR/CHF (64) and AUD/JPY (64); 63 on US Tech 100, US 500 and Spot Gold (Fri 3 Jul and Mon 7 Sep
-fail the movement test); 61 on Wall Street (the two Dukascopy days above, plus the same two
-holidays). Weekday profiles hold 11 to 13 days each, which is what §3.3 and §3.7 are about.
+EUR/CHF (64) and AUD/JPY (64); 63 on US Tech 100, US 500 and Spot Gold (Fri 3 Jul is an early close whose evening bars are
+missing from the grid, and on Mon 7 Sep, a US holiday, fewer than 90% of the bars are real); 61
+on Wall Street (the two Dukascopy days above, plus the same two holidays). Weekday profiles hold 11 to 13 days each, which is what §3.3 and §3.7 are about.
 
 **Pipeline** — from the repo root, node ≥ 18 and python 3:
 
 ```bash
 for s in ukxgbp grxeur frxeur nsxusd spxusd xauusd eurusd gbpusd audusd usdcad usdjpy usdchf \
          nzdusd eurgbp euraud eurjpy eurcad eurchf eurnzd audjpy; do
-  node tools/fetch_histdata.js $s 2026 2026 9 data          # monthly zips; re-runs skip what is on disk
+  node tools/fetch_histdata.js $s 2026 2026 9 data          # monthly zips; re-runs skip what is on disk and refetch the last month
 done
 for s in ukxgbp grxeur frxeur nsxusd spxusd xauusd; do python tools/hist2bars.py $s data data/${s}_m2.json 2 2026; done
 for s in eurusd gbpusd audusd usdcad usdjpy usdchf nzdusd eurgbp euraud eurjpy eurcad eurchf eurnzd audjpy; do
   python tools/hist2bars.py $s data data/${s}_m5.json 5 2026; done    # last argument: earliest zip year to read
+for s in ukxgbp grxeur frxeur nsxusd spxusd xauusd; do python tools/hist2bars.py $s data data/${s}_m5.json 5 2026; done   # fit_th.js needs both charts
 python tools/fetch_dukascopy.py USA30IDXUSD 2026-05-25 2026-09-20 data   # hours; resumable; names what it could not get
 python tools/duka2bars.py USA30IDXUSD data data/usa30_m2.json 2 1000
 node tools/fit_th.js --from 2026-06-22 --to 2026-09-18                     # only if the 5-minute TH or the sample changes
@@ -273,15 +274,16 @@ composites the most power, and the 5-minute FX rows the least of either. The FDR
 `sum(m × cut)` over the 60 firing families is 11.5 expected false of 186 red, 6.2%.
 
 **`MIN_LAM` was 3, then 1.5, and is 1 on the three-month board.** A single instrument's weekday
-profile holds 13 days and 1.1–3.2 turns per window; at 3 the guard hatched all 105 of those
-families and the weekday view carried no turn statistics at all, and at 1.5 it still hatched 25
-FX families once the ATR fix (§1b) lowered the FX turn rates. Measured by pushing flat Poisson
+profile holds 13 days and 1.1–3.2 turns per window; at 3 the guard hatched 101 of those 105
+families and the weekday view carried almost no turn statistics at all, and at 1.5 it still
+hatched 25 single-row families (24 FX and Spot Gold's Mondays) once the ATR fix (§1b) lowered the
+FX turn rates. Measured by pushing flat Poisson
 counts through the real pipeline, the false-mark rate does not move with `lambda`: 0.061 red and
 0.36 capped per family at `lambda` 1.0, 0.050 and 0.41 at 1.5, 0.067 and 0.63 at 9, with 4–7% of
 families showing any spurious red throughout. So the tests hold their promise down here, and the
 guard only needs to catch a profile with fewer expected turns than windows — none on this board.
-At 1 the real weekday profiles show 30 red on the single rows against 6.4 expected from noise, on
-19 of the 21. Weekday flags still run about 8× rarer per window than all-days ones.
+At 1 the real weekday profiles show 30 red on 11 of the 21 single rows against 6.4 expected from
+noise, with some weekday mark on 19 of them. Weekday flags still run about 8× rarer per window than all-days ones.
 
 `MID_FDR` was 0.30 and was raised to 0.40 on the 12-month board for coverage of the summary
 chips. On this board no row is flat (the largest omnibus is USD/CHF at 0.012); 0.30 would give
@@ -302,7 +304,8 @@ across `lambda`). Change one and you must change the other.
 
 Only `out.all.omni` is read. `out.flat = out.all.omni > OMNIBUS` (`OMNIBUS = 0.10`) feeds
 tooltip prose **only** — it must never gate which windows get marked (§6). On this board no row
-is flat: 21 of 25 sit at p < 0.001 and the largest is USD/CHF at 0.012 — and a non-flat row can
+is flat: 20 of 25 sit at p < 0.001 (EUR/AUD and EUR/JPY at 0.0011 and 0.0012) and the largest is
+USD/CHF at 0.012 — and a non-flat row can
 still clear the per-window bar not once: USD/CHF's best window (17 turns against 8.8) is at
 p = 0.009 where the cut needs 0.002.
 
@@ -318,8 +321,10 @@ rather than a gap.
 
 ### 3.5 Composite detection — `COMPOSITE`
 
-Derived, not hardcoded: a `big` row is a composite exactly when the non-`big` rows following it
-in its group have turn totals summing to its own. This correctly excludes **Spot Gold**, which is
+Derived, not hardcoded: a `big` row is a composite exactly when the shortest run of non-`big`
+rows following it in its group has turn totals summing to its own, so a single appended after a
+group's constituents (where `inject_row.js` puts new rows) sits outside the run instead of
+breaking the match. This correctly excludes **Spot Gold**, which is
 drawn `big` but is a real instrument. It self-maintains if rows are added — but it depends on
 invariant 2 and on constituents immediately following their composite in `ROWS` order, which is
 why `build_board.js` emits each group's composites first, each followed by its constituents
@@ -347,8 +352,8 @@ sample length, a longer history would have shrunk the printed probability rather
 `1 - exp(-mu)` is by Jensen an **upper bound** on P(at least one) for any mixed-Poisson day
 model, so it cannot mislead optimistically and does not drift with sample size. The UI says
 "up to" for exactly this reason — keep that wording if you touch it. The largest printed figure on
-the board is 96% (a composite on a weekday profile; 86% on all-days); singles top out at 55%
-(Wall Street).
+the board is 96% (a composite on a weekday profile; 86% on all-days); singles top out at 55% on
+all-days and 63% on a weekday profile (both Wall Street).
 
 ### 3.7 Other constants
 
@@ -439,7 +444,9 @@ the board is 96% (a composite on a weekday profile; 86% on all-days); singles to
 ## 5. Refreshing the data (the three-month window going stale)
 
 The sample is currently **22 Jun – 18 Sep 2026** on every row (§1b). histdata serves the current
-month a few days behind, so the window can be moved forward whenever a new full week is in.
+month a few days behind and fills it in as the month goes on, so the window can be moved forward
+whenever a new full week is in; the fetcher refetches the last month of its plan on every run for
+that reason (an older zip is kept only when histdata has nothing larger).
 
 ### Step 1 — rebuild the rows
 
@@ -499,16 +506,16 @@ rebuilt footer or a README would have to say.
 | (was footer) | bar height cap `1.8×` | matches `Math.min(d.t[k]/1.8, 1)` in `applyMode` |
 | Comment, turn-spikes header | FTSE 100 `~5 turns vs 3` weekday, `~22 vs 14.7` all-days; `lambda` 56.1 the largest, counts exact in all 7800 cells | that row's `lambda`; `max lambda`; count recovery vs `meta.counts` |
 | Comment, turn-spikes header | LOO: tier 2 `0.95` / `86%`, matched amplitude `0.95` / `82%` at `1.89×` and 460 flags, random `43%`; singles' `lambda` `7–15` | `tools/loo_harness.js`; `lambda` range |
-| Comment ~L290 | USD/CHF non-flat at `p = 0.012`, best window 17 vs 8.8 at p 0.009, cut needs 0.002 | its `omni`, `max(c)`, `p`, `FDR/52` |
-| Comment ~L375 | MID_FDR: 0.30 gives 349 marks and leaves USD/CHF and EUR/CHF off all-days, 0.40 gives 429 and admits them with 3 and 5 capped | rerun with `MID_FDR` at 0.30 / 0.50 |
-| Comment ~L386 | AGG_Q: row spreads 6–85 / 6–84 / 24–86 / 17–76%, cuts 63/61/72/67%, lighting 9/8/8/9, mean mu 0.58–0.69 and 0.43–0.59, weekday lighting 5–13 | `AGG_CUT`, `pTurn` spread, mean `c/days` per profile |
-| Comment ~L403 | FDR sweep `86/86/86/85%` at q = .05/.10/.15/.20 (355/460/536/593 flags); USD/CHF `17 vs 8.8` just outside | `tools/loo_harness.js`; its best count and `lambda` |
-| Comment ~L408 | MIN_LAM: null rates 0.061/0.36 at 1.0, 0.050/0.41 at 1.5, 0.067/0.63 at 9, 4–7% any red; 30 real red vs 6.4, 19 of 21 rows; 25 FX families hatched at 1.5 | the null simulation at each `lambda`; weekday tiers on single rows at each guard |
-| Comment ~L422 | `phi` 1.0 for 19 of 21 singles (USD/CAD 1.02, EUR/AUD 1.07), 1.28–1.68 composites | `TURN[i].phi` |
-| Comment ~L462 | rate hits `1.97` (USD pairs), `1.88` (Europe), `1.84` (US) | `max(c)/days` |
-| Comment ~L496 | no flat row, largest omnibus USD/CHF 0.012; a 5-minute row needs `1.6–1.9×`, a 13-day weekday profile `2.2–3.8×` | `TURN[i].needs`; smallest count with `poisUpper <= 0.05` at weekday `lambda` |
-| Comment ~L503 | tier 1 held-out `0.46` / `70%` vs tier 2 `0.95` / `86%`; null board `40` capped, `7` red vs `243` / `186` real | `tools/loo_harness.js` |
-| Comment ~L930 | chips: 21 of 25 rows on tier 2 alone (USD/CHF, EUR/JPY, EUR/CHF, AUD/JPY capped only), 25 of 25 with tier 1 | rows with any `tier > 0` / `tier === 2` on all-days |
+| Comment ~L327 | USD/CHF non-flat at `p = 0.012`, best window 17 vs 8.8 at p 0.009, cut needs 0.002 | its `omni`, `max(c)`, `p`, `FDR/52` |
+| Comment ~L371 | MID_FDR: 0.30 gives 349 marks and leaves USD/CHF and EUR/CHF off all-days, 0.40 gives 429 and admits them with 3 and 5 capped | rerun with `MID_FDR` at 0.30 / 0.50 |
+| Comment ~L380 | AGG_Q: row spreads 6–85 / 6–84 / 24–86 / 17–76%, cuts 63/61/72/67%, lighting 9/8/8/9, mean mu 0.58–0.69 and 0.43–0.59, weekday lighting 5–13 | `AGG_CUT`, `pTurn` spread, mean `c/days` per profile |
+| Comment ~L398 | FDR sweep `86/86/86/85%` at q = .05/.10/.15/.20 (355/460/536/593 flags); USD/CHF `17 vs 8.8` just outside | `tools/loo_harness.js`; its best count and `lambda` |
+| Comment ~L404 | MIN_LAM: null rates 0.061/0.36 at 1.0, 0.050/0.41 at 1.5, 0.067/0.63 at 9, 4–7% any red; 30 real red on 11 rows vs 6.4, some weekday mark on 19 of 21; 101 of 105 families hatched at 3, 25 (24 FX + Spot Gold Mondays) at 1.5 | the null simulation at each `lambda`; weekday tiers on single rows at each guard |
+| Comment ~L416 | `phi` 1.0 for 19 of 21 singles (USD/CAD 1.02, EUR/AUD 1.07), 1.28–1.68 composites | `TURN[i].phi` |
+| Comment ~L461 | rate hits `1.97` (USD pairs), `1.88` (Europe), `1.84` (US) | `max(c)/days` |
+| Comment ~L495 | no flat row, largest omnibus USD/CHF 0.012; a 5-minute row needs `1.6–1.9×`, a 13-day weekday profile `2.2–3.8×` | `TURN[i].needs`; smallest count with `poisUpper <= 0.05` at weekday `lambda` |
+| Comment ~L509 | tier 1 held-out `0.46` / `70%` vs tier 2 `0.95` / `86%`; null board `40` capped, `7` red vs `243` / `186` real | `tools/loo_harness.js` |
+| Comment ~L955 | chips: 21 of 25 rows on tier 2 alone (USD/CHF, EUR/JPY, EUR/CHF, AUD/JPY capped only), 25 of 25 with tier 1 | rows with any `tier > 0` / `tier === 2` on all-days |
 | §3.1 above | `phi` divergence figures `1.23 / 2.16 / 6.99`, blindness `0.96 / 1.00 / 1.01` | re-run the two estimator simulations; these are properties of the estimator, not the data, so they should reproduce |
 | §1b above | the fit: per-instrument TH2 `0.0265–0.0279`, pooled `0.0271`, ratio `1.80`; US 500 at 0.015 on 2-minute `82% / 17.6 a day` vs `57% / 6.9` on 5-minute | `tools/fit_th.js`; `gen_row.js --sweep` |
 
@@ -559,8 +566,8 @@ functions or in §1b.
 - **A 5-minute ATR(14) as the scale.** It normalises away the time-of-day structure the board
   exists to show (correlation 0.2–0.6 against the reference rows when it was tried).
 - **Requiring the hour before 08:00 on the grid.** It dropped every Monday of France 40 (§1b).
-- **`MIN_LAM = 3`, or 1.5, on a 13-day weekday profile.** 3 hatched all 105 single-row weekday
-  families and 1.5 still hatched 25, while protecting nothing: the false-mark rate under noise is
+- **`MIN_LAM = 3`, or 1.5, on a 13-day weekday profile.** 3 hatched 101 of the 105 single-row
+  weekday families and 1.5 still hatched 25, while protecting nothing: the false-mark rate under noise is
   the same at `lambda` 1 as at 9 (§3.3).
 - **Keeping the old 12-month, 5-minute rows for Wall Street and Chicago Wheat** alongside the
   rebuilt ones. Two definitions on one board cannot be read against each other; a missing row is
@@ -629,6 +636,7 @@ used on 22–25 Sep 2026 froze it at a Tuesday 10:07 UK).
 | Tier 2 ⊂ tier 1's cut | every tier-2 window also passes the 40% cut |
 | Section headings | Indices and Commodities say "2-minute chart", the FX groups "5-minute chart" |
 | Composite badges | Europe 3×, US 3×, USD pairs 7×, EUR crosses 6× |
+| Tooltip verdicts | a tier-0 window whose printed interval lies below 1.0× says "quieter than this row's flat rate", never "within ordinary variation" |
 | Invariants | `build_board.js` prints invariant 1 ok and invariant 3 worst ≤ 0.26 |
 | Event clock | in the converted bars, NFP (first Friday, 12:30 UTC) and the London open (07:00 UTC in summer, 08:00 in winter) are the largest bars of their day |
 | Column overlays | live-window marker aligns with its column to <1px at 5120 / 2560 / 1400 / 900 |
@@ -664,6 +672,13 @@ capped false marks per board against 186 and 243 real.
   replacements from a JSON file with `node tools/apply_edits.js edits.json` (each `{old, new}`
   must match exactly once; add `CLAUDE.md` as a second argument to edit this file), or use the
   editor's own write tool for a whole file, not inline `node -e` with the text embedded.
+  The assistant's shell also strips one level of backslashes from heredoc text, so a line that
+  carries a regex or an escape sequence is written with the editor's edit tool, never a heredoc
+  (a carriage-return-newline regex written through a heredoc arrived as a real line break once).
+- Line endings: `.gitattributes` keeps every text file LF in the working tree. The tools find the
+  `ROWS`, `TURNC` and `GROUPS` literals by exact anchors and normalise CRLF on the way in anyway,
+  because `core.autocrlf` handed the page back with CRLF after a rebase once and the anchor
+  failed. The `.vs/` workspace files are tracked and binary: never run a line-ending pass over them.
 - Prose is deliberately specific about uncertainty. If a change makes a stated number wrong,
   change the number — do not soften the sentence into something unfalsifiable.
 
@@ -879,27 +894,32 @@ bars of that chart, and each cell carries three things:
 | Cell colour | share of nights that bar was trending |
 | Figure on the cell | the share of a day's range that bar typically covers |
 | Bar beneath | turn spikes — trend starts and stops — bright where flagged, capped at the looser tier |
-| Grey cell | the instrument does not trade in that slot on this feed |
+| Grey cell | the instrument does not trade in that slot on this feed, or trades less than half of it (France 40's 04:00–08:00 bar); the tooltip says which, from the generator's `present` count |
 | Hatched cell | fewer than 30 nights, or under half the instrument's nights |
 
 **Data.** `data/swing.json`, written by `tools/gen_swing.py` from the same histdata.com M1 zips
-`tools/fetch_histdata.js` downloads. 20 instruments, 17 Jan 2024 to 18 Sep 2026, ~690 nights each
+`tools/fetch_histdata.js` downloads. 20 instruments, 22 Jan 2024 to 18 Sep 2026, 679–693 nights each
 (regenerated 25 Sep 2026 with the corrected histdata clock — §1b — after a first build that sat an
-hour late in every BST month).
+hour late in every BST month, and again the same day with the trading-day ATR and the open-slot
+turn baseline below).
 The generator streams each instrument once, cuts every timeframe on UK local time so the slots
 follow BST, and computes:
 
-- **trending** — `|EMA20[t] − EMA20[t−1]| >= TH × the 14-day ATR of UK calendar days`, with `TH`
+- **trending** — `|EMA20[t] − EMA20[t−1]| >= TH × the 14-day ATR of UK trading days` (Mon–Fri
+  with at least six hours of bars, as on the board — counting the Sunday-evening stub as a day
+  deflated the scale ~13% on every row but France 40 and put every movement figure ~15% high), with `TH`
   fitted per timeframe as the **median** of that quantity across every instrument and slot, so
-  "trending" reads as "busier than the median overnight bar of this chart". Fitted values land at
-  0.0381 (4h), 0.0161 (1h) and 0.0101 (30m) of a daily ATR. Carrying the board's absolute 5-minute
+  "trending" reads as "busier than the median overnight bar of this chart". Fitted values land at 0.0334 (4h), 0.0141 (1h) and 0.0089 (30m) of a daily ATR. Carrying the board's absolute 5-minute
   rule over with a `sqrt(minutes/15)` scaling was tried first and left every instrument between
   10% and 18% — too strict to mean anything.
 - **movement** — the bar's range over that daily ATR, median across nights, with the 90th
   percentile in the tooltip. Needs no calibration and is comparable across instruments.
 - **turns** — the board's three-state hysteresis (enter at 2 × TH, hold above 0.5 × TH), counted
   per slot, with the Poisson tail and both Benjamini-Hochberg tiers **precomputed in the
-  generator**, because this page carries no statistics layer of its own. That does not reintroduce
+  generator**, because this page carries no statistics layer of its own. The baseline is the mean
+  over the slots the instrument has nights in, as the board's `lambda` is over open windows; a row
+  with fewer than two such slots gets no tiers (France 40 on the 1-hour chart). Dividing by every
+  slot made both of France 40's two 30-minute slots "spikes" against a phantom flat night. That does not reintroduce
   the staleness hazard of §5: the tiers and the counts are written by the same run, so a refresh
   moves them together.
 

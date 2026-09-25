@@ -27,6 +27,7 @@ for (const [label, sym] of INS){
   rows.push({ label, target, th2, tpd5: tpd(P5, S5), tpd2: tpd(P2, S2), P2, P5 });
   console.log(label.padEnd(12) + ' 5-min@' + th5 + ': mean s ' + target.toFixed(3) + ', ' + tpd(P5, S5).toFixed(1) + ' turns/day | 2-min matches at TH2 = ' + th2.toFixed(4) + ' (' + tpd(P2, S2).toFixed(1) + ' turns/day), days ' + P5.days.length + '/' + P2.days.length);
 }
+if (!rows.length){ console.error('no instrument had both a 2-minute and a 5-minute bar file: build data/<sym>_m5.json for the 2-minute instruments first (CLAUDE.md 1b)'); process.exit(1); }
 // Pooled: one TH2 for the whole chart, matching the pooled mean share.
 const pooled5 = rows.reduce((a, r) => a + r.target, 0)/rows.length;
 let lo = 0.005, hi = 0.08;

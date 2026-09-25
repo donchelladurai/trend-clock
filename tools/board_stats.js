@@ -53,7 +53,7 @@ console.log(`phi: singles ${f(Math.min(...idx(single).map(i => TURN[i].phi)))}â€
 let spanAll = 0, nAll = 0, spanWd = 0, nWd = 0;
 ROWS.forEach((r, i) => { const t = TURN[i]; for (const m of MODES){ const tm = t[m]; if (tm.weak) continue; for (const k of open(r)){ const [lo, hi] = byar(tm.c[k] / tm.phi, 1.96).map(x => x * tm.phi / tm.lam); const sp = lo <= 1 && 1 <= hi; if (m === 'all'){ nAll++; if (sp) spanAll++; } else { nWd++; if (sp) spanWd++; } } } });
 console.log(`\n=== Byar interval spans 1.0x: all-days ${f(100 * spanAll / nAll, 1)}% of ${nAll}, weekday ${f(100 * spanWd / nWd, 1)}% of ${nWd}`);
-let contra = 0; ROWS.forEach((r, i) => { for (const m of MODES){ const tm = TURN[i][m]; if (tm.weak) continue; for (const k of open(r)){ const [lo, hi] = byar(tm.c[k] / tm.phi, 1.96).map(x => x * tm.phi / tm.lam); if (!tm.tier[k] && lo.toFixed(2) > 1 && !(lo > 1)) contra++; } } });
+let contra = 0; ROWS.forEach((r, i) => { for (const m of MODES){ const tm = TURN[i][m]; if (tm.weak) continue; for (const k of open(r)){ const [lo, hi] = byar(tm.c[k] / tm.phi, 1.96).map(x => x * tm.phi / tm.lam); if (!tm.tier[k] && !(lo > 1) && !(hi < 1) && (+lo.toFixed(2) > 1 || +hi.toFixed(2) < 1)) contra++; } } });
 console.log(`CI-vs-verdict contradictions: ${contra}`);
 
 // lambda ranges by class

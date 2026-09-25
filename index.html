@@ -403,14 +403,15 @@ function bhCutoff(ps, q){
 // honest reading rather than a bug to tune away.
 // MIN_LAM was 3 on the 12-month board, where it caught only Chicago Wheat's 1.0-1.5 turns per
 // weekday window. On the three-month board a single instrument's weekday profile carries 13 days
-// and 1.1-3.2 turns per window, so 3 would hatch all 105 of those families and the weekday view
-// would carry no turn statistics at all. Measured against flat Poisson noise through this exact
+// and 1.1-3.2 turns per window, so 3 would hatch 101 of those 105 families and the weekday view
+// would carry almost no turn statistics at all. Measured against flat Poisson noise through this exact
 // pipeline, the false-mark rate does not move with lambda: 0.061 red and 0.36 capped per family
 // at lambda 1.0, 0.050 and 0.41 at 1.5, 0.067 and 0.63 at 9, with 4-7% of families showing any
 // spurious red throughout. So the tests hold their promise down here and the guard only needs
 // to catch a profile with fewer turns than windows. At 1.0 every weekday family on the board is
-// read, and the real ones show 30 red against 6.4 expected from noise, on 19 of the 21 single
-// rows; at 1.5, 25 FX weekday families would be hatched for no statistical gain.
+// read, and the real ones show 30 red against 6.4 expected from noise, on 11 of the 21 single
+// rows, with some weekday mark on 19 of them; at 1.5, 25 single-row weekday families (24 FX and
+// Spot Gold's Mondays) would be hatched for no statistical gain.
 const FDR = 0.10, MIN_LAM = 1;
 // A per-row widening factor for the significance tests, from how unevenly a row's turns split
 // across the five weekdays (1.0 for 19 of the 21 single instruments on the three-month board,
@@ -552,16 +553,23 @@ const timeParts = timeZone => { const f = new Intl.DateTimeFormat("en-GB",{timeZ
 const ukParts = () => timeParts("Europe/London");
 let preview = null, dayMode = "auto", shownMode = null, shownOffset = null;
 // A big row is a composite of the rows beneath it, not an instrument — Europe is FTSE 100 +
-// Germany 40 + France 40, and so on. Spot Gold and Chicago Wheat are drawn big too but stand
-// alone, so the flag is derived rather than assumed: a big row is a composite exactly when the
-// non-big rows following it in its group have turn totals summing to its own.
+// Germany 40 + France 40, and so on. Spot Gold is drawn big too but stands alone (Chicago Wheat
+// would be the same if its bar file returned), so the flag is derived rather than assumed: a big
+// row is a composite exactly when the shortest run of non-big rows following it in its group has
+// turn totals summing to its own.
 const AGG_CUT = [];   // filled below, once COMPOSITE is known
 const COMPOSITE = ROWS.map((r, i) => {
   if (!r.big) return 0;
-  const kids = [];
-  for (let j=i+1; j<ROWS.length && ROWS[j].group === r.group && !ROWS[j].big; j++) kids.push(j);
-  const sum = kids.reduce((a, j) => a + TURNC[j][MODES.length-1], 0);
-  return kids.length && sum === TURNC[i][MODES.length-1] ? kids.length : 0;
+  // The shortest run of following non-big rows whose totals sum to this row's: a single appended
+  // after a group's constituents (tools/inject_row.js puts new rows at the end of their group)
+  // then sits outside the run instead of breaking the match.
+  let sum = 0, n = 0;
+  for (let j=i+1; j<ROWS.length && ROWS[j].group === r.group && !ROWS[j].big; j++){
+    sum += TURNC[j][MODES.length-1]; n++;
+    if (sum === TURNC[i][MODES.length-1]) return n;
+    if (sum > TURNC[i][MODES.length-1]) break;
+  }
+  return 0;
 });
 ROWS.forEach((r, i) => {
   if (!COMPOSITE[i]) { AGG_CUT[i] = Infinity; return; }
@@ -645,6 +653,9 @@ function applyMode(mode){
           : tn.tier[k] === 2 ? `p ${fmtP(tn.p[k])} — clears this row's 10% false-discovery cut`
           : tn.tier[k] === 1 ? `p ${fmtP(tn.p[k])} — clears this row's looser 40% cut, so expect up to two in five of its capped windows to be spurious`
           : rlo > 1 ? `p ${fmtP(tn.p[k])} — above average on its own, but short of even the loose cut once all ${tn.nOpen} windows are tested`
+          // A window with fewer turns than a flat day would give: the interval printed above sits
+          // below 1.0x, and the tiers only ever look for excess, so say that rather than "ordinary".
+          : rhi < 1 ? `p ${fmtP(tn.p[k])} — quieter than this row's flat rate on its own; the tiers look only for excess`
           : `p ${fmtP(tn.p[k])} — within ordinary variation`)
         // Then what the ROW says, which is a different question from what this window says.
         + (tn.weak || tn.tier[k] ? ``
@@ -768,9 +779,9 @@ const MV = {
       "Resting until {opens} UK. I shall have the first window marked for you on the stroke of it."
     ],
     "weekend": [
-      "The board resumes on Monday at 08:00, and I shall have it marked from the first window.",
+      "The board resumes on Monday at 08:00 UK, and I shall have it marked from the first window.",
       "The markets are enjoying the weekend; I shall wake the board with them on Monday.",
-      "Monday at 08:00 is the next live window. Do take the weekend — I shall keep the clock."
+      "Monday at 08:00 UK is the next live window. Do take the weekend — I shall keep the clock."
     ],
     "preview": [
       "Everything above is the profile at {time}, not the present.",
@@ -778,7 +789,7 @@ const MV = {
       "The marks are what the profile says of {time}, not of now."
     ],
     "previewOutside": [
-      "The board rests at {time}; choose an hour between 08:00 and 21:00 and I shall show you that window.",
+      "The board rests at {time}; choose an hour between {from} and {to} and I shall show you that window.",
       "{time} falls outside the board's hours. Name one inside them and it is yours."
     ]
   },
@@ -915,14 +926,15 @@ function tick(){
     const pv = !!preview && k < 0, pvTime = preview ? `${pad(preview.h)}:${pad(preview.m)}` : "";
     banner.textContent = pv ? fill(MV.banner.preview, {time: pvTime, profile: mode==="all"?"all-days":WDL[+mode]}) : weekend ? MV.banner.weekend : fill(MV.banner.outside, {opens: slotLabel(0)});
     banner.classList.add("show"); $("winlab").textContent="—"; $("cd").textContent="";
-    $("cdbig").textContent="—"; $("cdsub").textContent = pv ? "preview — clock paused" : weekend ? "board opens 08:00 UK" : "outside 08:00–21:00";
+    // Hours follow the displayed zone, as the banner beside them does; "UK" strings take UK times.
+    $("cdbig").textContent="—"; $("cdsub").textContent = pv ? "preview — clock paused" : weekend ? "board opens 08:00 UK" : `outside ${slotLabel(0)}–${slotLabel(52)}`;
     document.querySelector(".cdbox").classList.remove("soon");
     document.querySelectorAll("section").forEach(s=>s.classList.remove("live"));
     document.querySelectorAll(".row").forEach(r=>{ r.classList.remove("on","off","turn"); r.querySelector(".pct").textContent=""; });
     $("trendlist").innerHTML='<span class="chip none">—</span>'; $("turnnowlist").innerHTML='<span class="chip none">—</span>'; $("turnnextlist").innerHTML='<span class="chip none">—</span>';
     $("newsnowlist").innerHTML='<span class="chip none">—</span>'; $("newsnextlist").innerHTML='<span class="chip none">—</span>';
     // Off hours there is no brief to offer, so the heading is the salutation alone.
-    { const g = greeting(real, wdIdx); setMini(g, cap(afterGreeting(g, fill(byDay(pv ? MV.mini.previewOutside : weekend ? MV.mini.weekend : MV.mini.outside, 20), {name: NAME, opens: slotLabel(0), time: pvTime})))); }
+    { const g = greeting(real, wdIdx); setMini(g, cap(afterGreeting(g, fill(byDay(pv ? MV.mini.previewOutside : weekend ? MV.mini.weekend : MV.mini.outside, 20), {name: NAME, opens: ukTime(0), from: slotLabel(0), to: slotLabel(52), time: pvTime})))); }
     return;
   }
   banner.classList.remove("show");
@@ -956,7 +968,7 @@ function tick(){
   });
   // Strongest first, so the leftmost chip is always the one most worth reading.
   const chips = (list, cls, empty) => list.length
-    ? list.sort((a,b)=>b[2]-a[2]).map(([nm, pc, ti])=>
+    ? list.sort((a,b)=>b[2]-a[2] || b[1]-a[1]).map(([nm, pc, ti])=>
         `<span class="chip ${cls}${ti===1?" soft":""}">${nm}<b>${pc}%</b></span>`).join("")
     : `<span class="chip none">${empty}</span>`;
   $("trendlist").innerHTML  = chips(trend,   "",  "none at this threshold");

@@ -9,7 +9,7 @@
 const fs = require('fs'), path = require('path');
 const file = path.join(__dirname, '..', 'index.html');
 const { row, turnc } = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-let h = fs.readFileSync(file, 'utf8');
+let h = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');   // the anchors below need LF; git may hand back CRLF
 const grab = (re) => { const m = h.match(re); if (!m) throw new Error('literal not found: ' + re); return m; };
 const mR = grab(/const ROWS = (\[.*?\]);\n/s), mT = grab(/const TURNC = (\[.*\]);/), mG = grab(/const GROUPS = (\[.*\]);/);
 const ROWS = JSON.parse(mR[1]), TURNC = JSON.parse(mT[1]), GROUPS = JSON.parse(mG[1]);

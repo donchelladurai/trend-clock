@@ -13,13 +13,13 @@ round and the slots line up with the clock the trader is reading. Three numbers 
 
   trend  share of days the 20-period EMA of that timeframe moved more over that bar than a typical
          overnight bar moves on that chart: |EMA[t] - EMA[t-1]| >= TH x the 14-day ATR of UK
-         calendar days, with TH fitted per timeframe as the median of that same quantity over every
+         trading days (Mon-Fri with at least six hours of bars, so the Sunday-evening stub is not a day), with TH fitted per timeframe as the median of that same quantity over every
          instrument and every slot of the session. "Trending" therefore reads as "busier than the
          median overnight bar of this chart", which is comparable across instruments because each
          is divided by its own daily ATR. The board's absolute 5-minute rule was carried over first,
          scaled by sqrt(minutes/15), and left every instrument between 10% and 18% — too dark to
          read and too strict to mean anything. The fitted values are recorded in meta.trendRule.
-  vol    the bar's true range as a share of that daily ATR: what fraction of a day's range this
+  vol    the bar's range (high - low) as a share of that daily ATR: what fraction of a day's range this
          slot typically delivers. Median over the days, with the 90th percentile kept beside it,
          because the mean of a range is dragged about by single news bars.
   turn   trend starts and stops, counted the board's way: a three-state direction (+1/0/-1) with
@@ -134,7 +134,12 @@ def build(symbol):
 
     def close_day(db):
         nonlocal atr, atr_n, atr_acc, prev_close
-        _, hi, lo, cl = db
+        day_no, hi, lo, cl, mins = db
+        # A trading day only: Mon-Fri with at least six hours of bars. The FX feeds open on Sunday
+        # evening and the index and gold feeds at 23:00 UK, so a calendar-day rule would enter a
+        # one-hour stub as a day once a week and deflate the scale by about 13%.
+        if (day_no + 3) % 7 >= 5 or mins < 360:
+            return
         tr = hi - lo if prev_close is None else max(hi - lo, abs(hi - prev_close), abs(lo - prev_close))
         prev_close = cl
         if atr_n < ATR_DAYS:
@@ -150,12 +155,13 @@ def build(symbol):
         if day_bar is None or day_bar[0] != day:
             if day_bar is not None:
                 close_day(day_bar)
-            day_bar = [day, h, l, c]
+            day_bar = [day, h, l, c, 1]
             atr_at_day[day] = atr                          # ATR from completed days only
         else:
             day_bar[1] = max(day_bar[1], h)
             day_bar[2] = min(day_bar[2], l)
             day_bar[3] = c
+            day_bar[4] += 1
         for tf, mins, _ in TIMEFRAMES:
             start = tod - tod % mins
             b = cur[tf]
@@ -245,6 +251,7 @@ def measure(series, atr_at_day, tf, mins, nslots, th):
     ema, state, prev_ema, n_seen = None, 0, None, 0
     trend_hits = [0] * nslots
     day_count = [0] * nslots
+    present = [0] * nslots
     turns = [0] * nslots
     ranges = [[] for _ in range(nslots)]
     seen_days = set()
@@ -278,6 +285,7 @@ def measure(series, atr_at_day, tf, mins, nslots, th):
         slot = (tod - SESSION_MIN) // mins
         if slot >= nslots:
             continue
+        present[slot] += 1                                  # any bars at all in this slot tonight
         # A slot counts only when the minutes are mostly there and the bar moved.
         if minutes < mins * 0.5 or h <= l:
             continue
@@ -291,20 +299,28 @@ def measure(series, atr_at_day, tf, mins, nslots, th):
         ranges[slot].append((h - l) / atr)
     if fitting:
         return {'dnorm': dnorm}
-    total_turns = sum(turns)
-    lam = total_turns / nslots if nslots else 0.0
-    ps = [pois_upper(turns[k], lam) if lam > 0 else 1.0 for k in range(nslots)]
-    cut = bh_cutoff(ps, FDR) if lam >= MIN_LAM else -1
-    mid = bh_cutoff(ps, MID_FDR) if lam >= MIN_LAM else -1
+    # The baseline is the mean over OPEN slots only, as the board's lambda is over open windows:
+    # France 40 has bars in two of the sixteen 30-minute slots, and dividing its turns by sixteen
+    # made both of them 'spikes' against a phantom flat night. A row with fewer than two open
+    # slots cannot deviate from its own mean, so it gets no tiers at all.
+    open_slots = [k for k in range(nslots) if day_count[k] > 0]
+    total_turns = sum(turns[k] for k in open_slots)
+    lam = total_turns / len(open_slots) if open_slots else 0.0
+    ps = [pois_upper(turns[k], lam) if (lam > 0 and k in open_slots) else 1.0 for k in range(nslots)]
+    testable = lam >= MIN_LAM and len(open_slots) >= 2
+    open_ps = [ps[k] for k in open_slots]
+    cut = bh_cutoff(open_ps, FDR) if testable else -1
+    mid = bh_cutoff(open_ps, MID_FDR) if testable else -1
     return {
         'trend': [round(trend_hits[k] / day_count[k], 3) if day_count[k] else 0 for k in range(nslots)],
         'vol': [round(quantile(ranges[k], 0.5), 4) for k in range(nslots)],
         'volHi': [round(quantile(ranges[k], 0.9), 4) for k in range(nslots)],
         'turns': turns,
-        'turnRatio': [round(turns[k] / lam, 2) if lam > 0 else 0 for k in range(nslots)],
-        'tier': [2 if (cut >= 0 and ps[k] <= cut) else 1 if (mid >= 0 and ps[k] <= mid) else 0 for k in range(nslots)],
+        'turnRatio': [round(turns[k] / lam, 2) if (lam > 0 and k in open_slots) else 0 for k in range(nslots)],
+        'tier': [2 if (cut >= 0 and k in open_slots and ps[k] <= cut) else 1 if (mid >= 0 and k in open_slots and ps[k] <= mid) else 0 for k in range(nslots)],
         'p': [round(ps[k], 5) for k in range(nslots)],
         'n': day_count,
+        'present': present,
         'lam': round(lam, 2),
         'days': len(seen_days),
         'first': min(seen_days) if seen_days else 0,
@@ -361,7 +377,8 @@ meta = {
                  'on': {tf: round(TH[tf] * ON_RATIO, 5) for tf, _, _ in TIMEFRAMES},
                  'off': {tf: round(TH[tf] * OFF_RATIO, 5) for tf, _, _ in TIMEFRAMES}},
     'fdr': FDR, 'midFdr': MID_FDR, 'minLam': MIN_LAM, 'minN': MIN_N,
-    'unavailable': ['Wall Street', 'Chicago Wheat'],
+    'unavailable': ['Wall Street'],                     # on the board (Dukascopy), not on this feed
+    'onNeither': ['Chicago Wheat'],                     # no free source for either page
     'source': 'histdata.com M1, converted to UK local time',
 }
 json.dump({'meta': meta, 'rows': rows}, open(OUT, 'w'), separators=(',', ':'))

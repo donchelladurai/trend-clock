@@ -102,14 +102,17 @@ let ok1 = TURNC.every(t => t.slice(0, 5).reduce((a, b) => a + b, 0) === t[5]), w
 for (const r of ROWS) for (const m of MODES){ let s = 0, n = 0; for (let k = 0; k < SLOTS; k++){ if (r.closed[k]) continue; s += r.data[m].t[k]; n++; } worst = Math.max(worst, Math.abs(s - n)); }
 console.log('invariant 1 ' + (ok1 ? 'ok' : 'FAILED') + '; invariant 3 worst ' + worst.toFixed(3));
 if (args.dry) process.exit(0);
+// Find the three literals before touching anything, so a page the anchors cannot find leaves
+// data/rows intact. git can hand the page back with CRLF (core.autocrlf on a rebase or checkout)
+// and the anchors need LF, so normalise on the way in and write LF back.
+const file = path.join(root, 'index.html');
+let h = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+const grab = re => { const m = h.match(re); if (!m) throw new Error('literal not found: ' + re); return m; };
+const mR = grab(/const ROWS = (\[.*?\]);\n/s), mT = grab(/const TURNC = (\[.*\]);/), mG = grab(/const GROUPS = (\[.*\]);/);
 const dir = path.join(root, 'data', 'rows'); fs.mkdirSync(dir, { recursive: true });
 for (const f of fs.readdirSync(dir)) if (f.endsWith('.json')) fs.unlinkSync(path.join(dir, f));
 for (const [label, c] of record) fs.writeFileSync(path.join(dir, slug(label) + '.json'), JSON.stringify({ row: c.row, turnc: c.turnc, meta: c.meta }));
 fs.writeFileSync(path.join(dir, '_board.json'), JSON.stringify({ built: new Date().toISOString().slice(0, 10), from: FROM, to: TO, th: { 2: TH2, 5: TH5 }, rows: record.map(([l, c]) => ({ label: l, minutes: c.minutes, days: c.meta.days, from: c.meta.from || null, to: c.meta.to || null, source: c.meta.source || null, of: c.meta.of || null })), missing }, null, 1));
-const file = path.join(root, 'index.html');
-let h = fs.readFileSync(file, 'utf8');
-const grab = re => { const m = h.match(re); if (!m) throw new Error('literal not found: ' + re); return m; };
-const mR = grab(/const ROWS = (\[.*?\]);\n/s), mT = grab(/const TURNC = (\[.*\]);/), mG = grab(/const GROUPS = (\[.*\]);/);
 h = h.replace(mR[0], 'const ROWS = ' + JSON.stringify(ROWS) + ';\n').replace(mT[0], 'const TURNC = ' + JSON.stringify(TURNC) + ';').replace(mG[0], 'const GROUPS = ' + JSON.stringify(GROUPS) + ';');
 fs.writeFileSync(file, h);
 console.log('index.html updated: ' + ROWS.length + ' rows');

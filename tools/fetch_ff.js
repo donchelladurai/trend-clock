@@ -17,7 +17,7 @@ const out = process.argv[2] || 'data/ff_week.json';
   } catch (e) {
     throw new Error('Feed did not return JSON (often a rate limit): ' + text.slice(0, 120));
   }
-  if (!Array.isArray(raw) || !raw.length) throw new Error('Feed returned no events');
+  if (!Array.isArray(raw)) throw new Error('Feed did not return a list of events');
 
   const events = raw
     .filter(e => KEEP.has(e.country))
@@ -29,6 +29,9 @@ const out = process.argv[2] || 'data/ff_week.json';
       forecast: e.forecast || '',
       previous: e.previous || ''
     }));
+  // An empty week for the kept currencies is not a calendar; writing it would make both pages read
+  // the week as clear.
+  if (!events.length) throw new Error(`Feed returned ${raw.length} events but none for the kept currencies`);
 
   let old = null;
   try {

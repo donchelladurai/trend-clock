@@ -1,0 +1,6 @@
+# The tools parse index.html and the JSON records by exact anchors that need LF; keep every text
+# file LF in the working tree whatever core.autocrlf says.
+* text=auto eol=lf
+*.png binary
+*.zip binary
+*.bi5 binary

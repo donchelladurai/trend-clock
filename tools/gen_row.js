@@ -150,7 +150,7 @@ if (require.main === module){
   for (const m of MODES){ let s = 0; const lam = turnc[MODES.indexOf(m)]/P.open.length; for (const k of P.open){ s += row.data[m].t[k]; cells++; if (Math.round(row.data[m].t[k]*lam) !== meta.counts[m][k]) off++; } worst = Math.max(worst, Math.abs(s - P.open.length)); }
   console.log('invariant 3 worst |sum(t)-open| = ' + worst.toFixed(3) + '; count recovery round(t*lambda) off in ' + off + ' of ' + cells + ' cells');
   if (args.compare){
-    const h = fs.readFileSync(__dirname + '/../index.html', 'utf8'); const ROWS = JSON.parse(h.match(/const ROWS = (\[.*?\]);\n/s)[1]); const TURNC = JSON.parse(h.match(/const TURNC = (\[\[[\s\S]*?\]\]);/)[1]);
+    const h = fs.readFileSync(__dirname + '/../index.html', 'utf8').replace(/\r\n/g, '\n'); const ROWS = JSON.parse(h.match(/const ROWS = (\[.*?\]);\n/s)[1]); const TURNC = JSON.parse(h.match(/const TURNC = (\[\[[\s\S]*?\]\]);/)[1]);
     const ri = ROWS.findIndex(r => r.label === (args.compare === true ? args.label : args.compare)); if (ri < 0) console.log('no such row to compare');
     else { const r = ROWS[ri]; const ks = P.open.filter(k => !r.closed[k]); const corr = (a, b) => { const n = a.length; let ma = 0, mb = 0; for (let i = 0; i < n; i++){ ma += a[i]; mb += b[i]; } ma /= n; mb /= n; let ab = 0, aa = 0, bb = 0; for (let i = 0; i < n; i++){ const x = a[i]-ma, y = b[i]-mb; ab += x*y; aa += x*x; bb += y*y; } return ab/Math.sqrt(aa*bb); };
       const rmse = (a, b) => Math.sqrt(a.reduce((s, x, i) => s + (x-b[i])**2, 0)/a.length);

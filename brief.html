@@ -144,10 +144,11 @@
 const {TZ, CCY, IMPACT, DAYN, ukParts, hm, zonedToDate, windowFor, usdaSlots, shortName} = NewsFeed;
 const instrumentsFor = e => NewsFeed.instrumentsFor(e, ALL);
 const prepare = raw => NewsFeed.prepare(raw, ALL);
+// The board's row order, so instruments print in the same order on both pages.
 const GROUPS = [
-  ['Indices', ['FTSE 100','Germany 40','France 40','US 500','US Tech 100','Wall Street']],
-  ['USD pairs', ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','USD/CAD','AUD/USD','NZD/USD']],
-  ['EUR crosses', ['EUR/GBP','EUR/JPY','EUR/CHF','EUR/AUD','EUR/CAD','EUR/NZD']],
+  ['Indices', ['FTSE 100','Germany 40','France 40','Wall Street','US Tech 100','US 500']],
+  ['USD pairs', ['EUR/USD','GBP/USD','AUD/USD','USD/CAD','USD/JPY','USD/CHF','NZD/USD']],
+  ['EUR crosses', ['EUR/GBP','EUR/AUD','EUR/JPY','EUR/CAD','EUR/CHF','EUR/NZD']],
   ['Other', ['AUD/JPY','Spot Gold','Chicago Wheat']]
 ];
 const ALL = GROUPS.flatMap(g => g[1]);
@@ -173,6 +174,7 @@ const VOICE = {
   nextNoneSubWeekend: 'for the rest of the week. Monday will bring a fresh calendar, and I shall have it ready.',
   nextNoneSubNoSel: 'choose an instrument above and I shall watch it for you.',
   nextFailedBig: 'unknown', nextFailedSub: 'the calendar is out of reach, so I would rather say unknown than clear.',
+  nextStaleSub: 'my calendar stops short of this week, so I would rather say unknown than clear.',
   liveUntil: 'until {time}',
   loading: 'Consulting the calendar…',
   loadingSlow: 'Still consulting the calendar; the connection is taking its time. I shall have it shortly.',
@@ -192,6 +194,7 @@ const VOICE = {
   emptyRest: 'Clear at high and medium weight, on paper.',
   emptySpikes: 'A clear week at high impact on your instruments, so the indicator has nothing to hold.',
   emptyFailed: 'The calendar is out of reach, so I would rather say unknown than clear.',
+  emptyStale: 'My calendar stops short of this week, so I would rather say unknown than clear.',
   noSelectionPlain: 'Choose an instrument above.',
   noSelection: 'Choose an instrument above and I shall keep watch over it for you.',
   hits: 'Hits {instruments}.',
@@ -470,6 +473,7 @@ const VOICE = {
       'I should mention the calendar is a manual seed rather than a live pull — my best reading of the week.',
       'The calendar behind this is a manual seed, and the first Action run will replace it with the real thing.'
     ],
+    loadStale: ['My calendar stops short of this week, so I would read it as unknown rather than clear; the refresh should bring it on.'],
     loadFailed: [
       'The calendar is out of reach, so I would read the empty board as unknown rather than clear. I shall keep trying.',
       'I cannot see the calendar just now. Served over http I shall have it for you.',
@@ -559,6 +563,9 @@ try {
 
 
 
+// A loaded calendar that does not reach the week on show (the Action has not turned it over yet, or
+// the feed had nothing for the kept currencies) is unknown, not clear.
+function staleWeek(days) { return loadState === 'ok' && (!events.length || !events.some(e => days.some(d => d.ymd === e.ymd))); }
 function weekDays() {
   const now = new Date();
   const u = ukParts(now);
@@ -640,7 +647,9 @@ function drawMap(days, now) {
         g.appendChild(el('text', {x, y: base - 12, 'font-size': 10, fill: e.imp === 'H' ? '#ffb38a' : '#c9d2dd', 'text-anchor': 'middle'}, `${hm(e.min)} ${e.country}`));
         return;
       }
-      const a = Math.max(T0, e.min - e.win[0]), b = Math.min(T1, e.min + e.win[1]);
+      // An event after the axis end (22:00 UK) keeps a 3px marker at the edge under its label,
+      // rather than a bar placed beyond the drawing.
+      const a = Math.min(T1, Math.max(T0, e.min - e.win[0])), b = Math.min(T1, e.min + e.win[1]);
       const xa = X0 + (a - T0) * k, xb = X0 + (b - T0) * k, w = Math.max(xb - xa, 3);
       const hgt = {H: 22, M: 13, L: 6}[e.imp];
       const r = el('rect', {x: xa, y: base - hgt, width: w, height: hgt, fill: COL[e.imp]});
@@ -679,7 +688,7 @@ function renderLists(days, now) {
   ol.textContent = '';
   const list = dayWindows(focus.ymd);
   // Before the calendar has arrived, or if it never does, the lists say so rather than "quiet".
-  const unknown = loadState !== 'ok' && !events.length, unknownText = loadState === 'failed' ? VOICE.emptyFailed : VOICE.loading;
+  const stale = staleWeek(days), unknown = (loadState !== 'ok' && !events.length) || stale, unknownText = loadState === 'failed' ? VOICE.emptyFailed : stale ? VOICE.emptyStale : VOICE.loading;
   const allDone = isToday && list.length > 0 && list.every(e => ms > endMs(e));
   document.getElementById('todayH').textContent = (isToday ? (allDone ? VOICE.todayHDone : VOICE.todayH) : fill(VOICE.dayH, {day: focus.label})) + (source === 'seed' ? VOICE.provisional : '');
   if (!list.length) {
@@ -720,7 +729,7 @@ function renderLists(days, now) {
     p.appendChild(b);
     const dh = holidayList(d.ymd);
     const parts = evs.map(e => `${winText(e)} ${e.country === 'WHEAT' ? '' : e.country + ' '}${shortName(e.title)}${e.imp === 'H' ? VOICE.restHigh : ''}`);
-    p.appendChild(document.createTextNode((parts.length ? parts.join(' · ') : unknown ? unknownText : VOICE.emptyRest) + (dh.length ? ' · Holidays: ' + dh.join(', ') : '')));
+    p.appendChild(document.createTextNode((parts.length ? parts.join(' · ') : unknown ? unknownText : selected.size ? VOICE.emptyRest : VOICE.noSelectionPlain) + (dh.length ? ' · Holidays: ' + dh.join(', ') : '')));
     rest.appendChild(p);
   });
 
@@ -764,6 +773,7 @@ function renderHeader(now) {
   let label, bigText, subText, remark = '', title = VOICE.pageTitle, cls = 'next';
   if (loadState === 'pending') { label = VOICE.nextNone; bigText = '—'; subText = ''; }
   else if (loadState === 'failed' && !events.length) { label = VOICE.nextNone; bigText = VOICE.nextFailedBig; subText = VOICE.nextFailedSub; }
+  else if (staleWeek(weekDays())) { label = VOICE.nextNone; bigText = VOICE.nextFailedBig; subText = VOICE.nextStaleSub; }
   else if (live) {
     // Several at once: the figure and the name belong to the one that ends last, and no kind is claimed.
     const e = live.e, k = lives.length > 1 ? '' : kindOf(e);
@@ -789,7 +799,7 @@ function renderHeader(now) {
     remark = follow(next, future) || (bucket ? pick(bucket[2], 9, u) : '');
     if (mins < 60) title = `${mins}m · ${evLabel(e)}`;
   } else {
-    label = VOICE.nextNone; bigText = VOICE.nextNoneBig;
+    label = VOICE.nextNone; bigText = selected.size ? VOICE.nextNoneBig : '—';
     subText = !selected.size ? VOICE.nextNoneSubNoSel : (u.dow === 0 || u.dow === 6) ? VOICE.nextNoneSubWeekend : (u.dow === 5 && u.min >= 900) ? VOICE.nextNoneSubFriday : VOICE.nextNoneSub;
   }
   if (box.className !== cls) box.className = cls;
@@ -866,7 +876,7 @@ function renderBrief(days, now) {
   const greet = fill(pick(G[tod], 0, u), gv);
   const present = past ? fill(G.present.weekendPast, gv)
     : fill(pick(weekend ? G.present.weekend : u.min < 300 ? G.present.smallHours : G.present[tod], 1, u), gv);
-  const failed = loadState === 'failed' && !events.length;
+  const stale = staleWeek(days), failed = (loadState === 'failed' && !events.length) || stale;
   // There is no brief to present when the calendar did not load or nothing is selected; the
   // greeting goes straight to saying so.
   // The salutation and the offer of the brief head the panel; the paragraph below is the brief.
@@ -874,7 +884,7 @@ function renderBrief(days, now) {
   const intro = [];
   let sign = pick(L.signoff, 8, u);
   let hmList = [], lows = [];
-  if (failed) intro.push(pick(L.loadFailed, 1, u));
+  if (failed) intro.push(pick(stale ? L.loadStale : L.loadFailed, 1, u));
   else {
     const all = selected.size ? events.filter(e => e.ymd === focus.ymd && visible(e) && e.imp !== 'X').sort((a, b) => (a.min - a.win[0]) - (b.min - b.win[0]) || a.min - b.min) : [];
     hmList = all.filter(e => e.imp === 'H' || e.imp === 'M'); lows = all.filter(e => e.imp === 'L');

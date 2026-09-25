@@ -208,7 +208,9 @@ function build(){
         lab.textContent = r.label;
         const sub = document.createElement('span');
         sub.className = 'sub';
-        sub.textContent = d.days + ' nights';
+        // Nights the instrument has on any chart: a row whose bars all fail this chart's half-minutes
+        // rule (France 40 on the 4-hour) still traded on those nights.
+        sub.textContent = Math.max(...Object.values(r.tf).map(x => x.days)) + ' nights';
         lab.appendChild(sub);
         row.appendChild(lab);
         const strips = document.createElement('div');
@@ -227,7 +229,10 @@ function build(){
           const thin = !off && (d.n[k] < MIN_N || d.n[k] < d.days * 0.5);
           if (off){
             c.className = 'closed';
-            c.title = `${r.label}  ${slotLabel(tf, k)} UK\nnot trading in this slot on this feed`;
+            // present[k] counts nights with any bars at all; a slot that is present but never scored
+            // is one the instrument trades for less than half of (France 40's 04:00-08:00), not one
+            // it never trades.
+            c.title = `${r.label}  ${slotLabel(tf, k)} UK\n` + (d.present && d.present[k] ? `trades less than half of this bar on this feed, so it is not scored` : `not trading in this slot on this feed`);
             heat.appendChild(c);
             const bo = document.createElement('div');
             bo.appendChild(document.createElement('i'));
@@ -396,7 +401,8 @@ async function load(){
       + `The figure on the cell is the share of a day's range that bar usually covers, and the orange bar beneath counts trend starts and stops, `
       + `flagged where there are more than ordinary variation would give, at the same false-discovery rates the board uses. `
       + `Hatched cells rest on fewer than ${MIN_N} nights or on less than half the instrument's nights: the instrument barely trades then. `
-      + (m.unavailable.length ? `${m.unavailable.join(' and ')} are on the board but not on this page; the source has no symbol for them. ` : '')
+      + (m.unavailable && m.unavailable.length ? `${m.unavailable.join(' and ')} ${m.unavailable.length > 1 ? 'are' : 'is'} on the board but not on this page; this source has no symbol for ${m.unavailable.length > 1 ? 'them' : 'it'}. ` : '')
+      + (m.onNeither && m.onNeither.length ? `${m.onNeither.join(' and ')} ${m.onNeither.length > 1 ? 'are' : 'is'} on neither page for want of a source. ` : '')
       + `Slots are UK clock time the year round, so they follow BST.`;
   } catch (e) {
     state = 'failed';

@@ -44,6 +44,9 @@
   .ctrl select,.ctrl input{background:#1a2330;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font:inherit}
   .ctrl input{width:72px}
   .ctrl .btn{background:#1a2330;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px 10px;font:inherit;cursor:pointer}
+  /* The − / + steppers either side of the preview box. */
+  .ctrl .btn.step{padding:3px 8px;margin:0 4px;font-weight:700;line-height:1}
+  .ctrl .btn:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
   /* Sits directly under the mini brief, so it shares its measure and centring. */
   .banner{max-width:min(1100px, calc(100% - var(--pad-x) * 2));margin:10px auto 0;padding:8px 12px;border:1px solid #5a4a20;background:#241d0f;color:var(--amber);border-radius:6px;display:none}
   .banner.show{display:block}
@@ -233,7 +236,7 @@
     </div>
     <div class="r">
       <label>Trend if ≥ <select id="thr"><option>55</option><option>60</option><option>65</option><option>70</option><option selected>75</option></select>% of days</label>
-      <label>Preview time <input id="preview" class="mono" placeholder="HH:MM" maxlength="5"></label>
+      <label for="preview">Preview time <button class="btn step" id="prevwin" type="button" title="Previous 15-minute window" aria-label="Previous window">−</button><input id="preview" class="mono" placeholder="HH:MM" maxlength="5"><button class="btn step" id="nextwin" type="button" title="Next 15-minute window" aria-label="Next window">+</button></label>
       <button class="btn" id="live" type="button">Back to live</button>
     </div>
   </div>
@@ -1034,6 +1037,23 @@ $("preview").addEventListener("input", e=>{
   preview = (m && +m[1]<24 && +m[2]<60) ? {h:+m[1], m:+m[2]} : null; tick();
 });
 $("live").addEventListener("click", ()=>{ $("preview").value=""; preview=null; tick(); });
+// − / + step the preview by one 15-minute window. The box holds displayed-zone time (UK or EST),
+// so the step works in that zone too. From a typed time it moves to the previous or next window
+// start (10:07 → 10:00 or 10:15); from an empty box it starts at the window the clock is in, so +
+// shows the next window and − the one before. It wraps round midnight, and an out-of-hours
+// result is a preview like any other.
+function stepPreview(dir){
+  let base;
+  if (preview) base = preview.h*60 + preview.m;
+  else { const d = timeParts(timeMode === "est" ? "America/New_York" : "Europe/London"); base = Math.floor((d.h*60 + d.m)/15)*15; }
+  const next = dir > 0 ? Math.floor(base/15)*15 + 15 : Math.ceil(base/15)*15 - 15;
+  const m = (next + 1440) % 1440;
+  preview = {h: Math.floor(m/60), m: m%60};
+  $("preview").value = `${pad(preview.h)}:${pad(preview.m)}`;
+  tick();
+}
+$("prevwin").addEventListener("click", ()=>stepPreview(-1));
+$("nextwin").addEventListener("click", ()=>stepPreview(1));
 window.addEventListener("resize", tick);
 // ---- Pointer readout ----------------------------------------------------------------------
 // The row label sits at the far left of a strip that can be several thousand pixels wide, so

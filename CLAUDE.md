@@ -401,6 +401,12 @@ all-days and 63% on a weekday profile (both Wall Street).
   `clamp(9, colWidth × 0.32, 32)px`, drives the cell figure, bar height, heat height and both
   labels. Fixed breakpoints cannot do this — the same viewport gives different columns once the
   right label appears. Numbers are drawn only at `colWidth >= 26px`.
+- **Preview time** has − and + buttons either side (added 27 Sep 2026, at the owner's request)
+  that step one 15-minute window. With the box empty they start from the window the clock is in,
+  so + shows the next window and − the previous one; from a typed time they move to the previous
+  or next window start (10:07 → 10:00 or 10:15). They work in the displayed zone, as the box does,
+  and wrap round midnight. The label carries `for="preview"`, because a label wrapping a button
+  would otherwise send clicks on its text to the − button.
 - The **Trend if ≥** control outlines every heat cell meeting the threshold, in every profile,
   whether or not the market is open. Default 75%. On the all-days profile 92 of the 364 2-minute
   single cells and 88 of the 728 5-minute ones reach it.

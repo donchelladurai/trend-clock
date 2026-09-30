@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-09-30T08:30:47.154Z",
+ "fetchedAt": "2026-09-30T16:24:16.568Z",
  "events": [
   {
    "title": "Monetary Policy Meeting Minutes",
@@ -502,7 +502,7 @@
   {
    "title": "German 10-y Bond Auction",
    "country": "EUR",
-   "date": "2026-09-30T05:42:00-04:00",
+   "date": "2026-09-30T05:32:00-04:00",
    "impact": "Low",
    "forecast": "",
    "previous": "3.39|1.5"
@@ -655,7 +655,7 @@
    "title": "FOMC Member Kashkari Speaks",
    "country": "USD",
    "date": "2026-09-30T18:00:00-04:00",
-   "impact": "Low",
+   "impact": "Medium",
    "forecast": "",
    "previous": ""
   },

@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-09-30T16:24:16.568Z",
+ "fetchedAt": "2026-10-01T08:53:19.505Z",
  "events": [
   {
    "title": "Monetary Policy Meeting Minutes",
@@ -1096,7 +1096,7 @@
    "country": "USD",
    "date": "2026-10-02T08:30:00-04:00",
    "impact": "High",
-   "forecast": "90K",
+   "forecast": "89K",
    "previous": "162K"
   },
   {

@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-02T05:33:03.620Z",
+ "fetchedAt": "2026-10-02T19:16:30.245Z",
  "events": [
   {
    "title": "Monetary Policy Meeting Minutes",
@@ -1119,6 +1119,14 @@
    "title": "FOMC Member Logan Speaks",
    "country": "USD",
    "date": "2026-10-02T10:00:00-04:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "FOMC Member Goolsbee Speaks",
+   "country": "USD",
+   "date": "2026-10-02T13:00:00-04:00",
    "impact": "Low",
    "forecast": "",
    "previous": ""

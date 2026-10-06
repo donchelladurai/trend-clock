@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-06T01:17:29.215Z",
+ "fetchedAt": "2026-10-06T08:56:50.622Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -220,20 +220,20 @@
    "previous": "44.3"
   },
   {
-   "title": "MPC Member Mann Speaks",
-   "country": "GBP",
-   "date": "2026-10-06T04:30:00-04:00",
-   "impact": "Low",
-   "forecast": "",
-   "previous": ""
-  },
-  {
    "title": "Housing Equity Withdrawal q/q",
    "country": "GBP",
    "date": "2026-10-06T04:30:00-04:00",
    "impact": "Low",
    "forecast": "-11.9B",
    "previous": "-12.6B"
+  },
+  {
+   "title": "MPC Member Mann Speaks",
+   "country": "GBP",
+   "date": "2026-10-06T04:30:00-04:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
   },
   {
    "title": "Retail Sales m/m",

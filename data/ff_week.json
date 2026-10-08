@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-08T05:59:11.969Z",
+ "fetchedAt": "2026-10-08T19:55:47.454Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -624,7 +624,7 @@
    "country": "CAD",
    "date": "2026-10-09T08:30:00-04:00",
    "impact": "High",
-   "forecast": "6.3K",
+   "forecast": "6.1K",
    "previous": "-41.7K"
   },
   {

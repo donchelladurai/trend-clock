@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-12T22:56:26.693Z",
+ "fetchedAt": "2026-10-13T15:55:55.227Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -114,22 +114,6 @@
    "impact": "Low",
    "forecast": "",
    "previous": ""
-  },
-  {
-   "title": "M2 Money Supply y/y",
-   "country": "CNY",
-   "date": "2026-10-13T04:03:00-04:00",
-   "impact": "Low",
-   "forecast": "7.4%",
-   "previous": "7.5%"
-  },
-  {
-   "title": "New Loans",
-   "country": "CNY",
-   "date": "2026-10-13T04:03:00-04:00",
-   "impact": "Low",
-   "forecast": "1025B",
-   "previous": "60B"
   },
   {
    "title": "NFIB Small Business Index",
@@ -284,6 +268,22 @@
    "previous": ""
   },
   {
+   "title": "M2 Money Supply y/y",
+   "country": "CNY",
+   "date": "2026-10-14T04:03:00-04:00",
+   "impact": "Low",
+   "forecast": "7.4%",
+   "previous": "7.5%"
+  },
+  {
+   "title": "New Loans",
+   "country": "CNY",
+   "date": "2026-10-14T04:03:00-04:00",
+   "impact": "Low",
+   "forecast": "1025B",
+   "previous": "60B"
+  },
+  {
    "title": "ECB President Lagarde Speaks",
    "country": "EUR",
    "date": "2026-10-14T04:30:00-04:00",
@@ -304,6 +304,14 @@
    "country": "USD",
    "date": "2026-10-14T05:40:00-04:00",
    "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "EU Economic Summit",
+   "country": "EUR",
+   "date": "2026-10-14T06:15:00-04:00",
+   "impact": "Medium",
    "forecast": "",
    "previous": ""
   },
@@ -546,6 +554,14 @@
    "impact": "Low",
    "forecast": "0.0%",
    "previous": "-0.1%"
+  },
+  {
+   "title": "EU Economic Summit",
+   "country": "EUR",
+   "date": "2026-10-15T06:15:00-04:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
   },
   {
    "title": "Manufacturing Sales m/m",

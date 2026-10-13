@@ -49,8 +49,8 @@ information. That is why the dashboard leads with the live state and the climato
 - `t[k]` — **turn ratio**, normalised so its mean over that row's *open* windows is exactly 1.0.
   2 decimal places. It is a ratio to the row's own day, never a comparison between instruments.
 - Profile keys: `"0"`–`"4"` are Mon–Fri, `"all"` is the row's whole sample. On this board the
-  all-days profile holds 125–129 weekdays (Wall Street 91, §1b) and a weekday profile 24–26
-  (Wall Street 16–20). **Only the all-days profile carries turn statistics on the page** (§3.3).
+  all-days profile holds 125–129 weekdays (Wall Street 95, §1b) and a weekday profile 24–26
+  (Wall Street 17–20). **Only the all-days profile carries turn statistics on the page** (§3.3).
 
 `GROUPS` — 5 entries `[name, guideLines, minutesPerBar]`; the guide lines are minutes from 08:00
 and the third element is the board's chart, printed in each section heading ("5-minute chart").
@@ -133,10 +133,10 @@ it off that board; a composite then sums the constituents it has.
 
 - **Chicago Wheat** — no free intraday source reaches back six months. The manifest entry points
   at `data/wheat_m{15,5,2}.json`; drop bar files of the same shape there and the row returns.
-- **Wall Street** — on the board with 91 days (26 May – 9 Oct 2026) against the others' 125–129:
-  Dukascopy's feed starts on 25 May in this repo, and its server dropped most of 21 Sep – 2 Oct on
-  13 Oct 2026 (a retry loop recovered Sep 22–25, 28, 30 and Oct 3–12; Sep 21, 29 and Oct 1–2 are
-  still missing). Re-run `tools/fetch_dukascopy.py` (it skips what is on disk and names what it
+- **Wall Street** — on the board with 95 days (26 May – 9 Oct 2026) against the others' 125–129,
+  because Dukascopy's feed starts on 25 May in this repo. Its server refused most of 21 Sep – 12 Oct
+  for an hour on 13 Oct 2026; a loop of resumable re-runs with two-minute pauses got every weekday
+  in the end. Expect the same on the next refresh. Re-run `tools/fetch_dukascopy.py` (it skips what is on disk and names what it
   could not get), convert, and rebuild.
 
 **Bars.** `tools/hist2bars.py` and `tools/duka2bars.py` write `[utc_ms, o, h, l, c, real]` at 2, 5
@@ -175,7 +175,7 @@ reservation, §7). Per-instrument shares at the pooled threshold run 0.34–0.53
 AUD/JPY and Spot Gold lowest; FTSE 100, France 40, USD/CAD, EUR/CAD, EUR/GBP highest); ratios
 2-minute/5-minute 1.75, 15-minute/5-minute 0.50.
 
-**Sample.** **13 Apr – 9 Oct 2026, 26 weeks**, on every row (Wall Street from 26 May, 91 days). 125–129
+**Sample.** **13 Apr – 9 Oct 2026, 26 weeks**, on every row (Wall Street from 26 May, 95 days). 125–129
 weekdays per histdata row (holidays and dead-feed days removed by the validity rule; Fri 25 Sep is
 missing from histdata; US rows lose 3 Jul and 7 Sep), 24–26 per weekday. Twenty-six weeks because
 the study found the profiles stationary across 2026 and skill still rising, slightly, from 13 to 26
@@ -284,7 +284,7 @@ all-days (115 / 195 over all profiles), 5-minute 131 / 99 (214 / 282), 2-minute 
 The FDR bound `sum(m × cut)` over firing families is 4.4% / 6.5% / 6.6% of the red marks.
 
 `MIN_LAM = 1` now guards only the all-days profiles, where the smallest `lambda` is 4.5, so it
-never fires on this board; the 12 weekday families under it (Wall Street, USD/JPY, NZD/USD,
+never fires on this board; the 11 weekday families under it (Wall Street, USD/JPY, NZD/USD,
 EUR/JPY, AUD/JPY and Spot Gold on the 15-minute chart) are hatched anyway. The null simulation
 (§7) shows the false-mark rate under flat noise does not move with `lambda` (5.2–6.8 red marks per
 board across all six profiles against 115–410 real).

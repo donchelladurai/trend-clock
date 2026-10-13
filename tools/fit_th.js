@@ -1,37 +1,28 @@
 #!/usr/bin/env node
-// Fit the 2-minute trend threshold to the 5-minute one, on the instruments the board reads on the
-// 2-minute chart: the 2-minute 20EMA moves more over 15 minutes than the 5-minute one, so the same
-// threshold in daily-ATR units calls far more windows trending (US 500: 81% against 55%). The fit
-// finds TH2 such that, over the same instruments and days, the 2-minute chart calls the same
-// overall share of windows trending as the 5-minute chart does at TH5 — so "trending" carries one
-// intensity on both charts and only the MA being read differs.
+// Fit one trend threshold per chart so that "trending" carries the same intensity on the 15-, 5- and
+// 2-minute charts: the threshold at which each chart calls the same pooled share of windows trending,
+// over the 20 histdata instruments and every valid day in the range.
 //
-//   node tools/fit_th.js --from 2026-06-22 --to 2026-09-18 [--th5 0.015]
-const fs = require('fs');
-const { prepare, score } = require('./gen_row.js');
+//   node tools/fit_th.js [--share 0.45] [--from 2026-01-26 --to 2026-10-09] [--agg any]
+//
+// The share is the dial. The board ran at the 5-minute chart's share at th 0.015 (about 0.55 to 0.59
+// depending on the sample) until October 2026; the accuracy study (CLAUDE.md §7) found a pooled share of
+// 0.45 keeps the climatology's skill while making a lit cell mean more, so that is the default. Start the
+// range after the 14-day ATR exists (the files begin 1 Jan 2026; the first ATR is 22 Jan), or the dead
+// January days deflate every share. Prints the three thresholds and, per instrument, the share each
+// chart gives at its fitted value, so a drift between instruments is visible.
+const E = require('./eval_lib.js');
 const args = {}; for (let i = 2; i < process.argv.length; i++){ const a = process.argv[i]; if (a.startsWith('--')){ const k = a.slice(2); const v = process.argv[i+1]; if (v === undefined || v.startsWith('--')) args[k] = true; else { args[k] = v; i++; } } }
-const from = args.from || '2026-06-22', to = args.to || '2026-09-18', th5 = +(args.th5 || 0.015);
-const INS = [['FTSE 100','ukxgbp'],['Germany 40','grxeur'],['France 40','frxeur'],['US Tech 100','nsxusd'],['US 500','spxusd'],['Spot Gold','xauusd'],['Wall Street','usa30']];
-const meanS = (P, S) => { const v = P.open.map(k => S.prof.all.s[k]); return v.reduce((a, b) => a + b, 0)/v.length; };
-const tpd = (P, S) => S.turnc[5]/P.days.length;
-const rows = [];
-for (const [label, sym] of INS){
-  const f2 = 'data/' + sym + '_m2.json', f5 = 'data/' + sym + '_m5.json';
-  if (!fs.existsSync(f2) || !fs.existsSync(f5)){ console.log(label + ': missing bars, skipped'); continue; }
-  const P5 = prepare(JSON.parse(fs.readFileSync(f5, 'utf8')), { minutes: 5, from, to });
-  const P2 = prepare(JSON.parse(fs.readFileSync(f2, 'utf8')), { minutes: 2, from, to });
-  const S5 = score(P5, th5), target = meanS(P5, S5);
-  let lo = 0.005, hi = 0.08;
-  for (let i = 0; i < 40; i++){ const mid = (lo + hi)/2; if (meanS(P2, score(P2, mid)) > target) lo = mid; else hi = mid; }
-  const th2 = (lo + hi)/2, S2 = score(P2, th2);
-  rows.push({ label, target, th2, tpd5: tpd(P5, S5), tpd2: tpd(P2, S2), P2, P5 });
-  console.log(label.padEnd(12) + ' 5-min@' + th5 + ': mean s ' + target.toFixed(3) + ', ' + tpd(P5, S5).toFixed(1) + ' turns/day | 2-min matches at TH2 = ' + th2.toFixed(4) + ' (' + tpd(P2, S2).toFixed(1) + ' turns/day), days ' + P5.days.length + '/' + P2.days.length);
+const share = +(args.share || 0.45), from = args.from || '2026-01-26', to = args.to || '2026-10-09', def = { agg: args.agg || 'any' };
+const syms = E.INSTRUMENTS.map(x => x[1]).filter(s => s !== 'usa30');
+const out = {};
+for (const ch of [15, 5, 2]){
+  const Ps = syms.map(s => E.load(s, ch, from, to)).filter(Boolean);
+  const th = E.fitTh(Ps, def, share);
+  const per = Ps.map(P => { const O = E.outcomes(P, Object.assign({}, def, { th })); return [P.sym, E.meanShare(O), O.days.length]; });
+  const shares = per.map(x => x[1]);
+  out[ch] = +th.toPrecision(3);
+  console.log(`${ch}-minute: th ${th.toFixed(5)} -> ${out[ch]} for pooled share ${share} over ${Ps.length} instruments, ${per[0][2]}-${Math.max(...per.map(x => x[2]))} days; per-instrument share ${Math.min(...shares).toFixed(3)}–${Math.max(...shares).toFixed(3)}`);
+  console.log('   ' + per.map(x => `${x[0]} ${x[1].toFixed(2)}`).join('  '));
 }
-if (!rows.length){ console.error('no instrument had both a 2-minute and a 5-minute bar file: build data/<sym>_m5.json for the 2-minute instruments first (CLAUDE.md 1b)'); process.exit(1); }
-// Pooled: one TH2 for the whole chart, matching the pooled mean share.
-const pooled5 = rows.reduce((a, r) => a + r.target, 0)/rows.length;
-let lo = 0.005, hi = 0.08;
-for (let i = 0; i < 40; i++){ const mid = (lo + hi)/2; const m = rows.reduce((a, r) => a + meanS(r.P2, score(r.P2, mid)), 0)/rows.length; if (m > pooled5) lo = mid; else hi = mid; }
-const th2 = (lo + hi)/2;
-console.log('pooled: 5-min mean s ' + pooled5.toFixed(3) + '; 2-min matches at TH2 = ' + th2.toFixed(4) + ' (ratio to TH5 ' + (th2/th5).toFixed(2) + ')');
-for (const c of [0.02, 0.025, 0.03, 0.035]){ const m = rows.reduce((a, r) => a + meanS(r.P2, score(r.P2, c)), 0)/rows.length; const t = rows.reduce((a, r) => a + tpd(r.P2, score(r.P2, c)), 0)/rows.length; console.log('  at TH2 = ' + c + ': pooled mean s ' + m.toFixed(3) + ', ' + t.toFixed(1) + ' turns/day (5-min: ' + (rows.reduce((a, r) => a + r.tpd5, 0)/rows.length).toFixed(1) + ')'); }
+console.log('\nbuild with: node tools/build_board.js --th15 ' + out[15] + ' --th5 ' + out[5] + ' --th2 ' + out[2]);

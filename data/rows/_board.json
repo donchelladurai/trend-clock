@@ -1,262 +1,709 @@
 {
- "built": "2026-09-25",
- "from": "2026-06-22",
- "to": "2026-09-18",
- "th": {
-  "2": 0.027,
-  "5": 0.015
+ "built": "2026-10-13",
+ "def": {
+  "agg": "any",
+  "side": false,
+  "horizon": 1
  },
- "rows": [
-  {
-   "label": "Europe",
-   "minutes": 2,
-   "days": 65,
-   "from": null,
-   "to": null,
-   "source": null,
-   "of": [
-    "FTSE 100",
-    "Germany 40",
-    "France 40"
+ "charts": {
+  "2": {
+   "from": "2026-04-13",
+   "to": "2026-10-09",
+   "th": 0.0357,
+   "rows": [
+    {
+     "label": "Europe",
+     "days": 128,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "FTSE 100",
+      "Germany 40",
+      "France 40"
+     ]
+    },
+    {
+     "label": "FTSE 100",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com UKXGBP",
+     "of": null
+    },
+    {
+     "label": "Germany 40",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com GRXEUR",
+     "of": null
+    },
+    {
+     "label": "France 40",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com FRXEUR",
+     "of": null
+    },
+    {
+     "label": "US",
+     "days": 114,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "Wall Street",
+      "US Tech 100",
+      "US 500"
+     ]
+    },
+    {
+     "label": "Wall Street",
+     "days": 91,
+     "from": "2026-05-26",
+     "to": "2026-10-09",
+     "source": "Dukascopy USA30IDXUSD",
+     "of": null
+    },
+    {
+     "label": "US Tech 100",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com NSXUSD",
+     "of": null
+    },
+    {
+     "label": "US 500",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com SPXUSD",
+     "of": null
+    },
+    {
+     "label": "USD pairs",
+     "days": 128,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "EUR/USD",
+      "GBP/USD",
+      "AUD/USD",
+      "USD/CAD",
+      "USD/JPY",
+      "USD/CHF",
+      "NZD/USD"
+     ]
+    },
+    {
+     "label": "EUR/USD",
+     "days": 127,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURUSD",
+     "of": null
+    },
+    {
+     "label": "GBP/USD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com GBPUSD",
+     "of": null
+    },
+    {
+     "label": "AUD/USD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com AUDUSD",
+     "of": null
+    },
+    {
+     "label": "USD/CAD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDCAD",
+     "of": null
+    },
+    {
+     "label": "USD/JPY",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDJPY",
+     "of": null
+    },
+    {
+     "label": "USD/CHF",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDCHF",
+     "of": null
+    },
+    {
+     "label": "NZD/USD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com NZDUSD",
+     "of": null
+    },
+    {
+     "label": "EUR crosses",
+     "days": 129,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "EUR/GBP",
+      "EUR/AUD",
+      "EUR/JPY",
+      "EUR/CAD",
+      "EUR/CHF",
+      "EUR/NZD"
+     ]
+    },
+    {
+     "label": "EUR/GBP",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURGBP",
+     "of": null
+    },
+    {
+     "label": "EUR/AUD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURAUD",
+     "of": null
+    },
+    {
+     "label": "EUR/JPY",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURJPY",
+     "of": null
+    },
+    {
+     "label": "EUR/CAD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURCAD",
+     "of": null
+    },
+    {
+     "label": "EUR/CHF",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURCHF",
+     "of": null
+    },
+    {
+     "label": "EUR/NZD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURNZD",
+     "of": null
+    },
+    {
+     "label": "AUD/JPY",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com AUDJPY",
+     "of": null
+    },
+    {
+     "label": "Spot Gold",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com XAUUSD",
+     "of": null
+    }
+   ],
+   "missing": [
+    "Chicago Wheat"
    ]
   },
-  {
-   "label": "FTSE 100",
-   "minutes": 2,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com UKXGBP",
-   "of": null
-  },
-  {
-   "label": "Germany 40",
-   "minutes": 2,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com GRXEUR",
-   "of": null
-  },
-  {
-   "label": "France 40",
-   "minutes": 2,
-   "days": 64,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com FRXEUR",
-   "of": null
-  },
-  {
-   "label": "US",
-   "minutes": 2,
-   "days": 62,
-   "from": null,
-   "to": null,
-   "source": null,
-   "of": [
-    "Wall Street",
-    "US Tech 100",
-    "US 500"
+  "5": {
+   "from": "2026-04-13",
+   "to": "2026-10-09",
+   "th": 0.0204,
+   "rows": [
+    {
+     "label": "Europe",
+     "days": 128,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "FTSE 100",
+      "Germany 40",
+      "France 40"
+     ]
+    },
+    {
+     "label": "FTSE 100",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com UKXGBP",
+     "of": null
+    },
+    {
+     "label": "Germany 40",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com GRXEUR",
+     "of": null
+    },
+    {
+     "label": "France 40",
+     "days": 127,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com FRXEUR",
+     "of": null
+    },
+    {
+     "label": "US",
+     "days": 114,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "Wall Street",
+      "US Tech 100",
+      "US 500"
+     ]
+    },
+    {
+     "label": "Wall Street",
+     "days": 91,
+     "from": "2026-05-26",
+     "to": "2026-10-09",
+     "source": "Dukascopy USA30IDXUSD",
+     "of": null
+    },
+    {
+     "label": "US Tech 100",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com NSXUSD",
+     "of": null
+    },
+    {
+     "label": "US 500",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com SPXUSD",
+     "of": null
+    },
+    {
+     "label": "USD pairs",
+     "days": 128,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "EUR/USD",
+      "GBP/USD",
+      "AUD/USD",
+      "USD/CAD",
+      "USD/JPY",
+      "USD/CHF",
+      "NZD/USD"
+     ]
+    },
+    {
+     "label": "EUR/USD",
+     "days": 127,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURUSD",
+     "of": null
+    },
+    {
+     "label": "GBP/USD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com GBPUSD",
+     "of": null
+    },
+    {
+     "label": "AUD/USD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com AUDUSD",
+     "of": null
+    },
+    {
+     "label": "USD/CAD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDCAD",
+     "of": null
+    },
+    {
+     "label": "USD/JPY",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDJPY",
+     "of": null
+    },
+    {
+     "label": "USD/CHF",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDCHF",
+     "of": null
+    },
+    {
+     "label": "NZD/USD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com NZDUSD",
+     "of": null
+    },
+    {
+     "label": "EUR crosses",
+     "days": 129,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "EUR/GBP",
+      "EUR/AUD",
+      "EUR/JPY",
+      "EUR/CAD",
+      "EUR/CHF",
+      "EUR/NZD"
+     ]
+    },
+    {
+     "label": "EUR/GBP",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURGBP",
+     "of": null
+    },
+    {
+     "label": "EUR/AUD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURAUD",
+     "of": null
+    },
+    {
+     "label": "EUR/JPY",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURJPY",
+     "of": null
+    },
+    {
+     "label": "EUR/CAD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURCAD",
+     "of": null
+    },
+    {
+     "label": "EUR/CHF",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURCHF",
+     "of": null
+    },
+    {
+     "label": "EUR/NZD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURNZD",
+     "of": null
+    },
+    {
+     "label": "AUD/JPY",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com AUDJPY",
+     "of": null
+    },
+    {
+     "label": "Spot Gold",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com XAUUSD",
+     "of": null
+    }
+   ],
+   "missing": [
+    "Chicago Wheat"
    ]
   },
-  {
-   "label": "Wall Street",
-   "minutes": 2,
-   "days": 61,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "Dukascopy USA30IDXUSD",
-   "of": null
-  },
-  {
-   "label": "US Tech 100",
-   "minutes": 2,
-   "days": 63,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com NSXUSD",
-   "of": null
-  },
-  {
-   "label": "US 500",
-   "minutes": 2,
-   "days": 63,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com SPXUSD",
-   "of": null
-  },
-  {
-   "label": "USD pairs",
-   "minutes": 5,
-   "days": 65,
-   "from": null,
-   "to": null,
-   "source": null,
-   "of": [
-    "EUR/USD",
-    "GBP/USD",
-    "AUD/USD",
-    "USD/CAD",
-    "USD/JPY",
-    "USD/CHF",
-    "NZD/USD"
+  "15": {
+   "from": "2026-04-13",
+   "to": "2026-10-09",
+   "th": 0.0101,
+   "rows": [
+    {
+     "label": "Europe",
+     "days": 128,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "FTSE 100",
+      "Germany 40",
+      "France 40"
+     ]
+    },
+    {
+     "label": "FTSE 100",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com UKXGBP",
+     "of": null
+    },
+    {
+     "label": "Germany 40",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com GRXEUR",
+     "of": null
+    },
+    {
+     "label": "France 40",
+     "days": 127,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com FRXEUR",
+     "of": null
+    },
+    {
+     "label": "US",
+     "days": 114,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "Wall Street",
+      "US Tech 100",
+      "US 500"
+     ]
+    },
+    {
+     "label": "Wall Street",
+     "days": 91,
+     "from": "2026-05-26",
+     "to": "2026-10-09",
+     "source": "Dukascopy USA30IDXUSD",
+     "of": null
+    },
+    {
+     "label": "US Tech 100",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com NSXUSD",
+     "of": null
+    },
+    {
+     "label": "US 500",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com SPXUSD",
+     "of": null
+    },
+    {
+     "label": "USD pairs",
+     "days": 128,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "EUR/USD",
+      "GBP/USD",
+      "AUD/USD",
+      "USD/CAD",
+      "USD/JPY",
+      "USD/CHF",
+      "NZD/USD"
+     ]
+    },
+    {
+     "label": "EUR/USD",
+     "days": 127,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURUSD",
+     "of": null
+    },
+    {
+     "label": "GBP/USD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com GBPUSD",
+     "of": null
+    },
+    {
+     "label": "AUD/USD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com AUDUSD",
+     "of": null
+    },
+    {
+     "label": "USD/CAD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDCAD",
+     "of": null
+    },
+    {
+     "label": "USD/JPY",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDJPY",
+     "of": null
+    },
+    {
+     "label": "USD/CHF",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com USDCHF",
+     "of": null
+    },
+    {
+     "label": "NZD/USD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com NZDUSD",
+     "of": null
+    },
+    {
+     "label": "EUR crosses",
+     "days": 129,
+     "from": null,
+     "to": null,
+     "source": null,
+     "of": [
+      "EUR/GBP",
+      "EUR/AUD",
+      "EUR/JPY",
+      "EUR/CAD",
+      "EUR/CHF",
+      "EUR/NZD"
+     ]
+    },
+    {
+     "label": "EUR/GBP",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURGBP",
+     "of": null
+    },
+    {
+     "label": "EUR/AUD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURAUD",
+     "of": null
+    },
+    {
+     "label": "EUR/JPY",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURJPY",
+     "of": null
+    },
+    {
+     "label": "EUR/CAD",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURCAD",
+     "of": null
+    },
+    {
+     "label": "EUR/CHF",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURCHF",
+     "of": null
+    },
+    {
+     "label": "EUR/NZD",
+     "days": 129,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com EURNZD",
+     "of": null
+    },
+    {
+     "label": "AUD/JPY",
+     "days": 128,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com AUDJPY",
+     "of": null
+    },
+    {
+     "label": "Spot Gold",
+     "days": 125,
+     "from": "2026-04-13",
+     "to": "2026-10-09",
+     "source": "histdata.com XAUUSD",
+     "of": null
+    }
+   ],
+   "missing": [
+    "Chicago Wheat"
    ]
-  },
-  {
-   "label": "EUR/USD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com EURUSD",
-   "of": null
-  },
-  {
-   "label": "GBP/USD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com GBPUSD",
-   "of": null
-  },
-  {
-   "label": "AUD/USD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com AUDUSD",
-   "of": null
-  },
-  {
-   "label": "USD/CAD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com USDCAD",
-   "of": null
-  },
-  {
-   "label": "USD/JPY",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com USDJPY",
-   "of": null
-  },
-  {
-   "label": "USD/CHF",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com USDCHF",
-   "of": null
-  },
-  {
-   "label": "NZD/USD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com NZDUSD",
-   "of": null
-  },
-  {
-   "label": "EUR crosses",
-   "minutes": 5,
-   "days": 65,
-   "from": null,
-   "to": null,
-   "source": null,
-   "of": [
-    "EUR/GBP",
-    "EUR/AUD",
-    "EUR/JPY",
-    "EUR/CAD",
-    "EUR/CHF",
-    "EUR/NZD"
-   ]
-  },
-  {
-   "label": "EUR/GBP",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com EURGBP",
-   "of": null
-  },
-  {
-   "label": "EUR/AUD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com EURAUD",
-   "of": null
-  },
-  {
-   "label": "EUR/JPY",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com EURJPY",
-   "of": null
-  },
-  {
-   "label": "EUR/CAD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com EURCAD",
-   "of": null
-  },
-  {
-   "label": "EUR/CHF",
-   "minutes": 5,
-   "days": 64,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com EURCHF",
-   "of": null
-  },
-  {
-   "label": "EUR/NZD",
-   "minutes": 5,
-   "days": 65,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com EURNZD",
-   "of": null
-  },
-  {
-   "label": "AUD/JPY",
-   "minutes": 5,
-   "days": 64,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com AUDJPY",
-   "of": null
-  },
-  {
-   "label": "Spot Gold",
-   "minutes": 2,
-   "days": 63,
-   "from": "2026-06-22",
-   "to": "2026-09-18",
-   "source": "histdata.com XAUUSD",
-   "of": null
   }
- ],
- "missing": [
-  "Chicago Wheat"
- ]
+ }
 }

@@ -86,16 +86,22 @@ function prepare(raw, o){
     if (r < REAL_DAY*openPos.length || moves < openPos.length/2) continue;
     days.push({ day: d, wd: e.wd, idx: e.idx }); }
   days.sort((a, b) => a.day - b.day);
-  return { n, c, atrD, dm, days, win, open, closed, realShare, B, L, perDay, warm };
+  return { n, c, hi, lo, ema, real, atrD, dm, days, win, open, closed, realShare, B, L, perDay, warm };
 }
 
 // The threshold-dependent part: trending bars, turns, and the six profiles.
-function score(P, th){
-  const { n, atrD, dm, days, win, open } = P, on = ON_RATIO*th, off = OFF_RATIO*th;
+// opts (all optional, defaults are the board rule): agg 'any' | 'majority' | 'all' — how a window's bars
+// decide the window; side — a bar is trending only if its close sits on the slope's side of the EMA;
+// horizon — the EMA move is taken over horizon*L bars (2 = thirty minutes). The October 2026
+// accuracy study (tools/eval_lib.js) scores these against held-out weeks.
+function score(P, th, opts = {}){
+  const { n, c, ema, atrD, days, win, open, L } = P, on = ON_RATIO*th, off = OFF_RATIO*th;
+  const agg = opts.agg || 'any', H = opts.horizon || 1;
+  const dm = H === 1 ? P.dm : (() => { const x = new Float64Array(n).fill(NaN); for (let i = H*L; i < n; i++) x[i] = ema[i] - ema[i-H*L]; return x; })();
   const trending = new Uint8Array(n), state = new Int8Array(n), turn = new Uint8Array(n);
   let started = false;
   for (let i = 0; i < n; i++){ const x = dm[i], b = atrD[i]; if (isNaN(x) || isNaN(b)){ started = false; continue; }
-    trending[i] = Math.abs(x) >= th*b ? 1 : 0;
+    trending[i] = Math.abs(x) >= th*b && (!opts.side || sgn(x) === sgn(c[i] - ema[i])) ? 1 : 0;
     const prev = state[i-1] || 0;
     state[i] = (prev !== 0 && sgn(x) === prev && Math.abs(x) >= off*b) ? prev : (Math.abs(x) >= on*b ? sgn(x) : 0);
     if (started && state[i] !== state[i-1]) turn[i] = 1; started = true; }
@@ -103,7 +109,8 @@ function score(P, th){
   for (const m of MODES){
     const sel = m === 'all' ? days : days.filter(d => d.wd === +m + 1);
     const sh = new Float64Array(SLOTS), tc = new Float64Array(SLOTS);
-    for (const d of sel) for (const k of open){ let tr = 0, tu = 0; for (const p of win[k]){ const i = d.idx[p]; if (trending[i]) tr = 1; tu += turn[i]; } sh[k] += tr; tc[k] += tu; }
+    for (const d of sel) for (const k of open){ let tr = 0, tu = 0; const m = win[k].length; for (const p of win[k]){ const i = d.idx[p]; tr += trending[i]; tu += turn[i]; }
+      sh[k] += agg === 'all' ? (tr === m ? 1 : 0) : agg === 'majority' ? (tr*2 > m ? 1 : 0) : (tr > 0 ? 1 : 0); tc[k] += tu; }
     const total = tc.reduce((a, b) => a + b, 0), lam = total/open.length;
     prof[m] = { s: Array.from(sh, x => sel.length ? +(x/sel.length).toFixed(2) : 0), t: Array.from(tc, x => lam ? +(x/lam).toFixed(2) : 0), counts: Array.from(tc) };
     dcount[m] = sel.length; turnc.push(total);
@@ -112,14 +119,14 @@ function score(P, th){
 }
 
 function genRow(raw, o){
-  const P = prepare(raw, o), th = o.th, S = score(P, th);
+  const P = prepare(raw, o), th = o.th, S = score(P, th, { agg: o.agg, side: o.side, horizon: o.horizon });
   const { prof, dcount, turnc } = S, days = P.days;
   const row = { group: o.group, label: o.label, big: !!o.big, closed: P.closed.slice(),
     days: { all: dcount.all, 0: dcount[0], 1: dcount[1], 2: dcount[2], 3: dcount[3], 4: dcount[4] },
     data: Object.fromEntries(MODES.map(m => [m, { s: prof[m].s, t: prof[m].t }])) };
   const meta = { from: days.length ? fmtDay(days[0].day) : null, to: days.length ? fmtDay(days[days.length-1].day) : null, days: days.length,
     byWeekday: [1,2,3,4,5].map(w => days.filter(d => d.wd === w).length), minutes: o.minutes, moveBars: P.L,
-    params: { TREND_TH: th, TURN_ON: ON_RATIO*th, TURN_OFF: OFF_RATIO*th, MA_LEN, ATR_DAYS, OPEN_SHARE, REAL_DAY },
+    params: { TREND_TH: th, TURN_ON: ON_RATIO*th, TURN_OFF: OFF_RATIO*th, MA_LEN, ATR_DAYS, OPEN_SHARE, REAL_DAY, AGG: o.agg || 'any', SIDE: !!o.side, HORIZON: o.horizon || 1 },
     open: P.open.length, realShare: P.realShare.map(x => +x.toFixed(2)), counts: Object.fromEntries(MODES.map(m => [m, prof[m].counts])), source: o.source || null };
   return { row, turnc, meta, P, S };
 }
@@ -150,7 +157,7 @@ if (require.main === module){
   for (const m of MODES){ let s = 0; const lam = turnc[MODES.indexOf(m)]/P.open.length; for (const k of P.open){ s += row.data[m].t[k]; cells++; if (Math.round(row.data[m].t[k]*lam) !== meta.counts[m][k]) off++; } worst = Math.max(worst, Math.abs(s - P.open.length)); }
   console.log('invariant 3 worst |sum(t)-open| = ' + worst.toFixed(3) + '; count recovery round(t*lambda) off in ' + off + ' of ' + cells + ' cells');
   if (args.compare){
-    const h = fs.readFileSync(__dirname + '/../index.html', 'utf8').replace(/\r\n/g, '\n'); const ROWS = JSON.parse(h.match(/const ROWS = (\[.*?\]);\n/s)[1]); const TURNC = JSON.parse(h.match(/const TURNC = (\[\[[\s\S]*?\]\]);/)[1]);
+    const h = fs.readFileSync(__dirname + '/../index.html', 'utf8').replace(/\r\n/g, '\n'); const BOARDS = JSON.parse(h.match(/^const BOARDS = (\{.*\});$/m)[1]); const board = BOARDS[o.minutes] || {}; const ROWS = board.ROWS || [], TURNC = board.TURNC || [];
     const ri = ROWS.findIndex(r => r.label === (args.compare === true ? args.label : args.compare)); if (ri < 0) console.log('no such row to compare');
     else { const r = ROWS[ri]; const ks = P.open.filter(k => !r.closed[k]); const corr = (a, b) => { const n = a.length; let ma = 0, mb = 0; for (let i = 0; i < n; i++){ ma += a[i]; mb += b[i]; } ma /= n; mb /= n; let ab = 0, aa = 0, bb = 0; for (let i = 0; i < n; i++){ const x = a[i]-ma, y = b[i]-mb; ab += x*y; aa += x*x; bb += y*y; } return ab/Math.sqrt(aa*bb); };
       const rmse = (a, b) => Math.sqrt(a.reduce((s, x, i) => s + (x-b[i])**2, 0)/a.length);

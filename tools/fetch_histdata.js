@@ -2,8 +2,8 @@
 // Download 1-minute bars from histdata.com: one zip per full year, one per month of the last year.
 //   node tools/fetch_histdata.js audjpy 2021 2026 9 data
 // → data/hist_audjpy_2021.zip … data/hist_audjpy_2025.zip, data/hist_audjpy_2026_01.zip … _09.zip
-// Existing files are skipped, so a re-run only fetches what is new — except the last month of the
-// plan, which histdata fills in as the month goes on and is therefore refetched every run and
+// Existing files are skipped, so a re-run only fetches what is new — except the last two months of
+// the plan, which histdata fills in as the month goes on and are therefore refetched every run and
 // replaced when the new zip is larger. Requests are paced at 2.5 s.
 // Timestamps inside the zips are UK local time minus five hours (histdata calls it EST, but the offset
 // follows the UK clock change) — tools/hist2bars.py converts and aggregates (2- or 5-minute).
@@ -28,7 +28,9 @@ async function fetchZip(year, month){
   const plan = []; for (let y = +fromYear; y < +toYear; y++) plan.push([y]); for (let m = 1; m <= +toMonth; m++) plan.push([+toYear, m]);
   for (const [y, m] of plan){
     const out = `${dir}/hist_${pair}_${y}${m ? '_' + String(m).padStart(2, '0') : ''}.zip`;
-    const last = !!m && y === +toYear && m === +toMonth;   // the current month is partial on histdata: always refetch it
+    // The last two months of the plan are refetched every run: the current month is partial on histdata, and the month
+    // before it may have been fetched while still partial (September 2026 was, and the board lost 21-30 Sep until it was refetched).
+    const last = !!m && y === +toYear && m >= +toMonth - 1;
     if (!last && fs.existsSync(out) && fs.statSync(out).size > 1000){ console.log('have', out); continue; }
     try { const buf = await fetchZip(y, m);
       if (last && fs.existsSync(out) && fs.statSync(out).size >= buf.length) console.log('kept', out, '(histdata has nothing newer)');

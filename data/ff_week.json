@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-14T01:12:28.531Z",
+ "fetchedAt": "2026-10-14T07:34:44.249Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -204,9 +204,17 @@
    "previous": "3.8%"
   },
   {
+   "title": "ECB President Lagarde Speaks",
+   "country": "EUR",
+   "date": "2026-10-13T22:10:00-04:00",
+   "impact": "Medium",
+   "forecast": "",
+   "previous": ""
+  },
+  {
    "title": "Trade Balance",
    "country": "CNY",
-   "date": "2026-10-13T22:03:00-04:00",
+   "date": "2026-10-13T22:31:00-04:00",
    "impact": "Low",
    "forecast": "790B",
    "previous": "809B"
@@ -214,18 +222,10 @@
   {
    "title": "USD-Denominated Trade Balance",
    "country": "CNY",
-   "date": "2026-10-13T22:04:00-04:00",
+   "date": "2026-10-13T22:31:00-04:00",
    "impact": "Low",
    "forecast": "116.8B",
    "previous": "119.1B"
-  },
-  {
-   "title": "ECB President Lagarde Speaks",
-   "country": "EUR",
-   "date": "2026-10-13T22:10:00-04:00",
-   "impact": "Medium",
-   "forecast": "",
-   "previous": ""
   },
   {
    "title": "MPC Member Breeden Speaks",
@@ -776,7 +776,7 @@
    "country": "CAD",
    "date": "2026-10-16T08:30:00-04:00",
    "impact": "Low",
-   "forecast": "",
+   "forecast": "23.59B",
    "previous": "20.65B"
   },
   {

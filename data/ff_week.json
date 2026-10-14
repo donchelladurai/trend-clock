@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-14T13:41:27.042Z",
+ "fetchedAt": "2026-10-14T18:35:40.820Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -656,7 +656,7 @@
    "country": "USD",
    "date": "2026-10-15T10:30:00-04:00",
    "impact": "Low",
-   "forecast": "",
+   "forecast": "76B",
    "previous": "85B"
   },
   {
@@ -664,7 +664,7 @@
    "country": "USD",
    "date": "2026-10-15T12:00:00-04:00",
    "impact": "Low",
-   "forecast": "",
+   "forecast": "-0.2M",
    "previous": "-3.2M"
   },
   {

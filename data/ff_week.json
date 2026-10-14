@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-13T15:55:55.227Z",
+ "fetchedAt": "2026-10-14T01:12:28.531Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -375,6 +375,14 @@
    "title": "Beige Book",
    "country": "USD",
    "date": "2026-10-14T14:00:00-04:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "FOMC Member Goolsbee Speaks",
+   "country": "USD",
+   "date": "2026-10-14T15:00:00-04:00",
    "impact": "Low",
    "forecast": "",
    "previous": ""

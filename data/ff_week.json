@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-15T11:24:00.522Z",
+ "fetchedAt": "2026-10-16T21:04:09.757Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -806,7 +806,7 @@
   {
    "title": "Federal Budget Balance",
    "country": "USD",
-   "date": "2026-10-16T14:00:00-04:00",
+   "date": "2026-10-16T14:05:00-04:00",
    "impact": "Low",
    "forecast": "-34.7B",
    "previous": "-166.8B"

@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-18T10:59:50.404Z",
+ "fetchedAt": "2026-10-19T13:07:17.048Z",
  "events": [
   {
    "title": "BusinessNZ Services Index",
@@ -98,14 +98,6 @@
    "impact": "Low",
    "forecast": "-0.3%",
    "previous": "0.4%"
-  },
-  {
-   "title": "Foreign Direct Investment ytd/y",
-   "country": "CNY",
-   "date": "2026-10-19T02:02:00-04:00",
-   "impact": "Low",
-   "forecast": "",
-   "previous": "-5.3%"
   },
   {
    "title": "CPI m/m",
@@ -234,6 +226,14 @@
    "impact": "Low",
    "forecast": "23.6",
    "previous": "25.8"
+  },
+  {
+   "title": "Foreign Direct Investment ytd/y",
+   "country": "CNY",
+   "date": "2026-10-20T05:10:00-04:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": "-5.3%"
   },
   {
    "title": "10-y Bond Auction",

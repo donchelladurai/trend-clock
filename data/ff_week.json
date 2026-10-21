@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-21T13:44:56.653Z",
+ "fetchedAt": "2026-10-21T18:35:51.819Z",
  "events": [
   {
    "title": "BusinessNZ Services Index",
@@ -488,7 +488,7 @@
    "country": "USD",
    "date": "2026-10-22T10:30:00-04:00",
    "impact": "Low",
-   "forecast": "83B",
+   "forecast": "80B",
    "previous": "67B"
   },
   {
@@ -640,7 +640,7 @@
    "country": "USD",
    "date": "2026-10-23T09:45:00-04:00",
    "impact": "Medium",
-   "forecast": "57.8",
+   "forecast": "57.9",
    "previous": "58.7"
   },
   {

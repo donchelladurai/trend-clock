@@ -758,47 +758,62 @@ of the cash session, and over its final 15**, does the market follow the day's d
 direction or reverse it? Same or opposite only — nothing here reads up or down. Not yet on any page;
 the owner is to say how it should be added.
 
+**The averages.** The owner's charts carry the **200, 20 and 8 simple moving averages and never an
+EMA** (stated 22 Oct 2026). The study was first run on the board's 20EMA (commits 1485c61 and
+e51ced0, same conclusions) and rebuilt the same day on the SMA; the board itself is still the 20EMA
+of §1b until the rebuild the owner asked for. `eval_lib.outcomes` takes `ma: 'sma'` and `maLen`;
+`tools/fit_th.js --ma sma --maLen N` fits the thresholds and records them in **`data/th_fit.json`**,
+which this script reads. At the pooled share of 0.45 over the 20 histdata instruments, 26 Jan – 9 Oct
+2026: **SMA20 0.0365 / 0.0204 / 0.0105** (2- / 5- / 15-minute; the EMA's were 0.0357 / 0.0204 /
+0.0101) and **SMA8 0.0578 / 0.0329 / 0.016** — the 8 needs about 60% more move to call the same
+share of windows trending. Per-instrument shares 0.35–0.53, the same spread as the EMA's.
+
 **Definitions** (the script's header). Cash session: FTSE 100 08:00–16:30 UK; Germany 40 and
 France 40 09:00–17:30 CET (16:30 UK — the EU and UK clocks change on the same dates); the three US
 rows 09:30–16:00 New York, converted per day with `Intl`, so the clock-gap weeks (9–27 Mar 2026)
 land an hour earlier in UK time. Two close windows: the last 90 minutes (15:00–16:30 UK /
 14:30–16:00 ET) and the last 15 (16:15–16:30 / 15:45–16:00) — 8 bars = 16 minutes on the 2-minute
-chart, as the board's 15-minute move is. Four reference segments: `day`, the session up to the
-window; `day90`, the session up to 15:00 UK / 14:30 ET (the 15-minute window only); `pre`, the 75
-minutes before the final window; `full`, from 08:00 UK (US rows only). Three readings of direction:
-**state** — sign of (bars in the +1 state − bars in the −1 state), the board's 20EMA trend state on
-that chart (`eval_lib.outcomes`, thresholds 0.0357 / 0.0204); **fresh** — the window's state balance
-counting only trend states that begin inside it, because a state carried in from before the window
-follows the segment that produced it by construction; **price** — sign of the net move, in ATR
-units. follow = same sign, reverse = opposite, none = the window has no direction. Days: the board's
-valid days from 26 Jan 2026 (the first ATR) to 9 Oct (Wall Street 15 Jun – 12 Oct, 83 days), with at
-least 90% real bars in both segments, half the window's bars moving, and the exchange's holidays
-removed by list (LSE 5, Xetra 4, Euronext 3, NYSE 6 in range — the CFD feeds print bars on cash
-holidays, and four of the LSE's and three of Xetra's passed the board's validity rule). 174–180 days
-per histdata row.
+chart, as the board's 15-minute move is. Five references: `day`, the session up to the window;
+`day90`, the session up to 15:00 UK / 14:30 ET (the 15-minute window only); `pre`, the 75 minutes
+before the final window; `full`, from 08:00 UK (US rows only); `bias200`, the side of the 200SMA
+the last close before the window sits on. Five readings of direction: **state20 / state8** — sign of
+(bars in the +1 state − bars in the −1 state), the board's trend-state rule with the 20SMA / 8SMA in
+place of the EMA; **fresh20 / fresh8** — the window's balance counting only trend states that begin
+inside it, because a state carried in from before the window follows the segment that produced it by
+construction; **price** — sign of the net move, in ATR units. follow = same sign, reverse = opposite,
+none = the window has no direction. Days: the board's valid days from 26 Jan 2026 (the first ATR) to
+9 Oct (Wall Street 15 Jun – 12 Oct, 83 days), with at least 90% real bars in both segments, half the
+window's bars moving, and the exchange's holidays removed by list (LSE 5, Xetra 4, Euronext 3, NYSE 6
+in range — the CFD feeds print bars on cash holidays, and four of the LSE's and three of Xetra's
+passed the board's validity rule). 174–180 days per histdata row.
 
-**Data.** `data/close_study.json` (1.9 MB, committed): `records[label][chart][window]` holds one
-record per day — the three prices, the day and window moves and ranges in ATR units, the state bar
-counts over the day and the window, turns and trending bars in the window, the state and slope ratio
-on the last bar before it and the state on the final bar, the 20EMA's move over each segment, the
-state of every window bar as a `+0-` string, the 90-minute window in three 30-minute parts, the
-15-minute window's bar-by-bar closes against its start, and the other reference segments under
-`refs` — so any later aggregation reads the file and never the bars. `summary[window]` carries the
-tallies below per instrument, per market (date-clustered intervals) and a strong/weak split at the
-median reference strength, for every reading × reference; `meta` the days used and dropped per row.
-Re-run `node tools/close_study.js` only to change the definition or extend the sample.
+**Data.** `data/close_study.json` (3.1 MB, committed): `records[label][chart][window]` holds one
+record per day — the three prices, the day and window moves and ranges in ATR units, the 90-minute
+window's price move in three 30-minute parts, the 15-minute window's bar-by-bar closes against its
+start, the other reference segments under `refs`, the 200SMA side at the window's start with the
+share of the day spent above it and the average's own drift, and under `ma["20"]` and `ma["8"]` the
+state bar counts over the day and the window, turns and trending bars, the state and slope ratio on
+the last bar before the window and the state on the final bar, the average's move over each segment,
+the state of every window bar as a `+0-` string, and the same counts over the other references — so
+any later aggregation reads the file and never the bars. `summary[window]` carries the tallies per
+instrument, per market (date-clustered intervals) and a strong/weak split at the median reference
+strength, for every reading × reference; `meta` the days used and dropped per row. Re-run `node
+tools/close_study.js` only to change the definition or extend the sample.
 
-**What it found** — the share of decided windows that follow the day, with the clustered 95%
+**What it found** — the share of decided windows that follow the reference, with the clustered 95%
 interval (2- / 5-minute where the charts differ):
 
-| Window, reading | Europe (3 rows pooled) | US (3 rows pooled) |
+| Window, reading, reference | Europe (3 rows pooled) | US (3 rows pooled) |
 |---|---|---|
-| last 90 min, price | **45%** follow, n 531, 40–50%; move with the day −0.02 ATR ± 0.01 | 49%, n 431, 44–55%; +0.00 ATR |
-| last 90 min, state, whole window | 57% / 56%, n 346 / 333, 50–64 / 49–62% | 48% / 53%, n 145 / 148, 38–57 / 44–63% |
-| last 90 min, fresh states only | 52% / **45%**, n 230 / 194, 44–60 / 37–53% | 48% / 39%, n 109 / 87, 37–59 / 27–52% |
-| last 15 min, price | **42%** follow, n 533, 36–47%; −0.02 ATR | **41% / 43%**, n 431 / 430, 36–47 / 38–49%; −0.02 ATR |
-| last 15 min, state, whole window | 63% / 64%, n 194 / 211 — carry-over, see 3 | 57% / 60%, n 68 / 93 |
-| last 15 min, fresh states only | 38% / 48%, n 34 / 23 — too few to read | 42% / 40%, n 24 / 15 |
+| last 90 min, price, the day | **45%** follow, n 531, 40–50%; move with the day −0.02 ATR ± 0.01 | 49%, n 431, 44–55%; +0.00 ATR |
+| last 90 min, 20SMA state, whole window | 55% / 61%, n 317 / 284, 48–61 / 54–68% | 50% / 53%, n 136 / 141 |
+| last 90 min, 20SMA states beginning inside | **49% / 48%**, n 217 / 157, 42–57 / 39–57% | 56% / 40%, n 98 / 70 |
+| last 90 min, 8SMA whole / fresh | 53% / 57% whole; 51% / 55% fresh | 48% / 43%; 52% / 45% |
+| last 90 min, price, side of the 200SMA | 44% / 46%, 39–49 / 41–51% | 47% / 51% |
+| last 15 min, price, the day | **42%** follow, n 533, 36–47%; −0.02 ATR | **41% / 43%**, n 431 / 430, 36–47 / 38–49%; −0.02 ATR |
+| last 15 min, 20SMA state, whole window | 63% / 65%, n 187 / 218 — carry-over, see 3 | 64% / 60%, n 77 / 92 |
+| last 15 min, 20SMA states beginning inside | 49% / 47%, n 49 / 30 — too few | 57% / 64%, n 21 / 11 |
+| last 15 min, price, side of the 200SMA | 46% / 43% | 44% / 46% |
 
 In order of weight:
 
@@ -807,28 +822,34 @@ In order of weight:
    Street 42–44%, US Tech 100 44–45%, US 500 38–42%); both halves of the year agree (Europe 43%
    then 40%, US 46% then 38% on the 2-minute chart); no weekday goes above 49%. The tilt is against
    the *day*, not the run-in: against the 75 minutes before, the final window follows 49–52%;
-   against the session to 15:00 it follows 42–44%, as against the session to 16:15. A day with no
-   direction to speak of (net move under 0.15 ATR) is a coin flip (47–48%); any clearer day move
-   reverses 56–64% of the time, and the tilt is strongest in the last five minutes (follow 42% in
-   Europe, 39% in the US). The size is small: the final window moves 0.07 ATR on a typical day and
-   gives back 0.02 ATR against the day on average.
+   against the session to 15:00 it follows 42–44%, as against the session to 16:15; against the side
+   of the 200SMA, 43–46%. A day with no direction to speak of (net move under 0.15 ATR) is a coin
+   flip (47–48%); any clearer day move reverses 56–64% of the time, and the tilt is strongest in the
+   last five minutes (follow 42% in Europe, 39% in the US). The size is small: the final window moves
+   0.07 ATR on a typical day and gives back 0.02 ATR against the day on average. None of this involves
+   an average: the price reading is the same under the EMA and the SMA.
 2. **The last 90 minutes lean the same way in Europe, and not at all in the US.** Price: Europe 45%
-   follow on every row (46 / 45 / 43–44%), US 46–51%. The whole-window state reading's 57% "follow"
-   in Europe is the state in force at 15:00 carried into the window: trend states that *begin*
-   inside the last 90 minutes lean with the day 52% on the 2-minute chart and against it on the
-   5-minute (45%), US 48% and 39%. A trend state at the window's start predicts the window's price
-   direction on 47–57% of days. The strength of the day trend changes nothing on price (45% against
-   45%); the halves of the sample give 48% then 42%.
-3. **The 20EMA state cannot read a 15-minute window.** A trend state is present in the final window
-   on 37–40% of European days and 16–23% of US days, and its direction agrees with that window's own
-   price move only 52–55% (Europe) and 57–64% (US) of the time — the EMA lags the window. Its
-   63–64% "follow" is carry-over; states beginning inside the window occur on 4–7% of days. Over 90
-   minutes the state does describe the window (agreement 71–82%, fresh states 89–93%). For the final
-   15 minutes only the price reading means anything.
+   follow on every row (46 / 45 / 43–44%), US 46–51%; against the side of the 200SMA 44–46% and
+   47–51%. The whole-window 20SMA reading's 55–61% "follow" in Europe is the state in force at 15:00
+   carried into the window: trend states that *begin* inside the last 90 minutes lean nowhere (Europe
+   49% / 48%, US 56% / 40%), and the 8SMA says the same (fresh 51–55% Europe, 45–52% US). A trend
+   state at the window's start predicts the window's price direction on 44–57% of days. The strength
+   of the day trend changes nothing on price (45% against 45%); the halves of the sample give 48% then
+   42%.
+3. **No 20-period average can read a 15-minute window.** A 20SMA trend state is present in the final
+   window on 36–42% of European days and 19–22% of US days (the 8SMA 34–39% and 15–19%), and its
+   direction agrees with that window's own price move only 54–59% of the time (the 8SMA 56–57% in
+   Europe, 61–75% in the US on 63–82 cases) — the average lags the window. Its 60–65% "follow" is
+   carry-over (against the 75 minutes before it "follows" 73–91%, by construction); states beginning
+   inside the window occur on 3–11% of days. Over 90 minutes the state does describe the window
+   (agreement 69–79%, fresh states 84–88%). For the final 15 minutes only the price reading means
+   anything.
 4. **How quiet the US close is on this rule is real**, not an artefact: the board's own climatology
    has a trending bar in 33–42% of the US rows' 19:30–21:00 UK windows against 59–65% of Europe's
-   15:00–16:30.
+   15:00–16:30; on the 20SMA a trend state appears somewhere in the last 90 minutes on 58–65% of
+   European days and 33–35% of US days.
 
 The honest summary: **the day's direction does not foretell its last 90 minutes; its final 15
 minutes go against it about 58% of the time on every index, by about two hundredths of a day's
-range.** A tilt in frequency, not a move worth trading on its own.
+range.** A tilt in frequency, not a move worth trading on its own — and the same on the SMA as on
+the EMA, because the finding is in the price.

@@ -344,7 +344,8 @@ on the 5-minute (AUD/JPY 0.13) and none on the 2-minute; on the EMA none was fla
 
 The three lists at the top follow **both** marked tiers of the **selected panel's chart**, sorted
 strongest-first, tier 1 drawn as an outlined chip. They read `tier[k] > 0` on the all-days
-profile. 25 of 25 rows can reach the chips on the 5- and 2-minute boards, 21 on the 15-minute.
+profile. 25 of 25 rows can reach the chips on the 5- and 2-minute boards, 21 on the 15-minute. A
+fourth list, **Market close**, is the heads-up for the cash closes (§4).
 
 ### 3.5 Composite detection — `COMPOSITE`
 
@@ -418,6 +419,14 @@ row's flat-day figure beside it ("turn 32% (row 15%)") because a tier is a relat
   is outlined amber when its 95% interval excludes 50% and hatched under `MIN_N` days; the note
   names the profile and the per-cell day range, the footer the definitions. Data: the `CLOSE`
   literal (§1, §12). The strings live in `MV.close`.
+- **Market close heads-up** (`#closelist`, `closeHeadsUp`, since 22 Oct 2026): a row in the header
+  beside the trend, turn and news lists. For each market whose cash close is still ahead or under way
+  it names the window coming next with its time on the clock toggle — the last 90 minutes until it
+  starts (15:00 UK / 14:30 New York, so the clock-gap weeks land an hour earlier), then the final 15,
+  "now" while that runs — followed by a chip per index with that window's follow-or-reverse share on
+  the selected profile and chart (the 5-minute when the 15-minute panel is selected), strongest first,
+  solid when the 95% interval excludes 50% and outlined when it does not. "—" outside hours; "today's
+  closes are done" after the US close. Strings in `MV.closeHead`.
 - **Three panels** behind tabs (15-, 5-, 2-minute; the choice is kept in `localStorage`), each the
   familiar board: composite rows on their own band with a `N×` badge, section headings naming the
   chart, right-hand mirror labels at ≥1500px, a cursor readout and crosshair, `--pv` from the real
@@ -659,6 +668,7 @@ so rather than nothing.
 | CI vs verdict | **0** windows whose printed interval excludes 1.0× while the text says "within ordinary variation" |
 | Dashboard | 63 cells, none `na` on a complete board; 63 live cells with the helper streaming; each live cell has three lines |
 | Market Close | 32 cells, none `na`, no `NaN`; on a weekday profile the note names the weekday and each cell's third line carries the all-days figure; the `CLOSE` literal is found by `^const CLOSE = {...};$` |
+| Market close heads-up | before 15:00 UK the header row lists both markets' last-90 windows with times and six chips; 15:00–16:30 Europe shows its final 15; after 16:30 the US alone; after 21:00 "today's closes are done"; "—" out of hours |
 | Section headings | each panel's sections name its chart |
 | Composite badges | Europe 3×, US 3×, USD pairs 7×, EUR crosses 6× on every panel |
 | Invariants | `build_board.js` prints invariant 1 ok and invariant 3 worst ≤ 0.26 on each chart; `board_stats.js` prints count recovery 0 of 7800 differ per chart and max `lambda` < 100 |

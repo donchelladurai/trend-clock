@@ -82,6 +82,9 @@
   .chip.n{background:#2b2616;color:#f0dfa8;border:1px solid #6a5420}
   .chip.n.soft{background:transparent;color:#cdbf95}
   .chip.n b{color:var(--amber);font-size:1em}
+  /* The Market close heads-up: solid when the interval excludes 50%, outlined when it is a coin flip. */
+  .chip.c{background:#2a2416;color:#f3e3b8;border:1px solid #7a5a1f} .chip.c b{color:var(--amber)}
+  .chip.c.soft{background:transparent;color:#c9b88a;border-color:#5a4a2a} .chip.c.soft b{color:#d9b86a}
   .mini{max-width:min(1100px, calc(100% - var(--pad-x) * 2));margin:16px auto 2px;padding:14px 20px 15px;
         background-color:#17212d;
         background-image:linear-gradient(90deg,rgba(255,207,92,.10),rgba(255,207,92,.03) 45%,rgba(255,207,92,.015));
@@ -245,6 +248,7 @@
     <div><span class="k" id="trendk">Trend window now</span><span id="trendlist"></span></div>
     <div><span class="k">Turn spike now</span><span id="turnnowlist"></span></div>
     <div><span class="k">Turn spike next</span><span id="turnnextlist"></span></div>
+    <div><span class="k" id="closek">Market close</span><span id="closelist"></span></div>
     <div><span class="k">News now</span><span id="newsnowlist"></span></div>
     <div><span class="k">News next</span><span id="newsnextlist"></span></div>
   </div>
@@ -816,6 +820,17 @@ const MV = {
     "noData": "no bars on this chart",
     "noDays": "no days",
     "foot": "Days from {from} to {to}; cash sessions 08:00–16:30 UK for the European indices and 09:30–16:00 New York for the US ones, exchange holidays removed. The day's trend is the 20SMA trend-state balance over the session up to the window (a day with no balance is left out); the close is the window's net price move in points, read only for its sign. A cell is outlined when its 95% interval excludes 50%. Weekday cells hold two to three dozen days each and swing by 15 to 30 points, so the all-days profile is the one to trust; sizes run about two hundredths of a day's range either way, a tilt in frequency rather than a move to trade on its own."
+  },
+  "closeHead": {
+    "from": "{market} · last 90 min from {time}",
+    "at": "{market} · final 15 min at {time}",
+    "now": "{market} · final 15 min now",
+    "follows": "follows",
+    "reverses": "reverses",
+    "done": "today's closes are done",
+    "coinFlip": "the interval includes 50%, so read it as a coin flip",
+    "win90": "the last 90 minutes of the cash session",
+    "win15": "the final 15 minutes of the cash session"
   }
 };
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, q) => v[q] != null ? String(v[q]) : m);
@@ -1119,6 +1134,36 @@ function updateClose(mode){
   setText($("closenote"), fill(mode === "all" ? M.note : M.noteWd, { profile: wdName, nmin: nMin === Infinity ? "—" : nMin, nmax: nMax }));
   setText($("cfoot"), fill(M.foot, { from: CLOSE.sample.from, to: CLOSE.sample.to }));
 }
+// ---- The header's Market close heads-up ------------------------------------------------------------------
+// For each market whose cash close is still ahead or under way: the window coming next (the last 90 minutes
+// until it starts, then the final 15) with its time on the clock toggle, and a chip per index with the share
+// of days that window followed or reversed the day's 20SMA trend on the selected profile — solid when the
+// 95% interval excludes 50%, outlined when it does not. The US window follows the New York clock, so the
+// clock-gap weeks land an hour earlier. Data: CLOSE (§12); the chart is the selected panel's, or the
+// 5-minute where the table has no 15-minute chart.
+const CLOSE_MKT = [["Europe", ["FTSE 100", "Germany 40", "France 40"]], ["US", ["Wall Street", "US Tech 100", "US 500"]]];
+function closeHeadsUp(mode, cur, real, ch){
+  const M = MV.closeHead; if (!CLOSE.rows || !CLOSE.rows.length) return `<span class="chip none">—</span>`;
+  const chUsed = CLOSE_CH.includes(ch) ? ch : "5";
+  const ny = timeParts("America/New_York"), nyOff = ((real.h*60 + real.m) - (ny.h*60 + ny.m) + 1440) % 1440;   // UK minus New York: 300 outside the clock-gap weeks
+  const windows = { Europe: [420, 495, 510], US: [14*60 + 30 + nyOff - 480, 15*60 + 45 + nyOff - 480, 16*60 + nyOff - 480] };
+  const parts = [];
+  for (const [market, labels] of CLOSE_MKT){
+    const [s90, s15, end] = windows[market]; if (cur >= end) continue;
+    const w = cur < s90 ? "90" : "15", head = cur < s90 ? fill(M.from, { market, time: slotTime(s90) }) : cur < s15 ? fill(M.at, { market, time: slotTime(s15) }) : fill(M.now, { market });
+    const chips = [];
+    for (const label of labels){
+      const row = CLOSE.rows.find(r => r.label === label), d = row && row.data[chUsed] && row.data[chUsed][w]; if (!d) continue;
+      const x = d[mode] || d.all, [f, r, none, noDay, lo, hi] = x, n = f + r; if (!n) continue;
+      const p = f/n, follow = p >= 0.5, share = follow ? p : 1 - p, clear = lo != null && (lo > 0.5 || hi < 0.5);
+      const title = `${label}, ${chUsed}-minute chart, ${w === "90" ? M.win90 : M.win15}, ${mode === "all" ? "all days" : WDL[+mode]}: followed the day's 20SMA trend on ${f} days and reversed it on ${r} (95% interval ${lo != null ? Math.round(lo*100) + "–" + Math.round(hi*100) + "%" : "—"})${clear ? "" : "; " + M.coinFlip}`;
+      chips.push([label, share, follow, clear, title]);
+    }
+    chips.sort((a, b) => b[1] - a[1]);
+    parts.push(`<span class="chip none">${head}</span>` + chips.map(([label, share, follow, clear, title]) => `<span class="chip c${clear ? "" : " soft"}" title="${title}">${label} <b>${Math.round(share*100)}%</b> ${follow ? M.follows : M.reverses}</span>`).join(""));
+  }
+  return parts.length ? parts.join("") : `<span class="chip none">${M.done}</span>`;
+}
 function liveStatus(){
   const el = $("livestat"), tx = $("livetext");
   if (LIVESTATE.state === "ok"){ const stale = LIVESTATE.oldest > 15*60; el.className = "livestat " + (stale ? "stale" : "on"); setText(tx, `live ${LIVESTATE.source} · ${LIVESTATE.n} instruments · oldest bar ${ageText(LIVESTATE.oldest)}`); }
@@ -1174,6 +1219,7 @@ function tick(){
     document.querySelectorAll(".panel .row").forEach(r=>{ r.classList.remove("on","off","turn"); r.querySelector(".pct").textContent=""; });
     $("trendlist").innerHTML='<span class="chip none">—</span>'; $("turnnowlist").innerHTML='<span class="chip none">—</span>'; $("turnnextlist").innerHTML='<span class="chip none">—</span>';
     $("newsnowlist").innerHTML='<span class="chip none">—</span>'; $("newsnextlist").innerHTML='<span class="chip none">—</span>';
+    $("closek").textContent = "Market close"; $("closelist").innerHTML='<span class="chip none">—</span>';
     const sum = updateDash(-1, mode, thr, t, false);
     { const g = greeting(real, wdIdx); const live = liveSentence(sum, chart); setMini(g, cap(afterGreeting(g, fill(byDay(pv ? MV.mini.previewOutside : weekend ? MV.mini.weekend : MV.mini.outside, 20), {name: NAME, opens: ukTime(0), from: slotLabel(0), to: slotLabel(52), time: pvTime}))) + (live ? " " + live : "")); }
     return;
@@ -1208,6 +1254,9 @@ function tick(){
   $("trendlist").innerHTML  = chips(trend,   "",  "none at this threshold");
   $("turnnowlist").innerHTML  = chips(turnNow,  "t", "none") + (mode === "all" ? "" : `<span class="chip none">(all-days tiers)</span>`);
   $("turnnextlist").innerHTML = chips(turnNext, "t", "none");
+  { const closeHtml = closeHeadsUp(mode, t.h*60 + t.m - 480, real, chart);
+    $("closek").textContent = `Market close · ${CLOSE_CH.includes(chart) ? chart : "5"}-min`;
+    if ($("closelist").innerHTML !== closeHtml) $("closelist").innerHTML = closeHtml; }
   const nowEv = newsIn(k), nextEv = k < 51 ? newsIn(k+1).filter(e => !nowEv.includes(e)) : [];
   const nchips = (list, empty) => NEWS.state === "failed" ? `<span class="chip none" title="${location.protocol === "file:" ? MV.chips.unavailableTitle : MV.chips.unavailableHttp}">${MV.chips.unavailable}</span>`
     : NEWS.state === "stale" ? `<span class="chip none" title="${MV.chips.staleTitle}">${MV.chips.stale}</span>`

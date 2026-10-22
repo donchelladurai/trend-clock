@@ -696,7 +696,7 @@ forward-in-time figures are §7a.
   and binary.
 - Commits: local commits at each verified step, **one push per job** — every push costs the owner a
   Pages deploy and Actions minutes (22 Oct 2026). Pull with rebase before that push; the calendar
-  workflow commits every two hours.
+  workflow commits up to hourly in the trading day (§9).
 - Prose is deliberately specific about uncertainty. If a change makes a stated number wrong,
   change the number — do not soften the sentence into something unfalsifiable.
 - `README.md` is empty; this file is the documentation.
@@ -718,9 +718,13 @@ name.
 
 **Data.** `data/ff_week.json` is the Forex Factory weekly feed
 (`nfs.faireconomy.media/ff_calendar_thisweek.json`), filtered to USD EUR GBP JPY CHF CAD AUD NZD CNY
-and written by `tools/fetch_ff.js`. `.github/workflows/ff-calendar.yml` runs it every 2 hours and
-commits only when the events change (23 such commits between 25 Sep and 13 Oct 2026 — pull before
-pushing). The feed rate-limits frequent pulls. Feed times carry a US Eastern offset; the pages
+and written by `tools/fetch_ff.js`. `.github/workflows/ff-calendar.yml` runs it **hourly from 08:00
+to 16:00 UK on weekdays and twice in between, about 22:00 and 06:00 UK, every day** (since 22 Oct
+2026; it ran every two hours around the clock before, 16 commits between 13 and 22 Oct), and commits
+only when the events change — pull before pushing. GitHub's cron is UTC, so the file carries a BST
+line for April–October and a GMT line for November–March; the clock-change weeks are off by an hour
+for a few days. The pages re-read the committed file every 30 minutes, which costs nothing on GitHub.
+The feed rate-limits frequent pulls. Feed times carry a US Eastern offset; the pages
 convert with `Intl` to `Europe/London`.
 
 **Shared module.** `news.js` (`window.NewsFeed`) holds the currency-to-instrument map `CCY`, the

@@ -748,3 +748,61 @@ Europe/London trading days with at least six hours of bars, completed days only,
 histdata ATR runs high on USD/CAD, AUD/USD and NZD/USD against both feeds). Prices are CFD quotes,
 fine for the ATR-normalised state, not for quoting an index level. Only one helper should run at a
 time; `TV_TEST_DROP=<seconds>` is a test hook that closes the socket once.
+
+---
+
+## 12. The market-close direction study — `tools/close_study.js` (22 Oct 2026)
+
+A question about the six index rows only, on the 2- and 5-minute charts: over the **last 90 minutes
+of the cash session**, does the market follow the day's dominant trend direction or reverse it?
+Same or opposite only — nothing here reads up or down. Not yet on any page; the owner is to say how
+it should be added.
+
+**Definitions** (the script's header). Cash session: FTSE 100 08:00–16:30 UK; Germany 40 and
+France 40 09:00–17:30 CET (16:30 UK — the EU and UK clocks change on the same dates); the three US
+rows 09:30–16:00 New York, converted per day with `Intl`, so the clock-gap weeks (9–27 Mar 2026)
+land an hour earlier in UK time. Close = the session's last 90 minutes (15:00–16:30 UK / 14:30–16:00
+ET); day = the session before it (for the US rows also "full", from 08:00 UK). Two readings of each
+segment's direction: **state** — sign of (bars in the +1 state − bars in the −1 state), the board's
+20EMA trend state on that chart (`eval_lib.outcomes`, thresholds 0.0357 / 0.0204); **price** — sign
+of the net move, in ATR units. follow = same sign, reverse = opposite, none = the close has no
+direction. Days: the board's valid days from 26 Jan 2026 (the first ATR) to 9 Oct (Wall Street
+15 Jun – 12 Oct, 83 days), with at least 90% real bars in both segments, half the close bars moving,
+and the exchange's holidays removed by list (LSE 5, Xetra 4, Euronext 3, NYSE 6 in range — the CFD
+feeds print bars on cash holidays, and four of the LSE's and three of Xetra's passed the board's
+validity rule). 174–179 days per histdata row.
+
+**Data.** `data/close_study.json` (746 KB, committed): `records[label][chart]` holds one record per
+day — the three prices, the day and close moves and ranges in ATR units, the state bar counts over
+the day and the close, turns and trending bars in the close, the state and slope ratio on the last
+bar before the close and on the final bar, the 20EMA's move over each segment, the close window in
+three 30-minute parts, and for the US rows the same day readings from 08:00 UK — so any later
+aggregation reads the file and never the bars. `summary` carries the tallies below per instrument,
+per market (date-clustered intervals) and a strong/weak split at the median day strength; `meta` the
+days used and dropped per row. Re-run `node tools/close_study.js` only to change the definition or
+extend the sample.
+
+**What it found** (the share of decided closes that follow the day):
+
+| Reading | Europe (3 rows pooled) | US (3 rows pooled) |
+|---|---|---|
+| price, chart-free | **45%** follow / 55% reverse, n 531, clustered 95% CI 40–50%; mean close move with the day −0.02 ATR ± 0.01 | 49% / 51%, n 431, CI 44–55%; +0.00 ATR |
+| 20EMA state, 2-minute | **57%** follow / 43% reverse, n 346, CI 50–64%; the close has no trend state on 33% of days | 48% / 52%, n 145, CI 38–57%; no state on 66% of days |
+| 20EMA state, 5-minute | 56% / 44%, n 333, CI 49–62%; no state on 35% | 53% / 47%, n 148, CI 44–63%; no state on 64% |
+
+The two readings are not in conflict: they measure different things on the same days. In Europe the
+close-window state balance agrees with the close price move on 77% of days (correlation 0.63), yet
+on the 197 days the state leans with the day the price still reverses on 79 — the state registers
+the push, the price the whole 90 minutes. Per instrument the price reading reverses on every
+European row (FTSE 100 46% follow, Germany 40 45%, France 40 43–44%) and on none of the US rows
+(46–51%); the state reading follows most on Germany 40 2-minute (63%, CI 53–71%) and not at all on
+France 40 (50%). The strength of the day trend changes nothing (strong half 45% against weak 45%
+on price in Europe; 60% against 54% on the 2-minute state). Reading the US day from 08:00 UK instead
+of the cash open moves the US state figure to 54–55% (CI 44–65%) and the price figure not at all.
+Halves of the sample: Europe price 48% then 42%, state 60% then 54% — same sign, modest size. The
+board's own climatology agrees on how quiet the US close is on this rule (a trending bar in 33–42%
+of the 19:30–21:00 UK windows against 59–65% of Europe's 15:00–16:30). The honest summary: **the
+day's direction says little about its close.** The one tilt consistent across all three European
+rows is that the net price move of the last 90 minutes goes against the day slightly more often
+than with it, and its size — two hundredths of a day's range — is not worth trading on its own. The
+US close is a coin flip on both readings.

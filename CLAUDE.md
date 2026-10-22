@@ -20,7 +20,8 @@ trading day cut into 52 fifteen-minute windows:
 
 **The average is the simple one.** The owner's charts carry the 200, 20 and 8 SMA and never an EMA;
 every trending flag, turn, tier, live state and table on the board is the 20SMA's since 22 Oct
-2026. From 16 Sep to 22 Oct 2026 it was a 20EMA, inherited from the pre-repo generator the first
+2026. The board reads the 20 alone: the 8 is the owner's power-trend average and the 200 a bias, and
+neither predicts trends (owner, 22 Oct 2026). From 16 Sep to 22 Oct 2026 it was a 20EMA, inherited from the pre-repo generator the first
 pipeline was calibrated against and never chosen against the SMA. At a matched threshold the two
 states never oppose each other and coincide on about three quarters of state bars; the SMA turns
 15–25% less often (§1b). Figures in this file dated before 22 Oct 2026 were measured on the EMA and
@@ -194,8 +195,8 @@ over the 20 histdata instruments and every valid day from 26 Jan 2026 (the first
 the files have no ATR and must be excluded, or they deflate every share). The board ran at the
 5-minute chart's share at 0.015 — about 0.59 on live days — until 13 Oct 2026; it now runs at
 **0.45** (`node tools/fit_th.js --share 0.45`, which records the fit in **`data/th_fit.json`** under
-`sma20`, where `build_board.js` and `close_study.js` read it; `--maLen 8` fits the owner's fast
-average the same way, `sma8` = 0.016 / 0.0329 / 0.0578), so "trending" means a 20SMA move of 3.7%
+`sma20`, where `build_board.js` and `close_study.js` read it; `--maLen` fits another length for
+research only), so "trending" means a 20SMA move of 3.7%
 of a day's range in 16 minutes on the 2-minute chart, 2.0% in 15 minutes on the 5-minute, 1.1% in a
 bar on the 15-minute. The study found skill unchanged between shares 0.55 and 0.35 (§7); the rarer
 definition was chosen so that a lit cell and a live "trending" mean a move worth the name, at the
@@ -223,7 +224,6 @@ done
 python tools/fetch_dukascopy.py USA30IDXUSD 2026-05-25 2026-10-12 data   # hours; resumable; re-run until it names nothing
 for m in 15 5 2; do python tools/duka2bars.py USA30IDXUSD data data/usa30_m$m.json $m 1000; done
 node tools/fit_th.js --share 0.45 --from 2026-01-26 --to 2026-10-09      # only if the intensity or the sample changes materially; writes data/th_fit.json (sma20)
-node tools/fit_th.js --share 0.45 --maLen 8                               # the 8SMA, for the close study (sma8)
 node tools/build_board.js [--from 2026-04-13 --to 2026-10-09]             # thresholds from data/th_fit.json unless --th15/--th5/--th2 override
 node tools/close_study.js                                                 # the Market Close table (CLOSE literal, data/close_table.json) and data/close_study.json
 node tools/board_stats.js                                                 # every board-level figure the comments cite, per chart
@@ -523,6 +523,10 @@ Each was built, measured, and removed. The measurements are in §7 or in the cod
 - **An EMA anywhere.** The owner's charts carry the 200, 20 and 8 SMA; a 20EMA defined the board
   from 16 Sep to 22 Oct 2026 by inheritance, and its turns came earlier and 15–25% more often than
   the turns on the owner's chart. `eval_lib.js` has no EMA path any more; do not add one back.
+- **The 8SMA or the 200SMA in the trend definition.** The owner predicts trends on the 20SMA alone
+  (22 Oct 2026): the 8 is a power-trend average, used only once a strong trend is running, and the
+  200 a bias. Measured once in the close study before the ruling, an 8SMA state read the close no
+  better than the 20's and the side of the 200 moved the price reading by at most two points (§12).
 - **`majority` or `all` bars in the window, the price-side rule, or a 30-minute move** as the
   definition of trending. At matched rarity `any` is more predictable on every chart (2-minute skill
   0.095 against 0.053 for `majority` and 0.002 for `all`); `side` changes under 2% of windows and is
@@ -818,10 +822,8 @@ Europe/London trading days with at least six hours of bars, completed days only,
 2026 the live ATR sat within 5% of the generator's on the indices and within 10–18% on FX (the
 histdata ATR runs high on USD/CAD, AUD/USD and NZD/USD against both feeds). Prices are CFD quotes,
 fine for the ATR-normalised state, not for quoting an index level. Only one helper should run at a
-time; `TV_TEST_DROP=<seconds>` is a test hook that closes the socket once. The 120 bars suit a
-20-period average; a 200SMA bias on the dashboard (the owner's third average, §12) would need
-`BARS_SERVED` raised to about 260, which the minute store (~7 days) and the 15-minute series (~75
-days) can supply — not built as of 22 Oct 2026.
+time; `TV_TEST_DROP=<seconds>` is a test hook that closes the socket once. The 120 bars suit the
+20-period average, the only one the board reads (§6).
 
 ---
 
@@ -833,26 +835,28 @@ direction or reverse it? Same or opposite only — nothing here reads up or down
 22 Oct 2026 as the **Market Close** section (§4), below.
 
 **The averages.** The owner's charts carry the **200, 20 and 8 simple moving averages and never an
-EMA** (stated 22 Oct 2026). The study was first run on the board's 20EMA (commits 1485c61 and
-e51ced0, same conclusions) and rebuilt the same day on the SMA; the board, the live state and the
-overnight page followed the same evening (§1b, §10). `eval_lib.outcomes` takes `maLen` (always a
+EMA**, and **the 20 alone predicts trends**: the 8 is the owner's power-trend average, used only once
+a strong trend is running, and the 200 a bias (both stated 22 Oct 2026). The study was first run on
+the board's 20EMA (commits 1485c61 and e51ced0, same conclusions), rebuilt the same day on the SMA —
+for one evening with an 8SMA state and a 200SMA side reading beside the 20 (commit db69614; they
+added nothing, see below) — and the board, the live state and the overnight page followed the same
+evening (§1b, §10). `eval_lib.outcomes` takes `maLen` (always a
 simple average); `tools/fit_th.js --maLen N` fits the thresholds and records them in
 **`data/th_fit.json`**, which this script reads. At the pooled share of 0.45 over the 20 histdata instruments, 26 Jan – 9 Oct
-2026: **SMA20 0.0365 / 0.0204 / 0.0105** (2- / 5- / 15-minute; the EMA's were 0.0357 / 0.0204 /
-0.0101) and **SMA8 0.0578 / 0.0329 / 0.016** — the 8 needs about 60% more move to call the same
-share of windows trending. Per-instrument shares 0.35–0.53, the same spread as the EMA's.
+2026: **SMA20 0.0365 / 0.0204 / 0.0105** (2- / 5- / 15-minute; the EMA's were 0.0357 / 0.0204 / 0.0101). Per-instrument shares 0.35–0.53, the
+same spread as the EMA's. (The 8SMA was fitted the same way that evening — 0.0578 / 0.0329 / 0.016,
+about 60% more move for the same share — and the fit was removed with the reading.)
 
 **Definitions** (the script's header). Cash session: FTSE 100 08:00–16:30 UK; Germany 40 and
 France 40 09:00–17:30 CET (16:30 UK — the EU and UK clocks change on the same dates); the three US
 rows 09:30–16:00 New York, converted per day with `Intl`, so the clock-gap weeks (9–27 Mar 2026)
 land an hour earlier in UK time. Two close windows: the last 90 minutes (15:00–16:30 UK /
 14:30–16:00 ET) and the last 15 (16:15–16:30 / 15:45–16:00) — 8 bars = 16 minutes on the 2-minute
-chart, as the board's 15-minute move is. Five references: `day`, the session up to the window;
+chart, as the board's 15-minute move is. Four references: `day`, the session up to the window;
 `day90`, the session up to 15:00 UK / 14:30 ET (the 15-minute window only); `pre`, the 75 minutes
-before the final window; `full`, from 08:00 UK (US rows only); `bias200`, the side of the 200SMA
-the last close before the window sits on. Five readings of direction: **state20 / state8** — sign of
-(bars in the +1 state − bars in the −1 state), the board's trend-state rule with the 20SMA / 8SMA in
-place of the EMA; **fresh20 / fresh8** — the window's balance counting only trend states that begin
+before the final window; `full`, from 08:00 UK (US rows only). Three readings of direction:
+**state20** — sign of (bars in the +1 state − bars in the −1 state), the board's trend-state rule with
+the 20SMA in place of the EMA; **fresh20** — the window's balance counting only trend states that begin
 inside it, because a state carried in from before the window follows the segment that produced it by
 construction; **price** — sign of the net move, in ATR units. follow = same sign, reverse = opposite,
 none = the window has no direction. Days: the board's valid days from 26 Jan 2026 (the first ATR) to
@@ -861,11 +865,10 @@ window's bars moving, and the exchange's holidays removed by list (LSE 5, Xetra 
 in range — the CFD feeds print bars on cash holidays, and four of the LSE's and three of Xetra's
 passed the board's validity rule). 174–180 days per histdata row.
 
-**Data.** `data/close_study.json` (3.1 MB, committed): `records[label][chart][window]` holds one
+**Data.** `data/close_study.json` (2.1 MB, committed): `records[label][chart][window]` holds one
 record per day — the three prices, the day and window moves and ranges in ATR units, the 90-minute
 window's price move in three 30-minute parts, the 15-minute window's bar-by-bar closes against its
-start, the other reference segments under `refs`, the 200SMA side at the window's start with the
-share of the day spent above it and the average's own drift, and under `ma["20"]` and `ma["8"]` the
+start, the other reference segments under `refs`, and under `ma["20"]` the
 state bar counts over the day and the window, turns and trending bars, the state and slope ratio on
 the last bar before the window and the state on the final bar, the average's move over each segment,
 the state of every window bar as a `+0-` string, and the same counts over the other references — so
@@ -875,7 +878,8 @@ strength, for every reading × reference; `meta` the days used and dropped per r
 tools/close_study.js` only to change the definition or extend the sample.
 
 **What it found** — the share of decided windows that follow the reference, with the clustered 95%
-interval (2- / 5-minute where the charts differ):
+interval (2- / 5-minute where the charts differ; the 8SMA and 200SMA rows were measured on 22 Oct
+before the owner ruled both out of trend prediction, and are no longer in the file):
 
 | Window, reading, reference | Europe (3 rows pooled) | US (3 rows pooled) |
 |---|---|---|
@@ -944,9 +948,8 @@ cell only when its interval excludes 50% (five cells on the Tuesday profile, mos
 counts are the `CLOSE` literal (§1) and `data/close_table.json`, both written by `close_study.js`
 from the records, so re-running it after a bar refresh updates the page.
 
-**Not built, and open:** how the 8SMA (the fast state) and the 200SMA (the bias) should appear on
-the board. The close study reads both (states and the 200 side are in every record) and found
-neither adds to this question; on the dashboard the 8's natural role is a measured lookup — when the
-8 turns against the 20's state, how often does the 20 turn within 15 and 30 minutes — and the
-200's a side marker, which needs about 260 live bars per chart (§11). The owner is to choose
-between that and a second pair of strips per instrument on the panels.
+**Decided (22 Oct 2026):** the 20SMA alone predicts trends, on the board and on the page. The owner
+uses the 8 only in a strong power trend and the 200 as a bias; neither goes on the panels or the
+dashboard, and the study's records now carry the 20 alone (§6). Before the ruling the study had
+measured both: an 8SMA state read the close no better than the 20's (fresh states 45–55% follow over
+90 minutes, too few over 15) and the side of the 200 moved the price reading by at most two points.

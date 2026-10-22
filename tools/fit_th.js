@@ -12,10 +12,11 @@
 // January days deflate every share. Prints the three thresholds and, per instrument, the share each
 // chart gives at its fitted value, so a drift between instruments is visible.
 //
-// --maLen picks the simple moving average whose 15-minute move is measured: 20 is the board's, 8 the
-// owner's fast average (the owner's charts carry the 200, 20 and 8 SMA and never an EMA; the fits of
-// 13 Oct 2026 were on a 20EMA). The result is merged into data/th_fit.json under "sma<maLen>" so the
-// tools that build on it (build_board.js, close_study.js) read the figures that were printed.
+// --maLen picks the simple moving average whose 15-minute move is measured. 20 is the board's and the
+// only one that predicts trends: the owner's 8 is a power-trend average and the 200 a bias (22 Oct
+// 2026), and there is never an EMA (the fits of 13 Oct 2026 were on a 20EMA). Another length is for
+// research only. The result is merged into data/th_fit.json under "sma<maLen>" so the tools that
+// build on it (build_board.js, close_study.js) read the figures that were printed.
 const fs = require('fs'), path = require('path');
 const E = require('./eval_lib.js');
 const args = {}; for (let i = 2; i < process.argv.length; i++){ const a = process.argv[i]; if (a.startsWith('--')){ const k = a.slice(2); const v = process.argv[i+1]; if (v === undefined || v.startsWith('--')) args[k] = true; else { args[k] = v; i++; } } }

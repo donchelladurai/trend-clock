@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Market-close direction study — the six index rows on the 2- and 5-minute charts, on the owner's
-// averages: the 20 and 8 simple moving averages for the trend state, the 200 for the bias. No EMA.
+// trend average: the 20-period simple moving average. The owner's 8 is a power-trend average and the
+// 200 a bias, and neither predicts trends (22 Oct 2026); an 8SMA state and a 200SMA side reading were
+// measured here for one evening (commit db69614), added nothing, and were removed. No EMA, ever.
 //
 //   node tools/close_study.js [--close 90,15] [--from 2026-01-26] [--to 2026-10-12] [--th data/th_fit.json]
 //                             [--out data/close_study.json] [--quiet]
@@ -23,17 +25,16 @@
 //                    day      the cash session up to the start of the close window (both windows);
 //                    day90    the session up to 15:00 UK / 14:30 ET, the 90-minute window's day (15-minute window);
 //                    pre      the 75 minutes before the final window, 15:00–16:15 UK (15-minute window);
-//                    full     from 08:00 UK, the board's day start, to the window (US rows only);
-//                    bias200  the side of the 200SMA the last close before the window sits on (any method).
-//   readings       state20 / state8: sign of (bars in the +1 state − bars in the −1 state) over the segment,
-//                  where the state is the board's trend-state rule (CLAUDE.md §1b) on the 20SMA / 8SMA in
-//                  place of the EMA — the average's move over 15 minutes of clock time against TH × the
-//                  daily ATR, hysteresis 2× / 0.5×, TH fitted per average and chart by tools/fit_th.js at
-//                  a pooled share of 0.45 (data/th_fit.json, keys sma20 and sma8), via eval_lib outcomes();
-//                  fresh20 / fresh8: the window's balance counting only states that begin inside it (the
-//                  leading run of the state in force at the window's start is dropped), since a state
-//                  carried in from before the window follows the segment that produced it by construction;
-//                  price: sign of (last close of the segment − open of its first bar). Zero = no direction.
+//                    full     from 08:00 UK, the board's day start, to the window (US rows only).
+//   readings       state20: sign of (bars in the +1 state − bars in the −1 state) over the segment, where
+//                  the state is the board's trend-state rule (CLAUDE.md §1b) on the 20SMA — the average's
+//                  move over 15 minutes of clock time against TH × the daily ATR, hysteresis 2× / 0.5×, TH
+//                  fitted per chart by tools/fit_th.js at a pooled share of 0.45 (data/th_fit.json, key
+//                  sma20), via eval_lib outcomes(); fresh20: the window's balance counting only states that
+//                  begin inside it (the leading run of the state in force at the window's start is dropped),
+//                  since a state carried in from before the window follows the segment that produced it by
+//                  construction; price: sign of (last close of the segment − open of its first bar). Zero =
+//                  no direction.
 //   outcome        follow = the close has the reference's sign; reverse = the opposite sign; none = the
 //                  close has no direction (state balance exactly 0, or a zero price move).
 //   valid day      the board's valid day (gen_row.js), with at least 90% of the bars in the reference and
@@ -45,14 +46,13 @@
 //   records[label][chart][close] = [rec]; meta[label][chart][close] = { th, L, validDays, used, from, to, dropped, droppedDates }
 //   summary[close] = { perInstrument[label][chart]["reading.ref"], pooled[market][chart]["reading.ref" | facts[len]], facts[label][chart][len] }
 //   rec = { d, wd, atr, p0, p1, p2, dm, cm, rng, crng, nb, nc, thirds?: [pm × 3], path?: [...],
-//           refs: { day90?, pre?, full?: { p0, dm, nb, rng } }, b200, a200, m200,
-//           ma: { "20": E, "8": E } },  E = { up, dn, cu, cd, ct, ctr, two, s1, r1, s2, em, ecm, seq, thirds?: [{up, dn} × 3], refs: { name: { up, dn, em } } }
+//           refs: { day90?, pre?, full?: { p0, dm, nb, rng } },
+//           ma: { "20": E } },  E = { up, dn, cu, cd, ct, ctr, two, s1, r1, s2, em, ecm, seq, thirds?: [{up, dn} × 3], refs: { name: { up, dn, em } } }
 //   d date (UK), wd 1–5, atr the day's 14-day ATR; p0 session open, p1 close before the close window,
 //   p2 cash close; dm / cm the day / close price move in ATR units; rng / crng the segment ranges in ATR
 //   units; nb / nc bars in the day / close segment; thirds (90-minute window) the price move of each
-//   30-minute part; path (15-minute window) every close bar's close against p1 in ATR units; b200 the
-//   side of the 200SMA at p1, a200 the share of the day's bars closing above it, m200 the 200SMA's own
-//   move over the day in ATR units. Per average E: up / dn bars in the +1 / −1 state over the day, cu / cd
+//   30-minute part; path (15-minute window) every close bar's close against p1 in ATR units. Under the
+//   average E: up / dn bars in the +1 / −1 state over the day, cu / cd
 //   over the close; ct turns and ctr trending bars in the close; two = both states seen in the close; s1
 //   the state and r1 the slope ratio on the last bar before the close, s2 the state on the final bar;
 //   em / ecm the average's move over the day / close in ATR units; seq the state of every close bar as
@@ -66,7 +66,7 @@ const DAY = 86400000;
 const args = {}; for (let i = 2; i < process.argv.length; i++){ const a = process.argv[i]; if (a.startsWith('--')){ const k = a.slice(2); const v = process.argv[i + 1]; if (v === undefined || v.startsWith('--')) args[k] = true; else { args[k] = v; i++; } } }
 const FROM = args.from || '2026-01-26', TO = args.to || '2026-10-12', OUT = args.out || path.join(ROOT, 'data', 'close_study.json'), QUIET = !!args.quiet;
 const CLOSES = String(args.close || '90,15').split(',').map(Number), MAIN = 90;
-const CHARTS = [2, 5], LENS = [20, 8], BIAS = 200;
+const CHARTS = [2, 5], LENS = [20];
 const FIT = JSON.parse(fs.readFileSync(args.th || path.join(ROOT, 'data', 'th_fit.json'), 'utf8'));
 const TH = {}; for (const len of LENS){ const f = FIT['sma' + len]; if (!f || !(f.th[2] > 0) || !(f.th[5] > 0)) throw new Error(`data/th_fit.json has no sma${len} fit: run node tools/fit_th.js --ma sma --maLen ${len}`); TH[len] = { 2: f.th[2], 5: f.th[5] }; }
 const REAL_SEG = 0.9, MOVE_SEG = 0.5;
@@ -90,8 +90,8 @@ const INSTRUMENTS = [
   { label: 'US 500',      stem: 'spxusd', market: 'US',     tz: 'America/New_York', open: [9, 30], close: [16, 0],  hol: 'NYSE' },
 ];
 const MARKETS = { Europe: INSTRUMENTS.filter(i => i.market === 'Europe').map(i => i.label), US: INSTRUMENTS.filter(i => i.market === 'US').map(i => i.label) };
-const REFS = ['day', 'day90', 'pre', 'full', 'bias200'];
-const METHODS = [{ key: 'state20', kind: 'state', len: 20 }, { key: 'fresh20', kind: 'fresh', len: 20 }, { key: 'state8', kind: 'state', len: 8 }, { key: 'fresh8', kind: 'fresh', len: 8 }, { key: 'price', kind: 'price' }];
+const REFS = ['day', 'day90', 'pre', 'full'];
+const METHODS = [{ key: 'state20', kind: 'state', len: 20 }, { key: 'fresh20', kind: 'fresh', len: 20 }, { key: 'price', kind: 'price' }];
 
 // ---- clock: a wall-clock time in a zone on a UK calendar day → position on the board's 08:00 UK grid
 const fmtCache = new Map();
@@ -112,7 +112,6 @@ function opens(stem, minutes, n){
 function study(inst, minutes){
   const P = E.load(inst.stem, minutes, FROM, TO); if (!P) return null;
   const O = {}; for (const len of LENS) O[len] = E.outcomes(P, { th: TH[len][minutes], agg: 'any', maLen: len });
-  const S200 = E.sma(P.c, BIAS);
   const { c, hi, lo, real, atrD } = P, B = P.B, o = opens(inst.stem, minutes, P.n);
   const hol = new Set(HOL[inst.hol]), SYM = { '1': '+', '0': '0', '-1': '-' };
   const out = {}; for (const N of CLOSES) out[N] = { recs: [], dropped: { holiday: [], grid: [], sparse: [], dead: [], noAtr: [] } };
@@ -140,10 +139,6 @@ function study(inst, minutes){
       if (thirds) rec.thirds = thirds.map(([a, b]) => r3((c[idx[b - 1]] - c[idx[a] - 1]) / atr));
       if (N !== MAIN){ rec.path = []; for (let p = pT; p < pClose; p++) rec.path.push(r3((c[idx[p]] - p1) / atr)); }
       for (const [name, a, b] of refList){ const S = priceSeg(idx, a, b); rec.refs[name] = { p0: o[idx[a]], dm: r3((c[idx[b - 1]] - o[idx[a]]) / atr), nb: S.n, rng: r3(S.rng / atr) }; }
-      // the 200SMA bias: which side price closed on at the window's start, how much of the day sat there, and the average's own drift
-      const m200 = S200[i1]; rec.b200 = isNaN(m200) ? 0 : sgn(p1 - m200);
-      { let above = 0, cnt = 0; for (let p = pOpen; p < pT; p++){ const i = idx[p]; if (!isNaN(S200[i])){ cnt++; if (c[i] > S200[i]) above++; } } rec.a200 = cnt ? r3(above / cnt) : null; }
-      rec.m200 = isNaN(S200[i0]) || isNaN(m200) ? null : r3((m200 - S200[i0]) / atr);
       for (const len of LENS){ const bars = O[len].bars, MA = O[len].ma, Dm = maSeg(bars, idx, pOpen, pT), Cm = maSeg(bars, idx, pT, pClose);
         let seq = ''; for (let p = pT; p < pClose; p++) seq += SYM[String(bars.st[idx[p]])];
         const e = { up: Dm.up, dn: Dm.dn, cu: Cm.up, cd: Cm.dn, ct: Cm.turns, ctr: Cm.trending, two: Cm.up > 0 && Cm.dn > 0 ? 1 : 0, s1: bars.st[i1], r1: r3(bars.ratio[i1]), s2: bars.st[i2],
@@ -161,11 +156,9 @@ function study(inst, minutes){
 function freshDir(e){ let s = e.seq; if (e.s1 !== 0){ const ch = e.s1 > 0 ? '+' : '-'; let i = 0; while (i < s.length && s[i] === ch) i++; s = s.slice(i); }
   let up = 0, dn = 0; for (const ch of s){ if (ch === '+') up++; else if (ch === '-') dn++; } return sgn(up - dn); }
 function refDir(r, method, ref){ // the reference's direction, or null when the record has no such reference
-  if (ref === 'bias200') return r.b200;
   if (method.kind === 'price'){ const s = ref === 'day' ? r : r.refs[ref]; return s ? sgn(s.dm) : null; }
   const e = r.ma[method.len], s = ref === 'day' ? e : e.refs[ref]; return s ? sgn(s.up - s.dn) : null; }
 function refStrength(r, method, ref){
-  if (ref === 'bias200') return r.a200 == null ? 0 : Math.abs(r.a200 - 0.5);
   if (method.kind === 'price'){ const s = ref === 'day' ? r : r.refs[ref]; return Math.abs(s.dm); }
   const e = r.ma[method.len], s = ref === 'day' ? e : e.refs[ref], nb = ref === 'day' ? r.nb : r.refs[ref].nb; return Math.abs(s.up - s.dn) / nb; }
 function closeDir(r, method){ if (method.kind === 'price') return sgn(r.cm); const e = r.ma[method.len]; return method.kind === 'state' ? sgn(e.cu - e.cd) : freshDir(e); }
@@ -200,8 +193,7 @@ function closeFacts(recs, len){ // what the close window looks like on this aver
   return { anyState: r3(any / recs.length), bothStates: r3(two / recs.length), turns: r3(turns), trendingShare: r3(trending), absClose: r3(mean(recs.map(r => Math.abs(r.cm)))), absDay: r3(mean(recs.map(r => Math.abs(r.dm)))),
     inTrendAtClose: s1.length, inTrendFollow: s1follow, inTrendReverse: s1rev, pInTrendFollow: s1follow + s1rev ? r3(s1follow / (s1follow + s1rev)) : null,
     methodsAgreeDay: agree.length ? r3(agreeN / agree.length) : null, methodsAgreeDayN: agree.length, methodsAgreeClose: both.length ? r3(bothN / both.length) : null, methodsAgreeCloseN: both.length,
-    freshAny: r3(fresh.length / recs.length), freshAgreeClose: freshP.length ? r3(freshN / freshP.length) : null, freshAgreeCloseN: freshP.length,
-    above200: r3(mean(recs.filter(r => r.a200 != null).map(r => r.a200))) };
+    freshAny: r3(fresh.length / recs.length), freshAgreeClose: freshP.length ? r3(freshN / freshP.length) : null, freshAgreeCloseN: freshP.length };
 }
 
 // ---- run
@@ -219,10 +211,10 @@ for (const N of CLOSES) for (const market of Object.keys(MARKETS)){ summary[N].p
   for (const m of CHARTS){ const recs = []; for (const l of MARKETS[market]) if (records[l][m]?.[N]) recs.push(...records[l][m][N]);
     summary[N].pooled[market][m] = { facts: {} }; for (const method of METHODS) for (const ref of REFS){ const t = tally(recs, method, ref); if (t) summary[N].pooled[market][m][`${method.key}.${ref}`] = t; }
     for (const len of LENS) summary[N].pooled[market][m].facts[len] = closeFacts(recs, len); } }
-const def = { closes: CLOSES, averages: { state: LENS.map(l => 'SMA' + l), bias: 'SMA' + BIAS, ema: 'never' }, th: TH, thSource: Object.fromEntries(LENS.map(l => ['sma' + l, FIT['sma' + l]])), L: { 2: 8, 5: 3 },
-  state: 'board trend-state rule on the SMA (eval_lib outcomes, agg any, hysteresis 2/0.5)', readings: Object.fromEntries(METHODS.map(m => [m.key, m.kind === 'price' ? 'sign(last close − first open) over the segment' : m.kind === 'state' ? `sign(up − dn) of the SMA${m.len} state over the segment` : `SMA${m.len} state balance over the window counting only states that begin inside it`])),
+const def = { closes: CLOSES, averages: { state: 'SMA20', ema: 'never', note: 'the owner predicts trends on the 20SMA alone; the 8 is a power-trend average and the 200 a bias (22 Oct 2026)' }, th: TH, thSource: Object.fromEntries(LENS.map(l => ['sma' + l, FIT['sma' + l]])), L: { 2: 8, 5: 3 },
+  state: 'board trend-state rule on the 20SMA (eval_lib outcomes, agg any, hysteresis 2/0.5)', readings: Object.fromEntries(METHODS.map(m => [m.key, m.kind === 'price' ? 'sign(last close − first open) over the segment' : m.kind === 'state' ? `sign(up − dn) of the SMA${m.len} state over the segment` : `SMA${m.len} state balance over the window counting only states that begin inside it`])),
   outcome: 'follow = same sign; reverse = opposite; none = close direction 0',
-  refs: { day: 'cash session up to the close window', day90: 'cash session up to the 90-minute window (15-minute window only)', pre: 'the 75 minutes before the final window (15-minute window only)', full: 'from 08:00 UK to the close window (US rows only)', bias200: 'side of the 200SMA at the last close before the window' },
+  refs: { day: 'cash session up to the close window', day90: 'cash session up to the 90-minute window (15-minute window only)', pre: 'the 75 minutes before the final window (15-minute window only)', full: 'from 08:00 UK to the close window (US rows only)' },
   closeBars: Object.fromEntries(CLOSES.map(N => [N, { 2: Math.round(N / 2), 5: Math.round(N / 5) }])), validity: { realShare: REAL_SEG, closeMoving: MOVE_SEG, holidays: HOL },
   sessions: Object.fromEntries(INSTRUMENTS.map(i => [i.label, { market: i.market, tz: i.tz, open: i.open, close: i.close, holidays: i.hol }])) };
 fs.writeFileSync(OUT, JSON.stringify({ built, def, sample: { from: FROM, to: TO }, instruments: INSTRUMENTS.map(i => i.label), closes: CLOSES, meta, records, summary }));
@@ -274,9 +266,9 @@ if (!QUIET){
   const ci = t => t.ci ? `${pct(t.ci[0])}–${pct(t.ci[1])}` : '–';
   const cci = t => t.ciCluster ? `${pct(t.ciCluster[0])}–${pct(t.ciCluster[1])} (clustered)` : '–';
   const cont = t => (t.cont >= 0 ? '+' : '') + t.cont.toFixed(2) + ' ± ' + t.contSe.toFixed(2);
-  const REFNAME = { day: 'session to the window', day90: 'session to 15:00 UK / 14:30 ET', pre: 'the 75 minutes before', full: 'from 08:00 UK', bias200: 'side of the 200SMA' };
-  const MNAME = { state20: '20SMA trend state, whole window', fresh20: '20SMA states beginning inside the window', state8: '8SMA trend state, whole window', fresh8: '8SMA states beginning inside the window', price: 'Net price move' };
-  console.log(`close_study ${built}: sample ${FROM}..${TO}; SMA thresholds 20: 2-min ${TH[20][2]} 5-min ${TH[20][5]}; 8: 2-min ${TH[8][2]} 5-min ${TH[8][5]}; bias SMA${BIAS}; close windows ${CLOSES.join(' and ')} minutes (2-minute chart: ${CLOSES.map(N => Math.round(N / 2) * 2).join(' and ')} minutes)\n`);
+  const REFNAME = { day: 'session to the window', day90: 'session to 15:00 UK / 14:30 ET', pre: 'the 75 minutes before', full: 'from 08:00 UK' };
+  const MNAME = { state20: '20SMA trend state, whole window', fresh20: '20SMA states beginning inside the window', price: 'Net price move' };
+  console.log(`close_study ${built}: sample ${FROM}..${TO}; 20SMA thresholds 2-min ${TH[20][2]} 5-min ${TH[20][5]}; close windows ${CLOSES.join(' and ')} minutes (2-minute chart: ${CLOSES.map(N => Math.round(N / 2) * 2).join(' and ')} minutes)\n`);
   console.log('Days used per instrument, chart and window (valid board days → used; dropped: holiday / sparse / dead / grid / no ATR):');
   for (const inst of INSTRUMENTS) for (const m of CHARTS) for (const N of CLOSES){ const x = meta[inst.label][m]?.[N]; if (!x) continue; const d = x.dropped;
     console.log(`  ${inst.label.padEnd(12)} ${String(m).padStart(2)}-min ${String(N).padStart(2)}  ${x.validDays} → ${x.used}  (${d.holiday}/${d.sparse}/${d.dead}/${d.grid}/${d.noAtr})  ${x.from}..${x.to}` + (x.droppedDates.holiday.length ? `  holidays present: ${x.droppedDates.holiday.join(' ')}` : '') + (x.droppedDates.dead.length ? `  dead: ${x.droppedDates.dead.join(' ')}` : '') + (x.droppedDates.sparse.length ? `  sparse: ${x.droppedDates.sparse.join(' ')}` : '')); }
@@ -303,10 +295,10 @@ if (!QUIET){
     for (const market of Object.keys(MARKETS)) for (const m of CHARTS) for (const method of METHODS){ const t = summary[N].pooled[market][m][`${method.key}.day`], s = t.split.strong, w = t.split.weak;
       console.log(`| ${market} | ${m}-min | ${method.key} | ${t.medStrength} | ${s.follow} / ${s.reverse} / ${s.none} | ${pct(s.pFollow)} (${s.cont >= 0 ? '+' : ''}${s.cont} ATR) | ${w.follow} / ${w.reverse} / ${w.none} | ${pct(w.pFollow)} (${w.cont >= 0 ? '+' : ''}${w.cont} ATR) |`); }
     console.log('\n## What the close window looks like\n');
-    console.log('| Market | Chart | Average | Any trend state in the close | A state begins in the close | Both directions seen | Turns in the close | Trending bars | Mean abs day move (ATR) | Mean abs close move (ATR) | Day readings agree | Close state agrees with close price | Fresh state agrees with close price | In a trend at the window start: price follows / reverses | Day above the 200SMA |');
-    console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+    console.log('| Market | Chart | Average | Any trend state in the close | A state begins in the close | Both directions seen | Turns in the close | Trending bars | Mean abs day move (ATR) | Mean abs close move (ATR) | Day readings agree | Close state agrees with close price | Fresh state agrees with close price | In a trend at the window start: price follows / reverses |');
+    console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
     for (const market of Object.keys(MARKETS)) for (const m of CHARTS) for (const len of LENS){ const f = summary[N].pooled[market][m].facts[len];
-      console.log(`| ${market} | ${m}-min | SMA${len} | ${pct(f.anyState)} | ${pct(f.freshAny)} | ${pct(f.bothStates)} | ${f.turns.toFixed(1)} | ${pct(f.trendingShare)} | ${f.absDay.toFixed(2)} | ${f.absClose.toFixed(2)} | ${pct(f.methodsAgreeDay)} (n ${f.methodsAgreeDayN}) | ${pct(f.methodsAgreeClose)} (n ${f.methodsAgreeCloseN}) | ${pct(f.freshAgreeClose)} (n ${f.freshAgreeCloseN}) | ${f.inTrendFollow} / ${f.inTrendReverse} = ${pct(f.pInTrendFollow)} of ${f.inTrendAtClose} | ${pct(f.above200)} |`); }
+      console.log(`| ${market} | ${m}-min | SMA${len} | ${pct(f.anyState)} | ${pct(f.freshAny)} | ${pct(f.bothStates)} | ${f.turns.toFixed(1)} | ${pct(f.trendingShare)} | ${f.absDay.toFixed(2)} | ${f.absClose.toFixed(2)} | ${pct(f.methodsAgreeDay)} (n ${f.methodsAgreeDayN}) | ${pct(f.methodsAgreeClose)} (n ${f.methodsAgreeCloseN}) | ${pct(f.freshAgreeClose)} (n ${f.freshAgreeCloseN}) | ${f.inTrendFollow} / ${f.inTrendReverse} = ${pct(f.pInTrendFollow)} of ${f.inTrendAtClose} |`); }
   }
   console.log(`\nwrote ${path.relative(ROOT, OUT)} (${(fs.statSync(OUT).size / 1024).toFixed(0)} KB)`);
 }

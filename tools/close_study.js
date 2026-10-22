@@ -111,7 +111,7 @@ function opens(stem, minutes, n){
 // ---- one instrument × chart → records per close window
 function study(inst, minutes){
   const P = E.load(inst.stem, minutes, FROM, TO); if (!P) return null;
-  const O = {}; for (const len of LENS) O[len] = E.outcomes(P, { th: TH[len][minutes], agg: 'any', ma: 'sma', maLen: len });
+  const O = {}; for (const len of LENS) O[len] = E.outcomes(P, { th: TH[len][minutes], agg: 'any', maLen: len });
   const S200 = E.sma(P.c, BIAS);
   const { c, hi, lo, real, atrD } = P, B = P.B, o = opens(inst.stem, minutes, P.n);
   const hol = new Set(HOL[inst.hol]), SYM = { '1': '+', '0': '0', '-1': '-' };
@@ -227,8 +227,49 @@ const def = { closes: CLOSES, averages: { state: LENS.map(l => 'SMA' + l), bias:
   sessions: Object.fromEntries(INSTRUMENTS.map(i => [i.label, { market: i.market, tz: i.tz, open: i.open, close: i.close, holidays: i.hol }])) };
 fs.writeFileSync(OUT, JSON.stringify({ built, def, sample: { from: FROM, to: TO }, instruments: INSTRUMENTS.map(i => i.label), closes: CLOSES, meta, records, summary }));
 
+// ---- the page's table: by weekday, the reading the owner asked for on 22 Oct 2026 ---------------------
+// "For the day I'm trading, the percentage that the close follows and disagrees with the dominant trend of
+// that day" — day direction = the 20SMA trend-state balance over the cash session up to the window (what the
+// dominant trend of the day means on the chart), close direction = the window's net price move (the only
+// reading that describes a window this short, CLAUDE.md §12). Counts per weekday and over all days with a
+// 95% interval: Wilson for one instrument, date-clustered for a pooled row. Written as the CLOSE literal in
+// index.html (anchor `^const CLOSE = {...};$`) and as data/close_table.json.
+function pageCell(recs, wd){
+  let f = 0, r = 0, none = 0, noDay = 0; const byDate = new Map();
+  for (const rec of recs){ if (wd !== 'all' && rec.wd !== wd + 1) continue; const dd = sgn(rec.ma[20].up - rec.ma[20].dn); if (dd === 0){ noDay++; continue; }
+    const cd = sgn(rec.cm); let e = byDate.get(rec.d); if (!e){ e = { n: 0, f: 0 }; byDate.set(rec.d, e); }
+    if (cd === 0) none++; else { e.n++; if (cd === dd){ f++; e.f++; } else r++; } }
+  const n = f + r; let lo = null, hi = null;
+  if (n){ const p = f / n;
+    if ([...byDate.values()].some(e => e.n > 1)){ let v = 0; for (const e of byDate.values()) v += (e.f - p * e.n) ** 2; const se = Math.sqrt(v) / n; lo = Math.max(0, p - 1.96 * se); hi = Math.min(1, p + 1.96 * se); }
+    else [lo, hi] = wilson(f, n); }
+  return [f, r, none, noDay, lo == null ? null : r3(lo), hi == null ? null : r3(hi)];
+}
+const WDS = ['all', 0, 1, 2, 3, 4], closeRows = [];
+for (const market of Object.keys(MARKETS)){
+  const labels = MARKETS[market], pooled = {};
+  for (const m of CHARTS) for (const N of CLOSES){ const recs = []; for (const l of labels) if (records[l][m]?.[N]) recs.push(...records[l][m][N]); (pooled[m] = pooled[m] || {})[N] = Object.fromEntries(WDS.map(wd => [String(wd), pageCell(recs, wd)])); }
+  closeRows.push({ label: market, market, pooled: labels.length, data: pooled });
+  for (const l of labels){ const data = {}; for (const m of CHARTS) for (const N of CLOSES) if (records[l][m]?.[N]) (data[m] = data[m] || {})[N] = Object.fromEntries(WDS.map(wd => [String(wd), pageCell(records[l][m][N], wd)])); closeRows.push({ label: l, market, data }); }
+}
+const CLOSE = { built, sample: { from: FROM, to: TO }, windows: CLOSES, ma: 'sma20', th: TH[20],
+  def: { day: 'sign of (bars in the +1 state − bars in the −1 state) of the 20SMA trend state over the cash session up to the window', close: 'sign of the window\'s net price move',
+    cell: '[follow, reverse, close with no direction, no day direction, 95% lo, 95% hi]; the interval is Wilson for one instrument and date-clustered for a pooled row', weekdays: '"0".."4" = Mon..Fri, "all" = every day' },
+  rows: closeRows };
+fs.writeFileSync(path.join(ROOT, 'data', 'close_table.json'), JSON.stringify(CLOSE));
+if (!args.dry){ const file = path.join(ROOT, 'index.html'); let h = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+  const m = h.match(/^const CLOSE = (\{.*\});$/m); if (!m) throw new Error('const CLOSE literal not found in index.html');
+  fs.writeFileSync(file, h.replace(m[0], 'const CLOSE = ' + JSON.stringify(CLOSE) + ';')); }
+
 // ---- print
 if (!QUIET){
+  console.log('\n# The page table (CLOSE): follow share of decided windows, 20SMA day direction against the window price move\n');
+  console.log('| Row | Chart | Window | All days | Mon | Tue | Wed | Thu | Fri |');
+  console.log('|---|---|---|---|---|---|---|---|---|');
+  const fc = x => { const n = x[0] + x[1]; return n ? `${Math.round(100 * x[0] / n)}% (${n})` : '–'; };
+  for (const row of closeRows) for (const m of CHARTS) for (const N of CLOSES){ const d = row.data[m]?.[N]; if (!d) continue;
+    console.log(`| ${row.pooled ? '**' + row.label + '**' : row.label} | ${m}-min | ${N} | ${fc(d.all)} | ${WDS.slice(1).map(wd => fc(d[String(wd)])).join(' | ')} |`); }
+  console.log('');
   const pct = x => x == null || isNaN(x) ? '–' : (100 * x).toFixed(0) + '%';
   const ci = t => t.ci ? `${pct(t.ci[0])}–${pct(t.ci[1])}` : '–';
   const cci = t => t.ciCluster ? `${pct(t.ciCluster[0])}–${pct(t.ciCluster[1])} (clustered)` : '–';

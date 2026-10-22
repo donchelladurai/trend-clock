@@ -18,12 +18,12 @@
 // Definition options (def):
 //   th        absolute threshold in daily-ATR units (or use fitTh() to solve it for a pooled share)
 //   agg       'any' (board rule: a window is trending if any of its bars is), 'majority', 'all'
-//   horizon   multiplier of the 15-minute move: 1 = EMA[t] - EMA[t-L] (board), 2 = over 30 minutes
-//   side      true: a bar is trending only if the close sits on the slope's side of the EMA
+//   horizon   multiplier of the 15-minute move: 1 = MA[t] - MA[t-L] (board), 2 = over 30 minutes
+//   side      true: a bar is trending only if the close sits on the slope's side of the average
 //   onRatio / offRatio   hysteresis multiples of th for the turn state (board: 2 and 0.5)
-//   ma        'ema' (the board's average until October 2026) or 'sma' (the owner's charts carry the 200,
-//             20 and 8 SMA; the 22 Oct 2026 close study and everything after it use 'sma')
-//   maLen     the average's length (default 20; the EMA is recomputed here when it differs from the board's)
+//   maLen     the simple moving average's length (default 20, the board's; another length is computed here).
+//             There is no EMA option: the owner's charts carry the 200, 20 and 8 SMA and never an EMA
+//             (22 Oct 2026). Every figure dated before that day was measured on a 20EMA.
 //
 // Scores (walkForward): for each test week, the training set is the trainWeeks weeks before it.
 // Trend predictors: all-days share, same-weekday share, and the weekday share shrunk toward the
@@ -74,8 +74,6 @@ function load(sym, minutes, from = '2026-01-01', to = '2026-10-09'){
   cache.set(key, P);
   return P;
 }
-function ema(c, len){ const n = c.length, e = new Float64Array(n).fill(NaN), a = 2 / (len + 1); let s = 0, v = NaN;
-  for (let i = 0; i < n; i++){ if (i < len - 1){ s += c[i]; continue; } if (i === len - 1){ s += c[i]; v = s / len; } else v = a * c[i] + (1 - a) * v; e[i] = v; } return e; }
 // Simple moving average on the continuous series. The running sum is re-summed exactly every 4096 bars
 // so no floating drift accumulates over a year of 2-minute bars.
 function sma(c, len){ const n = c.length, e = new Float64Array(n).fill(NaN); let s = 0;
@@ -86,9 +84,9 @@ function outcomes(P, def){
   const th = def.th; if (!(th > 0)) throw new Error('def.th required (use fitTh)');
   const agg = def.agg || 'any', H = def.horizon || 1, on = (def.onRatio == null ? 2 : def.onRatio) * th, off = (def.offRatio == null ? 0.5 : def.offRatio) * th;
   const { n, c, atrD, days, win, open, L } = P;
-  const maLen = def.maLen || 20, maType = def.ma || 'ema';
-  const E = maType === 'sma' ? sma(c, maLen) : (maLen !== 20 ? ema(c, maLen) : P.ema);
-  const d = (H === 1 && E === P.ema) ? P.dm : (() => { const x = new Float64Array(n).fill(NaN); for (let i = H * L; i < n; i++) x[i] = E[i] - E[i - H * L]; return x; })();
+  const maLen = def.maLen || 20;
+  const E = maLen !== 20 ? sma(c, maLen) : P.ma;
+  const d = (H === 1 && E === P.ma) ? P.dm : (() => { const x = new Float64Array(n).fill(NaN); for (let i = H * L; i < n; i++) x[i] = E[i] - E[i - H * L]; return x; })();
   const tr = new Uint8Array(n), st = new Int8Array(n), turn = new Uint8Array(n), ratio = new Float32Array(n).fill(NaN), age = new Int32Array(n), side = new Int8Array(n);
   let started = false, a = 0;
   for (let i = 0; i < n; i++){
@@ -112,7 +110,7 @@ function outcomes(P, def){
       turns[k] = tu; dir[k] = up > dn ? 1 : dn > up ? -1 : 0; }
     return { day: dd.day, wd: dd.wd, week: weekOf(dd.day), idx: dd.idx, trend, turns, dir };
   });
-  return { days: out, open: open.slice(), win, bars: { tr, st, turn, ratio, age, side, d }, ma: E, maType, maLen, th, def, P };
+  return { days: out, open: open.slice(), win, bars: { tr, st, turn, ratio, age, side, d }, ma: E, maLen, th, def, P };
 }
 
 // Mean window share over open windows and all days — the quantity fit_th.js matches across charts.
@@ -218,7 +216,7 @@ function bucket(rows, keyFn, targetFn){ const t = new Map(); const n = rows.k.le
   for (let i = 0; i < n; i++){ const key = keyFn(i); if (key == null) continue; let e = t.get(key); if (!e){ e = { n: 0, s: 0 }; t.set(key, e); } e.n++; e.s += targetFn(i); }
   return Array.from(t, ([key, e]) => ({ key, n: e.n, rate: e.s / e.n })).sort((a, b) => String(a.key) < String(b.key) ? -1 : 1); }
 
-module.exports = { INSTRUMENTS, SLOTS, load, outcomes, meanShare, fitTh, fitTrain, walkForward, splitHalf, corr, stateRows, bucket, poisUpper, bhCutoff, brier, logloss, auc, reliability, ymd, fmtDay, weekOf, mean, ema, sma };
+module.exports = { INSTRUMENTS, SLOTS, load, outcomes, meanShare, fitTh, fitTrain, walkForward, splitHalf, corr, stateRows, bucket, poisUpper, bhCutoff, brier, logloss, auc, reliability, ymd, fmtDay, weekOf, mean, sma };
 
 if (require.main === module){
   const sym = process.argv[2] || 'eurusd', minutes = +(process.argv[3] || 5), th = +(process.argv[4] || (minutes === 2 ? 0.027 : 0.015));

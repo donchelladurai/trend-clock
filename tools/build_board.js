@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 // Build every board row on every chart from the bar files in data/ and write them into index.html.
 //
-//   node tools/build_board.js [--from 2026-04-13 --to 2026-10-09] [--th2 0.0333 --th5 0.0188 --th15 0.0093]
+//   node tools/build_board.js [--from 2026-04-13 --to 2026-10-09] [--th2 0.0365 --th5 0.0204 --th15 0.0105]
 //                             [--from15 2026-04-13] [--agg any|majority|all] [--side] [--horizon 1] [--dry]
+//
+// The thresholds default to the 20SMA fit in data/th_fit.json (tools/fit_th.js, pooled share 0.45); pass
+// --th2/--th5/--th15 only to override it. The average is the 20-period SMA everywhere (gen_row.js); the
+// board was a 20EMA until 22 Oct 2026.
 //
 // Three boards, one per chart the owner trades (15-, 5- and 2-minute), each holding every instrument
 // in the manifest below plus the composites. A row is genRow() over data/<stem>_m<chart>.json with
@@ -28,7 +32,9 @@ const CHARTS = [15, 5, 2];
 // 26 weeks: the accuracy study (CLAUDE.md §7) found the profiles stationary across 2026 and skill still rising
 // from 13 to 26 weeks of history; the thresholds are tools/fit_th.js at a pooled share of 0.45.
 const FROM = args.from || '2026-04-13', TO = args.to || '2026-10-09';
-const TH = { 2: +(args.th2 || 0.0333), 5: +(args.th5 || 0.0188), 15: +(args.th15 || 0.0093) };
+const FIT = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'th_fit.json'), 'utf8')).sma20.th; } catch (e) { return null; } })();
+if (!FIT && !(args.th2 && args.th5 && args.th15)) throw new Error('no 20SMA fit in data/th_fit.json: run node tools/fit_th.js --share 0.45 or pass --th2 --th5 --th15');
+const TH = { 2: +(args.th2 || FIT[2]), 5: +(args.th5 || FIT[5]), 15: +(args.th15 || FIT[15]) };
 const DEF = { agg: args.agg || 'any', side: !!args.side, horizon: +(args.horizon || 1) };
 const sampleWindow = ch => ({ from: args['from' + ch] || FROM, to: args['to' + ch] || TO });
 const root = path.join(__dirname, '..');
@@ -133,7 +139,7 @@ for (const ch of CHARTS){
 // ---- live-layer constants: the rule per chart, the fallback scale per instrument, the state tables.
 // The lookups the October 2026 study (tools/eval_lib.js, study D) found to carry the information, fitted on
 // one half of the year and scored on the other: a turn within 15 / 30 minutes while in a trend state by
-// slope ratio r (7 buckets) x age in bars (5) x whether the close sits on the trend's side of the EMA
+// slope ratio r (7 buckets) x age in bars (5) x whether the close sits on the trend's side of the average
 // (out-of-sample Brier skill 0.26 against 0.18 without the side); a trend state starting while flat by
 // r (5 buckets, a flat state has r < 2 by construction) x whether the slope is rising x age (0.12); and
 // the next window trending by r x the next window's climatology tertile within the row (0.24). Pooled
@@ -187,7 +193,7 @@ function regime(ch){
   }
   return out;
 }
-const LIVE = { built: new Date().toISOString().slice(0, 10), th: TH, L: { 2: 8, 5: 3, 15: 1 }, def: DEF, atr: atrEnd, tables: {}, regime: {} };
+const LIVE = { built: new Date().toISOString().slice(0, 10), ma: 'sma20', th: TH, L: { 2: 8, 5: 3, 15: 1 }, def: DEF, atr: atrEnd, tables: {}, regime: {} };
 for (const ch of CHARTS){ LIVE.tables[ch] = stateTables(ch); LIVE.regime[ch] = regime(ch);
   const t = LIVE.tables[ch].turn; console.log(`${ch}m turn table, P(turn in 15 min) by age, price on the trend side: r 1-1.5 ${t[3].map(x => x[1].p15).join('/')} | r 2-3 ${t[5].map(x => x[1].p15).join('/')}; against the trend: r 1-1.5 ${t[3].map(x => x[0].p15).join('/')}`);
   const rg = Object.values(LIVE.regime[ch]); console.log(`${ch}m regime (last 4 weeks / window): turns ${(rg.reduce((a, x) => a + x.turns, 0)/rg.length).toFixed(2)}, share ${(rg.reduce((a, x) => a + x.share, 0)/rg.length).toFixed(2)}`); }

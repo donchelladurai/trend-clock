@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // tools/live.js — live bars for the TrendClock board, served from the owner's machine.
 //
-// index.html is a static time-of-day climatology; its live layer reads the 20EMA slope state of
+// index.html is a static time-of-day climatology; its live layer reads the 20SMA slope state of
 // each instrument on the 15-, 5- and 2-minute charts from live bars. The page cannot fetch quotes
 // itself (CORS), so this helper keeps seven days of 1-minute bars per instrument in memory, fed
 // by one of two sources, and serves:

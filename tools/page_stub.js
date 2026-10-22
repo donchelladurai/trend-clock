@@ -9,6 +9,6 @@ function loadPage(file){
   const stub = 'const document={getElementById:()=>EL(),createElement:()=>EL(),querySelectorAll:()=>[],querySelector:()=>EL(),addEventListener(){}};const window={addEventListener(){}};const setInterval=()=>0;const innerWidth=1000,innerHeight=800;';
   const body = js.replace(/^build\(\); buildDash\(\); tick\(\); setInterval\(tick, 1000\);$/m, '');
   if (body === js) throw new Error('kick-off line not found in index.html');
-  return new Function('EL', stub + body + '\nreturn {BOARDS, LIVE, B, CHARTS, LABELS, MODES, SLOTS, FDR, MID_FDR, MIN_LAM, MIN_N, OMNIBUS, AGG_Q, TURN_RISK, START_LIKELY, poisUpper, bhCutoff, byar, wilson, ciHalfPP, gammp, betai, liveState};')(el);
+  return new Function('EL', stub + body + '\nreturn {BOARDS, LIVE, CLOSE, B, CHARTS, LABELS, MODES, SLOTS, FDR, MID_FDR, MIN_LAM, MIN_N, OMNIBUS, AGG_Q, TURN_RISK, START_LIKELY, poisUpper, bhCutoff, byar, wilson, ciHalfPP, gammp, betai, liveState, buildClose, updateClose};')(el);
 }
 module.exports = { loadPage };

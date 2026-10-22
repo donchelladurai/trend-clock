@@ -11,8 +11,8 @@ streams them once per instrument, so memory stays flat whatever the history leng
 For every timeframe the bars are cut on UK local time, so a 4-hour bar is 00:00-04:00 UK the year
 round and the slots line up with the clock the trader is reading. Three numbers per slot:
 
-  trend  share of days the 20-period EMA of that timeframe moved more over that bar than a typical
-         overnight bar moves on that chart: |EMA[t] - EMA[t-1]| >= TH x the 14-day ATR of UK
+  trend  share of days the 20-period SMA of that timeframe moved more over that bar than a typical
+         overnight bar moves on that chart: |SMA[t] - SMA[t-1]| >= TH x the 14-day ATR of UK
          trading days (Mon-Fri with at least six hours of bars, so the Sunday-evening stub is not a day), with TH fitted per timeframe as the median of that same quantity over every
          instrument and every slot of the session. "Trending" therefore reads as "busier than the
          median overnight bar of this chart", which is comparable across instruments because each
@@ -34,7 +34,7 @@ moved at all, so a thin overnight instrument reports fewer days rather than a fl
 """
 import sys, os, glob, zipfile, io, json, math
 from datetime import date, timedelta
-from collections import defaultdict
+from collections import defaultdict, deque
 
 DATA_DIR = sys.argv[1] if len(sys.argv) > 1 else 'data'
 OUT = sys.argv[2] if len(sys.argv) > 2 else 'data/swing.json'
@@ -68,7 +68,9 @@ TIMEFRAMES = [('4h', 240, 2), ('1h', 60, 8), ('30m', 30, 16)]
 SESSION_MIN, SESSION_LEN = 0, 480          # 00:00 to 08:00 UK
 # Every instrument is counted over the same window, so the rows can be read against each other.
 # AUD/JPY has five years on disk from the board's own refresh; the rest have two, so two it is.
-# Earlier bars are still streamed — they warm the EMA and the ATR — but they are not counted.
+# Earlier bars are still streamed — they warm the average and the ATR — but they are not counted.
+# The average is a simple one: the owner's charts carry the 200, 20 and 8 SMA and never an EMA
+# (22 Oct 2026); this generator used a 20EMA until then.
 WINDOW_FROM = (2024, 1, 1)
 ATR_DAYS, MA_LEN = 14, 20
 ON_RATIO, OFF_RATIO = 2.0, 0.5          # either side of the fitted trend threshold, as the board has it
@@ -241,14 +243,14 @@ def quantile(xs, q):
 def measure(series, atr_at_day, tf, mins, nslots, th):
     """Per slot: trending share, range as a share of the daily ATR, turn counts and tiers.
 
-    Pass A calls this with th = None to collect the |dEMA|/ATR sample the threshold is fitted from;
+    Pass A calls this with th = None to collect the |dSMA|/ATR sample the threshold is fitted from;
     pass B calls it with the fitted number and everything else follows.
     """
     bars = series[tf]
     fitting = th is None
     on, off = ((th * ON_RATIO, th * OFF_RATIO) if not fitting else (float('inf'), float('inf')))
     dnorm = []
-    ema, state, prev_ema, n_seen = None, 0, None, 0
+    window, wsum, state, prev_ma, n_seen = deque(), 0.0, 0, None, 0
     trend_hits = [0] * nslots
     day_count = [0] * nslots
     present = [0] * nslots
@@ -256,23 +258,26 @@ def measure(series, atr_at_day, tf, mins, nslots, th):
     ranges = [[] for _ in range(nslots)]
     seen_days = set()
     for day, tod, o, h, l, c, minutes in bars:
-        # EMA of the timeframe's own closes, across the whole history, not just the session.
-        if n_seen < MA_LEN - 1:
-            ema = c if ema is None else ema + (c - ema) / (n_seen + 1)
-            n_seen += 1
-            prev_ema = ema
+        # 20SMA of the timeframe's own closes, across the whole history, not just the session. The
+        # running sum is re-summed exactly every 4096 bars so no floating drift accumulates.
+        window.append(c)
+        wsum += c
+        if len(window) > MA_LEN:
+            wsum -= window.popleft()
+        n_seen += 1
+        if n_seen % 4096 == 0:
+            wsum = sum(window)
+        if n_seen <= MA_LEN:
+            if n_seen == MA_LEN:
+                prev_ma = wsum / MA_LEN
             continue
-        if n_seen == MA_LEN - 1:
-            ema = ema + (c - ema) / MA_LEN
-            n_seen += 1
-            prev_ema = ema
-            continue
-        prev_ema = ema
-        ema = ema + (c - ema) * 2.0 / (MA_LEN + 1)
+        ma = wsum / MA_LEN
         atr = atr_at_day.get(day)
         if not atr or atr <= 0:
+            prev_ma = ma
             continue
-        d = ema - prev_ema
+        d = ma - prev_ma
+        prev_ma = ma
         sgn = 1 if d > 0 else -1 if d < 0 else 0
         keep = state != 0 and sgn == state and abs(d) >= off * atr
         new_state = state if keep else (sgn if abs(d) >= on * atr else 0)
@@ -372,7 +377,7 @@ meta = {
     'from': iso(min(firsts)) if firsts else '', 'to': iso(max(lasts)) if lasts else '',
     'timeframes': [{'key': tf, 'minutes': mins, 'slots': n} for tf, mins, n in TIMEFRAMES],
     'trendRule': {'maLen': MA_LEN, 'atrDays': ATR_DAYS, 'fitted': TH,
-                  'fittedAs': 'median |dEMA| / daily ATR over every instrument and session slot'},
+                  'fittedAs': 'median |dSMA| / daily ATR over every instrument and session slot'},
     'turnRule': {'onRatio': ON_RATIO, 'offRatio': OFF_RATIO,
                  'on': {tf: round(TH[tf] * ON_RATIO, 5) for tf, _, _ in TIMEFRAMES},
                  'off': {tf: round(TH[tf] * OFF_RATIO, 5) for tf, _, _ in TIMEFRAMES}},

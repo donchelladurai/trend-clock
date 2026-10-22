@@ -11,11 +11,14 @@
 // Definitions — see CLAUDE.md §1b. One rule for every chart, in units of the instrument's own
 // daily range, so a 2-minute index row and a 5-minute FX row answer the same question about
 // different charts:
-//   MA        20-period EMA of the bar closes, on the continuous series (weekend gaps ignored).
+//   MA        20-period simple moving average of the bar closes, on the continuous series (weekend
+//             gaps ignored). The owner's charts carry the 200, 20 and 8 SMA and never an EMA (22 Oct
+//             2026); the 20EMA this generator used from 16 Sep to 22 Oct 2026 was inherited from the
+//             pre-repo generator it was calibrated against, not chosen.
 //   scale     14-day Wilder ATR of UK-calendar-day bars, taken from completed trading days only
 //             (Mon-Fri with at least six hours of real bars, so an FX Sunday-evening hour or a
 //             holiday stub is not a day).
-//   move      d[t] = EMA[t] - EMA[t-L], the MA's move over the last 15 minutes of clock time:
+//   move      d[t] = MA[t] - MA[t-L], the MA's move over the last 15 minutes of clock time:
 //             L = round(15 / minutes) bars, i.e. 3 bars on the 5-minute chart, 8 (16 min) on the
 //             2-minute chart.
 //   trending  bar t is trending when |d[t]| >= TH * scale; a 15-minute window is trending on a
@@ -30,7 +33,7 @@
 //             every statistic (Chicago Wheat's pre-open gap, the evening after a cash close).
 //   valid day Mon-Fri (UK); every board bar on the grid; at least 90% of the bars in open windows
 //             real; at least half of those bars show movement (drops holidays and dead feeds).
-//             No warm-up hour is demanded before 08:00: the EMA runs on the continuous series and
+//             No warm-up hour is demanded before 08:00: the average runs on the continuous series and
 //             a feed that starts the week at 08:00 (France 40) is read as its chart shows it.
 const fs = require('fs');
 const SLOTS = 52, MA_LEN = 20, ATR_DAYS = 14, ON_RATIO = 2, OFF_RATIO = 0.5, OPEN_SHARE = 0.5, REAL_DAY = 0.9;
@@ -44,7 +47,7 @@ function offMin(ts){ const h = Math.floor(ts/3600000); let o = offCache.get(h);
   if (o === undefined){ const p = {}; for (const x of fmt.formatToParts(new Date(h*3600000))) p[x.type] = x.value;
     o = (Date.UTC(+p.year, +p.month-1, +p.day, (+p.hour)%24, +p.minute) - h*3600000)/60000; offCache.set(h, o); } return o; }
 
-// Everything that does not depend on the threshold: the grid, the day index, EMA, ATR and d.
+// Everything that does not depend on the threshold: the grid, the day index, the 20SMA, ATR and d.
 function prepare(raw, o){
   const B = o.minutes, L = Math.round(15/B), perDay = 780/B, warm = 0, from = ymd(o.from), to = ymd(o.to);
   raw = raw.filter(b => b[4] > 0).sort((a, b) => a[0] - b[0]);
@@ -54,7 +57,9 @@ function prepare(raw, o){
   for (let i = 0; i < n; i++){ const b = bars[i]; hi[i] = b[2]; lo[i] = b[3]; c[i] = b[4]; real[i] = b.length > 5 ? (b[5] ? 1 : 0) : 1;
     const lt = b[0] + offMin(b[0])*60000; day[i] = Math.floor(lt/DAY); const m = Math.floor((lt - day[i]*DAY)/60000); wd[i] = new Date(lt).getUTCDay();
     if (m >= 480 && m < 1260 && (m - 480) % B === 0) pos[i] = (m - 480)/B; }
-  const ema = new Float64Array(n).fill(NaN); { const a = 2/(MA_LEN+1); let s = 0, e = NaN; for (let i = 0; i < n; i++){ if (i < MA_LEN-1){ s += c[i]; continue; } if (i === MA_LEN-1){ s += c[i]; e = s/MA_LEN; } else e = a*c[i] + (1-a)*e; ema[i] = e; } }
+  // The 20SMA on the continuous series; the running sum is re-summed exactly every 4096 bars so no floating drift
+  // accumulates over a year of 2-minute bars.
+  const ma = new Float64Array(n).fill(NaN); { let s = 0; for (let i = 0; i < n; i++){ s += c[i]; if (i >= MA_LEN) s -= c[i-MA_LEN]; if (i >= MA_LEN-1){ if ((i & 4095) === 0){ s = 0; for (let j = i-MA_LEN+1; j <= i; j++) s += c[j]; } ma[i] = s/MA_LEN; } } }
   // Daily ATR over UK calendar days that are trading days: Mon-Fri with at least six hours of real
   // bars. Without that test the FX feeds' Sunday-evening hour (one twelfth of a day, a quarter of
   // a day's range) entered as a day of its own once a week and deflated the FX scale by ~13%
@@ -67,7 +72,7 @@ function prepare(raw, o){
         d = day[i]; dh = hi[i]; dl = lo[i]; nb = real[i]; wdd = wd[i]; }
       else { if (hi[i] > dh) dh = hi[i]; if (lo[i] < dl) dl = lo[i]; nb += real[i]; }
       atrD[i] = atr; } }
-  const dm = new Float64Array(n).fill(NaN); for (let i = L; i < n; i++) dm[i] = ema[i] - ema[i-L];
+  const dm = new Float64Array(n).fill(NaN); for (let i = L; i < n; i++) dm[i] = ma[i] - ma[i-L];
   // Day index: one slot per grid position from 08:00 to 21:00.
   const map = new Map();
   for (let i = 0; i < n; i++){ const p = pos[i]; if (p === -999) continue; const d = day[i]; if (d < from || d > to || wd[i] < 1 || wd[i] > 5) continue;
@@ -86,22 +91,22 @@ function prepare(raw, o){
     if (r < REAL_DAY*openPos.length || moves < openPos.length/2) continue;
     days.push({ day: d, wd: e.wd, idx: e.idx }); }
   days.sort((a, b) => a.day - b.day);
-  return { n, c, hi, lo, ema, real, atrD, dm, days, win, open, closed, realShare, B, L, perDay, warm };
+  return { n, c, hi, lo, ma, real, atrD, dm, days, win, open, closed, realShare, B, L, perDay, warm };
 }
 
 // The threshold-dependent part: trending bars, turns, and the six profiles.
 // opts (all optional, defaults are the board rule): agg 'any' | 'majority' | 'all' — how a window's bars
-// decide the window; side — a bar is trending only if its close sits on the slope's side of the EMA;
-// horizon — the EMA move is taken over horizon*L bars (2 = thirty minutes). The October 2026
+// decide the window; side — a bar is trending only if its close sits on the slope's side of the average;
+// horizon — the average's move is taken over horizon*L bars (2 = thirty minutes). The October 2026
 // accuracy study (tools/eval_lib.js) scores these against held-out weeks.
 function score(P, th, opts = {}){
-  const { n, c, ema, atrD, days, win, open, L } = P, on = ON_RATIO*th, off = OFF_RATIO*th;
+  const { n, c, ma, atrD, days, win, open, L } = P, on = ON_RATIO*th, off = OFF_RATIO*th;
   const agg = opts.agg || 'any', H = opts.horizon || 1;
-  const dm = H === 1 ? P.dm : (() => { const x = new Float64Array(n).fill(NaN); for (let i = H*L; i < n; i++) x[i] = ema[i] - ema[i-H*L]; return x; })();
+  const dm = H === 1 ? P.dm : (() => { const x = new Float64Array(n).fill(NaN); for (let i = H*L; i < n; i++) x[i] = ma[i] - ma[i-H*L]; return x; })();
   const trending = new Uint8Array(n), state = new Int8Array(n), turn = new Uint8Array(n);
   let started = false;
   for (let i = 0; i < n; i++){ const x = dm[i], b = atrD[i]; if (isNaN(x) || isNaN(b)){ started = false; continue; }
-    trending[i] = Math.abs(x) >= th*b && (!opts.side || sgn(x) === sgn(c[i] - ema[i])) ? 1 : 0;
+    trending[i] = Math.abs(x) >= th*b && (!opts.side || sgn(x) === sgn(c[i] - ma[i])) ? 1 : 0;
     const prev = state[i-1] || 0;
     state[i] = (prev !== 0 && sgn(x) === prev && Math.abs(x) >= off*b) ? prev : (Math.abs(x) >= on*b ? sgn(x) : 0);
     if (started && state[i] !== state[i-1]) turn[i] = 1; started = true; }

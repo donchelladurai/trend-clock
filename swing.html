@@ -396,7 +396,7 @@ async function load(){
     build();
     const m = DATA.meta;
     $('note').textContent = `${DATA.rows.length} instruments, ${m.from} to ${m.to}, from histdata.com 1-minute bars cut on UK local time. `
-      + `A cell is blue by how often the ${m.trendRule.maLen}-period EMA of that chart moved more than a typical overnight bar of it — `
+      + `A cell is blue by how often the ${m.trendRule.maLen}-period SMA of that chart moved more than a typical overnight bar of it — `
       + `the threshold is the median move across every instrument and slot, so the rows compare with each other rather than with an absolute. `
       + `The figure on the cell is the share of a day's range that bar usually covers, and the orange bar beneath counts trend starts and stops, `
       + `flagged where there are more than ordinary variation would give, at the same false-discovery rates the board uses. `

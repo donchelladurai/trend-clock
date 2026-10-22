@@ -754,55 +754,81 @@ time; `TV_TEST_DROP=<seconds>` is a test hook that closes the socket once.
 ## 12. The market-close direction study — `tools/close_study.js` (22 Oct 2026)
 
 A question about the six index rows only, on the 2- and 5-minute charts: over the **last 90 minutes
-of the cash session**, does the market follow the day's dominant trend direction or reverse it?
-Same or opposite only — nothing here reads up or down. Not yet on any page; the owner is to say how
-it should be added.
+of the cash session, and over its final 15**, does the market follow the day's dominant trend
+direction or reverse it? Same or opposite only — nothing here reads up or down. Not yet on any page;
+the owner is to say how it should be added.
 
 **Definitions** (the script's header). Cash session: FTSE 100 08:00–16:30 UK; Germany 40 and
 France 40 09:00–17:30 CET (16:30 UK — the EU and UK clocks change on the same dates); the three US
 rows 09:30–16:00 New York, converted per day with `Intl`, so the clock-gap weeks (9–27 Mar 2026)
-land an hour earlier in UK time. Close = the session's last 90 minutes (15:00–16:30 UK / 14:30–16:00
-ET); day = the session before it (for the US rows also "full", from 08:00 UK). Two readings of each
-segment's direction: **state** — sign of (bars in the +1 state − bars in the −1 state), the board's
-20EMA trend state on that chart (`eval_lib.outcomes`, thresholds 0.0357 / 0.0204); **price** — sign
-of the net move, in ATR units. follow = same sign, reverse = opposite, none = the close has no
-direction. Days: the board's valid days from 26 Jan 2026 (the first ATR) to 9 Oct (Wall Street
-15 Jun – 12 Oct, 83 days), with at least 90% real bars in both segments, half the close bars moving,
-and the exchange's holidays removed by list (LSE 5, Xetra 4, Euronext 3, NYSE 6 in range — the CFD
-feeds print bars on cash holidays, and four of the LSE's and three of Xetra's passed the board's
-validity rule). 174–179 days per histdata row.
+land an hour earlier in UK time. Two close windows: the last 90 minutes (15:00–16:30 UK /
+14:30–16:00 ET) and the last 15 (16:15–16:30 / 15:45–16:00) — 8 bars = 16 minutes on the 2-minute
+chart, as the board's 15-minute move is. Four reference segments: `day`, the session up to the
+window; `day90`, the session up to 15:00 UK / 14:30 ET (the 15-minute window only); `pre`, the 75
+minutes before the final window; `full`, from 08:00 UK (US rows only). Three readings of direction:
+**state** — sign of (bars in the +1 state − bars in the −1 state), the board's 20EMA trend state on
+that chart (`eval_lib.outcomes`, thresholds 0.0357 / 0.0204); **fresh** — the window's state balance
+counting only trend states that begin inside it, because a state carried in from before the window
+follows the segment that produced it by construction; **price** — sign of the net move, in ATR
+units. follow = same sign, reverse = opposite, none = the window has no direction. Days: the board's
+valid days from 26 Jan 2026 (the first ATR) to 9 Oct (Wall Street 15 Jun – 12 Oct, 83 days), with at
+least 90% real bars in both segments, half the window's bars moving, and the exchange's holidays
+removed by list (LSE 5, Xetra 4, Euronext 3, NYSE 6 in range — the CFD feeds print bars on cash
+holidays, and four of the LSE's and three of Xetra's passed the board's validity rule). 174–180 days
+per histdata row.
 
-**Data.** `data/close_study.json` (746 KB, committed): `records[label][chart]` holds one record per
-day — the three prices, the day and close moves and ranges in ATR units, the state bar counts over
-the day and the close, turns and trending bars in the close, the state and slope ratio on the last
-bar before the close and on the final bar, the 20EMA's move over each segment, the close window in
-three 30-minute parts, and for the US rows the same day readings from 08:00 UK — so any later
-aggregation reads the file and never the bars. `summary` carries the tallies below per instrument,
-per market (date-clustered intervals) and a strong/weak split at the median day strength; `meta` the
-days used and dropped per row. Re-run `node tools/close_study.js` only to change the definition or
-extend the sample.
+**Data.** `data/close_study.json` (1.9 MB, committed): `records[label][chart][window]` holds one
+record per day — the three prices, the day and window moves and ranges in ATR units, the state bar
+counts over the day and the window, turns and trending bars in the window, the state and slope ratio
+on the last bar before it and the state on the final bar, the 20EMA's move over each segment, the
+state of every window bar as a `+0-` string, the 90-minute window in three 30-minute parts, the
+15-minute window's bar-by-bar closes against its start, and the other reference segments under
+`refs` — so any later aggregation reads the file and never the bars. `summary[window]` carries the
+tallies below per instrument, per market (date-clustered intervals) and a strong/weak split at the
+median reference strength, for every reading × reference; `meta` the days used and dropped per row.
+Re-run `node tools/close_study.js` only to change the definition or extend the sample.
 
-**What it found** (the share of decided closes that follow the day):
+**What it found** — the share of decided windows that follow the day, with the clustered 95%
+interval (2- / 5-minute where the charts differ):
 
-| Reading | Europe (3 rows pooled) | US (3 rows pooled) |
+| Window, reading | Europe (3 rows pooled) | US (3 rows pooled) |
 |---|---|---|
-| price, chart-free | **45%** follow / 55% reverse, n 531, clustered 95% CI 40–50%; mean close move with the day −0.02 ATR ± 0.01 | 49% / 51%, n 431, CI 44–55%; +0.00 ATR |
-| 20EMA state, 2-minute | **57%** follow / 43% reverse, n 346, CI 50–64%; the close has no trend state on 33% of days | 48% / 52%, n 145, CI 38–57%; no state on 66% of days |
-| 20EMA state, 5-minute | 56% / 44%, n 333, CI 49–62%; no state on 35% | 53% / 47%, n 148, CI 44–63%; no state on 64% |
+| last 90 min, price | **45%** follow, n 531, 40–50%; move with the day −0.02 ATR ± 0.01 | 49%, n 431, 44–55%; +0.00 ATR |
+| last 90 min, state, whole window | 57% / 56%, n 346 / 333, 50–64 / 49–62% | 48% / 53%, n 145 / 148, 38–57 / 44–63% |
+| last 90 min, fresh states only | 52% / **45%**, n 230 / 194, 44–60 / 37–53% | 48% / 39%, n 109 / 87, 37–59 / 27–52% |
+| last 15 min, price | **42%** follow, n 533, 36–47%; −0.02 ATR | **41% / 43%**, n 431 / 430, 36–47 / 38–49%; −0.02 ATR |
+| last 15 min, state, whole window | 63% / 64%, n 194 / 211 — carry-over, see 3 | 57% / 60%, n 68 / 93 |
+| last 15 min, fresh states only | 38% / 48%, n 34 / 23 — too few to read | 42% / 40%, n 24 / 15 |
 
-The two readings are not in conflict: they measure different things on the same days. In Europe the
-close-window state balance agrees with the close price move on 77% of days (correlation 0.63), yet
-on the 197 days the state leans with the day the price still reverses on 79 — the state registers
-the push, the price the whole 90 minutes. Per instrument the price reading reverses on every
-European row (FTSE 100 46% follow, Germany 40 45%, France 40 43–44%) and on none of the US rows
-(46–51%); the state reading follows most on Germany 40 2-minute (63%, CI 53–71%) and not at all on
-France 40 (50%). The strength of the day trend changes nothing (strong half 45% against weak 45%
-on price in Europe; 60% against 54% on the 2-minute state). Reading the US day from 08:00 UK instead
-of the cash open moves the US state figure to 54–55% (CI 44–65%) and the price figure not at all.
-Halves of the sample: Europe price 48% then 42%, state 60% then 54% — same sign, modest size. The
-board's own climatology agrees on how quiet the US close is on this rule (a trending bar in 33–42%
-of the 19:30–21:00 UK windows against 59–65% of Europe's 15:00–16:30). The honest summary: **the
-day's direction says little about its close.** The one tilt consistent across all three European
-rows is that the net price move of the last 90 minutes goes against the day slightly more often
-than with it, and its size — two hundredths of a day's range — is not worth trading on its own. The
-US close is a coin flip on both readings.
+In order of weight:
+
+1. **The final 15 minutes go against the day on every index.** On price all six rows follow less
+   than half the time on both charts (FTSE 100 42–43%, Germany 40 45–46%, France 40 37%, Wall
+   Street 42–44%, US Tech 100 44–45%, US 500 38–42%); both halves of the year agree (Europe 43%
+   then 40%, US 46% then 38% on the 2-minute chart); no weekday goes above 49%. The tilt is against
+   the *day*, not the run-in: against the 75 minutes before, the final window follows 49–52%;
+   against the session to 15:00 it follows 42–44%, as against the session to 16:15. A day with no
+   direction to speak of (net move under 0.15 ATR) is a coin flip (47–48%); any clearer day move
+   reverses 56–64% of the time, and the tilt is strongest in the last five minutes (follow 42% in
+   Europe, 39% in the US). The size is small: the final window moves 0.07 ATR on a typical day and
+   gives back 0.02 ATR against the day on average.
+2. **The last 90 minutes lean the same way in Europe, and not at all in the US.** Price: Europe 45%
+   follow on every row (46 / 45 / 43–44%), US 46–51%. The whole-window state reading's 57% "follow"
+   in Europe is the state in force at 15:00 carried into the window: trend states that *begin*
+   inside the last 90 minutes lean with the day 52% on the 2-minute chart and against it on the
+   5-minute (45%), US 48% and 39%. A trend state at the window's start predicts the window's price
+   direction on 47–57% of days. The strength of the day trend changes nothing on price (45% against
+   45%); the halves of the sample give 48% then 42%.
+3. **The 20EMA state cannot read a 15-minute window.** A trend state is present in the final window
+   on 37–40% of European days and 16–23% of US days, and its direction agrees with that window's own
+   price move only 52–55% (Europe) and 57–64% (US) of the time — the EMA lags the window. Its
+   63–64% "follow" is carry-over; states beginning inside the window occur on 4–7% of days. Over 90
+   minutes the state does describe the window (agreement 71–82%, fresh states 89–93%). For the final
+   15 minutes only the price reading means anything.
+4. **How quiet the US close is on this rule is real**, not an artefact: the board's own climatology
+   has a trending bar in 33–42% of the US rows' 19:30–21:00 UK windows against 59–65% of Europe's
+   15:00–16:30.
+
+The honest summary: **the day's direction does not foretell its last 90 minutes; its final 15
+minutes go against it about 58% of the time on every index, by about two hundredths of a day's
+range.** A tilt in frequency, not a move worth trading on its own.

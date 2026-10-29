@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-10-28T11:19:56.180Z",
+ "fetchedAt": "2026-10-29T11:30:00.748Z",
  "events": [
   {
    "title": "Bank Holiday",
@@ -398,7 +398,7 @@
   {
    "title": "Italian 10-y Bond Auction",
    "country": "EUR",
-   "date": "2026-10-29T05:33:00-04:00",
+   "date": "2026-10-29T06:45:00-04:00",
    "impact": "Low",
    "forecast": "",
    "previous": "4.58|1.6"

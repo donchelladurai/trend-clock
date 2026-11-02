@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-02T01:30:17.046Z",
+ "fetchedAt": "2026-11-02T15:54:38.915Z",
  "events": [
   {
    "title": "Daylight Saving Time Shift",
@@ -70,7 +70,7 @@
   {
    "title": "Retail Sales y/y",
    "country": "CHF",
-   "date": "2026-11-02T02:30:00-05:00",
+   "date": "2026-11-02T02:33:00-05:00",
    "impact": "Low",
    "forecast": "3.0%",
    "previous": "3.2%"

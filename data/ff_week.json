@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-03T14:15:40.177Z",
+ "fetchedAt": "2026-11-03T16:16:32.315Z",
  "events": [
   {
    "title": "Daylight Saving Time Shift",
@@ -252,6 +252,14 @@
    "previous": "-159.6B"
   },
   {
+   "title": "RCM/TIPP Economic Optimism",
+   "country": "USD",
+   "date": "2026-11-03T04:00:00-05:00",
+   "impact": "Low",
+   "forecast": "46.2",
+   "previous": "46.8"
+  },
+  {
    "title": "10-y Bond Auction",
    "country": "GBP",
    "date": "2026-11-03T05:02:00-05:00",
@@ -276,14 +284,6 @@
    "previous": "0.1%"
   },
   {
-   "title": "RCM/TIPP Economic Optimism",
-   "country": "USD",
-   "date": "2026-11-03T10:10:00-05:00",
-   "impact": "Low",
-   "forecast": "46.2",
-   "previous": "46.8"
-  },
-  {
    "title": "Omdia Total Vehicle Sales",
    "country": "USD",
    "date": "2026-11-03T10:15:00-05:00",
@@ -302,7 +302,7 @@
   {
    "title": "GDT Price Index",
    "country": "NZD",
-   "date": "2026-11-03T10:50:00-05:00",
+   "date": "2026-11-03T10:27:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": "2.5%"

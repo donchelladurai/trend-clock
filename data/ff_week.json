@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-03T21:50:28.041Z",
+ "fetchedAt": "2026-11-04T02:20:55.802Z",
  "events": [
   {
    "title": "Daylight Saving Time Shift",
@@ -504,7 +504,7 @@
    "country": "USD",
    "date": "2026-11-04T10:30:00-05:00",
    "impact": "Low",
-   "forecast": "-0.1M",
+   "forecast": "-1.7M",
    "previous": "-1.9M"
   },
   {
@@ -712,7 +712,7 @@
    "country": "USD",
    "date": "2026-11-05T10:30:00-05:00",
    "impact": "Low",
-   "forecast": "",
+   "forecast": "81B",
    "previous": "80B"
   },
   {

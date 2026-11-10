@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-09T18:49:56.844Z",
+ "fetchedAt": "2026-11-10T04:07:35.299Z",
  "events": [
   {
    "title": "RBA Assist Gov Hunter Speaks",
@@ -164,20 +164,20 @@
    "previous": "-13"
   },
   {
-   "title": "Trade Balance",
-   "country": "CNY",
-   "date": "2026-11-09T22:03:00-05:00",
-   "impact": "Low",
-   "forecast": "859B",
-   "previous": "906B"
-  },
-  {
    "title": "USD-Denominated Trade Balance",
    "country": "CNY",
-   "date": "2026-11-09T22:04:00-05:00",
+   "date": "2026-11-09T21:32:00-05:00",
    "impact": "Low",
    "forecast": "126.5B",
    "previous": "133.5B"
+  },
+  {
+   "title": "Trade Balance",
+   "country": "CNY",
+   "date": "2026-11-09T21:33:00-05:00",
+   "impact": "Low",
+   "forecast": "855B",
+   "previous": "906B"
   },
   {
    "title": "30-y Bond Auction",
@@ -192,7 +192,7 @@
    "country": "JPY",
    "date": "2026-11-10T00:00:00-05:00",
    "impact": "Low",
-   "forecast": "46.9",
+   "forecast": "47.1",
    "previous": "47.0"
   },
   {
@@ -216,7 +216,7 @@
    "country": "CNY",
    "date": "2026-11-10T04:03:00-05:00",
    "impact": "Low",
-   "forecast": "7.3%",
+   "forecast": "7.2%",
    "previous": "7.2%"
   },
   {
@@ -232,7 +232,7 @@
    "country": "USD",
    "date": "2026-11-10T06:00:00-05:00",
    "impact": "Low",
-   "forecast": "97.7",
+   "forecast": "98.0",
    "previous": "97.9"
   },
   {
@@ -390,7 +390,7 @@
   {
    "title": "German Buba President Nagel Speaks",
    "country": "EUR",
-   "date": "2026-11-11T03:20:00-05:00",
+   "date": "2026-11-11T03:15:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": ""
@@ -464,7 +464,7 @@
    "country": "GBP",
    "date": "2026-11-11T19:01:00-05:00",
    "impact": "Low",
-   "forecast": "-32%",
+   "forecast": "-33%",
    "previous": "-32%"
   },
   {
@@ -528,7 +528,7 @@
    "country": "GBP",
    "date": "2026-11-12T02:00:00-05:00",
    "impact": "Low",
-   "forecast": "-0.3%",
+   "forecast": "0.4%",
    "previous": "1.7%"
   },
   {
@@ -540,19 +540,11 @@
    "previous": ""
   },
   {
-   "title": "EU Economic Forecasts",
-   "country": "EUR",
-   "date": "2026-11-12T05:00:00-05:00",
-   "impact": "Low",
-   "forecast": "",
-   "previous": ""
-  },
-  {
    "title": "Building Permits m/m",
    "country": "CAD",
    "date": "2026-11-12T08:30:00-05:00",
    "impact": "Low",
-   "forecast": "-3.9%",
+   "forecast": "-4.0%",
    "previous": "8.8%"
   },
   {
@@ -566,7 +558,7 @@
   {
    "title": "FOMC Member Hammack Speaks",
    "country": "USD",
-   "date": "2026-11-12T09:00:00-05:00",
+   "date": "2026-11-12T08:30:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": ""
@@ -576,7 +568,7 @@
    "country": "USD",
    "date": "2026-11-12T10:00:00-05:00",
    "impact": "Low",
-   "forecast": "3.86M",
+   "forecast": "3.89M",
    "previous": "3.99M"
   },
   {
@@ -606,7 +598,7 @@
   {
    "title": "FOMC Member Goolsbee Speaks",
    "country": "USD",
-   "date": "2026-11-12T11:30:00-05:00",
+   "date": "2026-11-12T11:15:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": ""
@@ -618,6 +610,14 @@
    "impact": "Low",
    "forecast": "",
    "previous": "-0.9M"
+  },
+  {
+   "title": "German Buba President Nagel Speaks",
+   "country": "EUR",
+   "date": "2026-11-12T12:30:00-05:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
   },
   {
    "title": "30-y Bond Auction",
@@ -648,7 +648,7 @@
    "country": "USD",
    "date": "2026-11-12T14:00:00-05:00",
    "impact": "Low",
-   "forecast": "",
+   "forecast": "-286.3B",
    "previous": "-26.9B"
   },
   {
@@ -704,7 +704,7 @@
    "country": "EUR",
    "date": "2026-11-13T04:00:00-05:00",
    "impact": "Low",
-   "forecast": "1.85B",
+   "forecast": "2.84B",
    "previous": "1.77B"
   },
   {
@@ -791,6 +791,14 @@
    "title": "FOMC Member Bowman Speaks",
    "country": "USD",
    "date": "2026-11-13T10:50:00-05:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "German Buba President Nagel Speaks",
+   "country": "EUR",
+   "date": "2026-11-13T11:00:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": ""

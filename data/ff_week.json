@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-11T14:24:18.373Z",
+ "fetchedAt": "2026-11-12T15:16:00.260Z",
  "events": [
   {
    "title": "RBA Assist Gov Hunter Speaks",
@@ -524,22 +524,6 @@
    "previous": ""
   },
   {
-   "title": "M2 Money Supply y/y",
-   "country": "CNY",
-   "date": "2026-11-12T04:03:00-05:00",
-   "impact": "Low",
-   "forecast": "7.2%",
-   "previous": "7.2%"
-  },
-  {
-   "title": "New Loans",
-   "country": "CNY",
-   "date": "2026-11-12T04:03:00-05:00",
-   "impact": "Low",
-   "forecast": "80B",
-   "previous": "1080B"
-  },
-  {
    "title": "Building Permits m/m",
    "country": "CAD",
    "date": "2026-11-12T08:30:00-05:00",
@@ -582,7 +566,7 @@
   {
    "title": "Mortgage Delinquencies",
    "country": "USD",
-   "date": "2026-11-12T10:00:00-05:00",
+   "date": "2026-11-12T10:21:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": "4.37%"
@@ -730,6 +714,22 @@
    "impact": "Low",
    "forecast": "-4.5B",
    "previous": "-6.8B"
+  },
+  {
+   "title": "M2 Money Supply y/y",
+   "country": "CNY",
+   "date": "2026-11-13T05:03:00-05:00",
+   "impact": "Low",
+   "forecast": "7.2%",
+   "previous": "7.2%"
+  },
+  {
+   "title": "New Loans",
+   "country": "CNY",
+   "date": "2026-11-13T05:03:00-05:00",
+   "impact": "Low",
+   "forecast": "80B",
+   "previous": "1080B"
   },
   {
    "title": "Manufacturing Sales m/m",

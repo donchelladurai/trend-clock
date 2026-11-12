@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-12T15:16:00.260Z",
+ "fetchedAt": "2026-11-12T16:50:05.800Z",
  "events": [
   {
    "title": "RBA Assist Gov Hunter Speaks",
@@ -564,14 +564,6 @@
    "previous": ""
   },
   {
-   "title": "Mortgage Delinquencies",
-   "country": "USD",
-   "date": "2026-11-12T10:21:00-05:00",
-   "impact": "Low",
-   "forecast": "",
-   "previous": "4.37%"
-  },
-  {
    "title": "CB Leading Index m/m",
    "country": "AUD",
    "date": "2026-11-12T10:30:00-05:00",
@@ -602,6 +594,14 @@
    "impact": "Low",
    "forecast": "",
    "previous": ""
+  },
+  {
+   "title": "Mortgage Delinquencies",
+   "country": "USD",
+   "date": "2026-11-12T12:59:00-05:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": "4.37%"
   },
   {
    "title": "30-y Bond Auction",

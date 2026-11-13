@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-12T16:50:05.800Z",
+ "fetchedAt": "2026-11-13T02:37:59.867Z",
  "events": [
   {
    "title": "RBA Assist Gov Hunter Speaks",
@@ -596,14 +596,6 @@
    "previous": ""
   },
   {
-   "title": "Mortgage Delinquencies",
-   "country": "USD",
-   "date": "2026-11-12T12:59:00-05:00",
-   "impact": "Low",
-   "forecast": "",
-   "previous": "4.37%"
-  },
-  {
    "title": "30-y Bond Auction",
    "country": "USD",
    "date": "2026-11-12T13:01:00-05:00",
@@ -786,6 +778,14 @@
    "impact": "Low",
    "forecast": "",
    "previous": ""
+  },
+  {
+   "title": "Mortgage Delinquencies",
+   "country": "USD",
+   "date": "2026-11-13T10:15:00-05:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": "4.37%"
   },
   {
    "title": "Natural Gas Storage",

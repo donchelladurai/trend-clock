@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-15T13:56:28.490Z",
+ "fetchedAt": "2026-11-16T02:08:47.812Z",
  "events": [
   {
    "title": "BusinessNZ Services Index",
@@ -176,6 +176,14 @@
    "country": "USD",
    "date": "2026-11-16T12:00:00-05:00",
    "impact": "High",
+   "forecast": "",
+   "previous": ""
+  },
+  {
+   "title": "FOMC Member Hammack Speaks",
+   "country": "USD",
+   "date": "2026-11-16T14:15:00-05:00",
+   "impact": "Low",
    "forecast": "",
    "previous": ""
   },
@@ -503,7 +511,7 @@
    "title": "BOE Gov Bailey Speaks",
    "country": "GBP",
    "date": "2026-11-18T02:30:00-05:00",
-   "impact": "High",
+   "impact": "Medium",
    "forecast": "",
    "previous": ""
   },
@@ -903,7 +911,7 @@
    "title": "FOMC Member Waller Speaks",
    "country": "USD",
    "date": "2026-11-20T08:25:00-05:00",
-   "impact": "Medium",
+   "impact": "Low",
    "forecast": "",
    "previous": ""
   },

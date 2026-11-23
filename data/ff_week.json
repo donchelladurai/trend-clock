@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-23T02:45:36.308Z",
+ "fetchedAt": "2026-11-23T18:09:46.343Z",
  "events": [
   {
    "title": "Core Retail Sales q/q",
@@ -118,7 +118,7 @@
   {
    "title": "Corporate Profits q/q",
    "country": "CAD",
-   "date": "2026-11-23T08:30:00-05:00",
+   "date": "2026-11-23T08:32:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": "8.7%"
@@ -154,14 +154,6 @@
    "impact": "Low",
    "forecast": "53.5",
    "previous": "53.3"
-  },
-  {
-   "title": "Foreign Direct Investment ytd/y",
-   "country": "CNY",
-   "date": "2026-11-24T02:02:00-05:00",
-   "impact": "Low",
-   "forecast": "",
-   "previous": "-4.3%"
   },
   {
    "title": "German ifo Business Climate",
@@ -316,6 +308,14 @@
    "previous": "0.2%"
   },
   {
+   "title": "Foreign Direct Investment ytd/y",
+   "country": "CNY",
+   "date": "2026-11-25T02:02:00-05:00",
+   "impact": "Low",
+   "forecast": "",
+   "previous": "-4.3%"
+  },
+  {
    "title": "UBS Economic Expectations",
    "country": "CHF",
    "date": "2026-11-25T04:00:00-05:00",
@@ -356,14 +356,6 @@
    "previous": "2.3%"
   },
   {
-   "title": "Unemployment Claims",
-   "country": "USD",
-   "date": "2026-11-25T08:30:00-05:00",
-   "impact": "Medium",
-   "forecast": "201K",
-   "previous": "203K"
-  },
-  {
    "title": "Core Durable Goods Orders m/m",
    "country": "USD",
    "date": "2026-11-25T08:30:00-05:00",
@@ -394,6 +386,14 @@
    "impact": "Low",
    "forecast": "0.4%",
    "previous": "0.5%"
+  },
+  {
+   "title": "Unemployment Claims",
+   "country": "USD",
+   "date": "2026-11-25T08:30:00-05:00",
+   "impact": "Low",
+   "forecast": "201K",
+   "previous": "203K"
   },
   {
    "title": "New Home Sales",

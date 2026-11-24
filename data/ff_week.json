@@ -1,7 +1,7 @@
 {
  "source": "forexfactory",
  "feed": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
- "fetchedAt": "2026-11-24T06:04:04.287Z",
+ "fetchedAt": "2026-11-24T17:46:07.963Z",
  "events": [
   {
    "title": "Core Retail Sales q/q",
@@ -190,7 +190,7 @@
   {
    "title": "CB Leading Index m/m",
    "country": "CNY",
-   "date": "2026-11-24T09:00:00-05:00",
+   "date": "2026-11-24T08:51:00-05:00",
    "impact": "Low",
    "forecast": "",
    "previous": "-0.1%"
